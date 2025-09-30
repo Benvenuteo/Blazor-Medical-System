@@ -10,11 +10,12 @@
 <PageTitle>Lista lekarzy</PageTitle>
 <h3>Lista lekarzy</h3>
 
+
 <RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowAlternatingRows="false"
                 FilterMode="FilterMode.Advanced" AllowSorting="true" PageSize="5" AllowPaging="true"
-                PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true"
-                Data="@_doctorList" ColumnWidth="300px" LogicalFilterOperator="LogicalFilterOperator.Or"
-                SelectionMode="DataGridSelectionMode.Single">
+                ShowPagingSummary="true"
+                Data="@_doctorList" ColumnWidth="100px" LogicalFilterOperator="LogicalFilterOperator.Or"
+                SelectionMode="DataGridSelectionMode.Single" Style="width:90%">
     <Columns>
         <RadzenDataGridColumn Property="Id" Title="ID" Width="100px" />
         <RadzenDataGridColumn Property="FirstName" Title="First Name" Width="150px" />

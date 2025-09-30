@@ -7,6 +7,42 @@
       "RelativeMoniker": "D:0:0:{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}|MedicalBookingSystem.BlazorServer\\MedicalBookingSystem.BlazorServer.csproj|solutionrelative:medicalbookingsystem.blazorserver\\pages\\admin\\doctors.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}|MedicalBookingSystem.BlazorServer\\MedicalBookingSystem.BlazorServer.csproj|c:\\projektygithub\\medicalbookingsystem\\medicalbookingsystem\\medicalbookingsystem.blazorserver\\pages\\index.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}|MedicalBookingSystem.BlazorServer\\MedicalBookingSystem.BlazorServer.csproj|solutionrelative:medicalbookingsystem.blazorserver\\pages\\index.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}|MedicalBookingSystem.BlazorServer\\MedicalBookingSystem.BlazorServer.csproj|c:\\projektygithub\\medicalbookingsystem\\medicalbookingsystem\\medicalbookingsystem.blazorserver\\wwwroot\\css\\site.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
+      "RelativeMoniker": "D:0:0:{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}|MedicalBookingSystem.BlazorServer\\MedicalBookingSystem.BlazorServer.csproj|solutionrelative:medicalbookingsystem.blazorserver\\wwwroot\\css\\site.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E228DA18-F921-4769-B12E-BF390E841B57}|MedicalBookingSystem.WebAPI\\MedicalBookingSystem.WebAPI.csproj|c:\\projektygithub\\medicalbookingsystem\\medicalbookingsystem\\medicalbookingsystem.webapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E228DA18-F921-4769-B12E-BF390E841B57}|MedicalBookingSystem.WebAPI\\MedicalBookingSystem.WebAPI.csproj|solutionrelative:medicalbookingsystem.webapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E228DA18-F921-4769-B12E-BF390E841B57}|MedicalBookingSystem.WebAPI\\MedicalBookingSystem.WebAPI.csproj|c:\\projektygithub\\medicalbookingsystem\\medicalbookingsystem\\medicalbookingsystem.webapi\\jwt\\jwtservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E228DA18-F921-4769-B12E-BF390E841B57}|MedicalBookingSystem.WebAPI\\MedicalBookingSystem.WebAPI.csproj|solutionrelative:medicalbookingsystem.webapi\\jwt\\jwtservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E228DA18-F921-4769-B12E-BF390E841B57}|MedicalBookingSystem.WebAPI\\MedicalBookingSystem.WebAPI.csproj|c:\\projektygithub\\medicalbookingsystem\\medicalbookingsystem\\medicalbookingsystem.webapi\\jwt\\jwtsettings.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E228DA18-F921-4769-B12E-BF390E841B57}|MedicalBookingSystem.WebAPI\\MedicalBookingSystem.WebAPI.csproj|solutionrelative:medicalbookingsystem.webapi\\jwt\\jwtsettings.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}|MedicalBookingSystem.BlazorServer\\MedicalBookingSystem.BlazorServer.csproj|c:\\projektygithub\\medicalbookingsystem\\medicalbookingsystem\\medicalbookingsystem.blazorserver\\shared\\mainlayout.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}|MedicalBookingSystem.BlazorServer\\MedicalBookingSystem.BlazorServer.csproj|solutionrelative:medicalbookingsystem.blazorserver\\shared\\mainlayout.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}|MedicalBookingSystem.BlazorServer\\MedicalBookingSystem.BlazorServer.csproj|c:\\projektygithub\\medicalbookingsystem\\medicalbookingsystem\\medicalbookingsystem.blazorserver\\shared\\navmenu.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}|MedicalBookingSystem.BlazorServer\\MedicalBookingSystem.BlazorServer.csproj|solutionrelative:medicalbookingsystem.blazorserver\\shared\\navmenu.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6324D4B1-A372-4DEC-9850-B2F8CCB26B62}|MedicalBookingSystem.BlazorWasm\\MedicalBookingSystem.BlazorWasm.csproj|c:\\projektygithub\\medicalbookingsystem\\medicalbookingsystem\\medicalbookingsystem.blazorwasm\\shared\\navmenu.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{6324D4B1-A372-4DEC-9850-B2F8CCB26B62}|MedicalBookingSystem.BlazorWasm\\MedicalBookingSystem.BlazorWasm.csproj|solutionrelative:medicalbookingsystem.blazorwasm\\shared\\navmenu.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6324D4B1-A372-4DEC-9850-B2F8CCB26B62}|MedicalBookingSystem.BlazorWasm\\MedicalBookingSystem.BlazorWasm.csproj|c:\\projektygithub\\medicalbookingsystem\\medicalbookingsystem\\medicalbookingsystem.blazorwasm\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6324D4B1-A372-4DEC-9850-B2F8CCB26B62}|MedicalBookingSystem.BlazorWasm\\MedicalBookingSystem.BlazorWasm.csproj|solutionrelative:medicalbookingsystem.blazorwasm\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}|MedicalBookingSystem.BlazorServer\\MedicalBookingSystem.BlazorServer.csproj|c:\\projektygithub\\medicalbookingsystem\\medicalbookingsystem\\medicalbookingsystem.blazorserver\\pages\\admin\\doctorprescriptions.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}|MedicalBookingSystem.BlazorServer\\MedicalBookingSystem.BlazorServer.csproj|solutionrelative:medicalbookingsystem.blazorserver\\pages\\admin\\doctorprescriptions.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
@@ -86,10 +122,6 @@
       "RelativeMoniker": "D:0:0:{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}|MedicalBookingSystem.BlazorServer\\MedicalBookingSystem.BlazorServer.csproj|solutionrelative:medicalbookingsystem.blazorserver\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{E228DA18-F921-4769-B12E-BF390E841B57}|MedicalBookingSystem.WebAPI\\MedicalBookingSystem.WebAPI.csproj|c:\\projektygithub\\medicalbookingsystem\\medicalbookingsystem\\medicalbookingsystem.webapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E228DA18-F921-4769-B12E-BF390E841B57}|MedicalBookingSystem.WebAPI\\MedicalBookingSystem.WebAPI.csproj|solutionrelative:medicalbookingsystem.webapi\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{162F8332-0D85-4AE5-90F5-354F3D6A8CFD}|MedicalBookingSystem.Domain\\MedicalBookingSystem.Domain.csproj|c:\\projektygithub\\medicalbookingsystem\\medicalbookingsystem\\medicalbookingsystem.domain\\contracts\\idoctorschedulerepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{162F8332-0D85-4AE5-90F5-354F3D6A8CFD}|MedicalBookingSystem.Domain\\MedicalBookingSystem.Domain.csproj|solutionrelative:medicalbookingsystem.domain\\contracts\\idoctorschedulerepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -161,7 +193,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 13,
+          "SelectedChildIndex": 12,
           "Children": [
             {
               "$type": "Bookmark",
@@ -185,55 +217,72 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
-              "Title": "Dashboard.razor",
-              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\Dashboard.razor",
-              "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorWasm\\Pages\\Dashboard.razor",
-              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\Dashboard.razor",
-              "RelativeToolTip": "MedicalBookingSystem.BlazorWasm\\Pages\\Dashboard.razor",
+              "DocumentIndex": 5,
+              "Title": "JwtSettings.cs",
+              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.WebAPI\\JWT\\JwtSettings.cs",
+              "RelativeDocumentMoniker": "MedicalBookingSystem.WebAPI\\JWT\\JwtSettings.cs",
+              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.WebAPI\\JWT\\JwtSettings.cs",
+              "RelativeToolTip": "MedicalBookingSystem.WebAPI\\JWT\\JwtSettings.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-30T12:21:26.888Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "MainLayout.razor",
+              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\Shared\\MainLayout.razor",
+              "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorServer\\Shared\\MainLayout.razor",
+              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\Shared\\MainLayout.razor",
+              "RelativeToolTip": "MedicalBookingSystem.BlazorServer\\Shared\\MainLayout.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvw8AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-09-30T12:15:47.203Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "NavMenu.razor",
+              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\Shared\\NavMenu.razor",
+              "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorServer\\Shared\\NavMenu.razor",
+              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\Shared\\NavMenu.razor",
+              "RelativeToolTip": "MedicalBookingSystem.BlazorServer\\Shared\\NavMenu.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAABHAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-09-30T12:15:03.594Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "NavMenu.razor",
+              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Shared\\NavMenu.razor",
+              "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorWasm\\Shared\\NavMenu.razor",
+              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Shared\\NavMenu.razor",
+              "RelativeToolTip": "MedicalBookingSystem.BlazorWasm\\Shared\\NavMenu.razor",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-06-14T09:50:36.524Z"
+              "WhenOpened": "2025-09-30T12:14:47.08Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
-              "Title": "AppointmentsPage.razor",
-              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsPage.razor",
-              "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsPage.razor",
-              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsPage.razor",
-              "RelativeToolTip": "MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsPage.razor",
+              "DocumentIndex": 9,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Program.cs",
+              "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorWasm\\Program.cs",
+              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Program.cs",
+              "RelativeToolTip": "MedicalBookingSystem.BlazorWasm\\Program.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-06-14T09:50:31.869Z"
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-30T12:14:38.698Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
-              "Title": "AppointmentsHistory.razor",
-              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsHistory.razor",
-              "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsHistory.razor",
-              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsHistory.razor",
-              "RelativeToolTip": "MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsHistory.razor",
-              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-06-14T09:50:29.875Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 12,
-              "Title": "AppointmentsCreate.razor",
-              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsCreate.razor",
-              "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsCreate.razor",
-              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsCreate.razor",
-              "RelativeToolTip": "MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsCreate.razor",
-              "ViewState": "AgIAAE4AAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-06-14T09:49:31.022Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 23,
               "Title": "ReviewService.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.Application\\Services\\ReviewService.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.Application\\Services\\ReviewService.cs",
@@ -245,7 +294,96 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 15,
+              "DocumentIndex": 3,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.WebAPI\\Program.cs",
+              "RelativeDocumentMoniker": "MedicalBookingSystem.WebAPI\\Program.cs",
+              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.WebAPI\\Program.cs",
+              "RelativeToolTip": "MedicalBookingSystem.WebAPI\\Program.cs",
+              "ViewState": "AgIAABgAAAAAAAAAAAAAADMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-06-09T13:18:38.323Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Doctors.razor",
+              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\Pages\\Admin\\Doctors.razor",
+              "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorServer\\Pages\\Admin\\Doctors.razor",
+              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\Pages\\Admin\\Doctors.razor",
+              "RelativeToolTip": "MedicalBookingSystem.BlazorServer\\Pages\\Admin\\Doctors.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-06-09T08:09:42.686Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Index.razor",
+              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\Pages\\Index.razor",
+              "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorServer\\Pages\\Index.razor",
+              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\Pages\\Index.razor",
+              "RelativeToolTip": "MedicalBookingSystem.BlazorServer\\Pages\\Index.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-09-30T18:21:32.371Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "JwtService.cs",
+              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.WebAPI\\JWT\\JwtService.cs",
+              "RelativeDocumentMoniker": "MedicalBookingSystem.WebAPI\\JWT\\JwtService.cs",
+              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.WebAPI\\JWT\\JwtService.cs",
+              "RelativeToolTip": "MedicalBookingSystem.WebAPI\\JWT\\JwtService.cs",
+              "ViewState": "AgIAABIAAAAAAAAAAAAQwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-09-30T12:21:31.624Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "site.css",
+              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\wwwroot\\css\\site.css",
+              "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorServer\\wwwroot\\css\\site.css",
+              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\wwwroot\\css\\site.css",
+              "RelativeToolTip": "MedicalBookingSystem.BlazorServer\\wwwroot\\css\\site.css",
+              "ViewState": "AgIAADEAAAAAAAAAAAAUwEoAAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
+              "WhenOpened": "2025-09-30T18:18:27.144Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "AppointmentsCreate.razor",
+              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsCreate.razor",
+              "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsCreate.razor",
+              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsCreate.razor",
+              "RelativeToolTip": "MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsCreate.razor",
+              "ViewState": "AgIAAE4AAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-06-14T09:49:31.022Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "AppointmentsHistory.razor",
+              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsHistory.razor",
+              "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsHistory.razor",
+              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsHistory.razor",
+              "RelativeToolTip": "MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsHistory.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-06-14T09:50:29.875Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
               "Title": "IReviewService.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.Application\\Services\\IReviewService.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.Application\\Services\\IReviewService.cs",
@@ -257,7 +395,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 16,
+              "DocumentIndex": 25,
               "Title": "TaskAwaiter.cs",
               "DocumentMoniker": "C:\\Users\\krzys\\AppData\\Local\\Temp\\.vsdbgsrc\\30a718626809fa918d54d5c4e66b6c037dbc6037bbf57453e35d5b75a4c80102\\TaskAwaiter.cs",
               "RelativeDocumentMoniker": "..\\..\\..\\Users\\krzys\\AppData\\Local\\Temp\\.vsdbgsrc\\30a718626809fa918d54d5c4e66b6c037dbc6037bbf57453e35d5b75a4c80102\\TaskAwaiter.cs",
@@ -270,7 +408,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 22,
               "Title": "ReviewsController .cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.WebAPI\\Controllers\\ReviewsController .cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.WebAPI\\Controllers\\ReviewsController .cs",
@@ -282,20 +420,31 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Doctors.razor",
-              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\Pages\\Admin\\Doctors.razor",
-              "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorServer\\Pages\\Admin\\Doctors.razor",
-              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\Pages\\Admin\\Doctors.razor",
-              "RelativeToolTip": "MedicalBookingSystem.BlazorServer\\Pages\\Admin\\Doctors.razor",
-              "ViewState": "AgIAADwAAAAAAAAAAAAAAEEAAAAAAAAAAAAAAA==",
+              "DocumentIndex": 19,
+              "Title": "AppointmentsPage.razor",
+              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsPage.razor",
+              "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsPage.razor",
+              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsPage.razor",
+              "RelativeToolTip": "MedicalBookingSystem.BlazorWasm\\Pages\\AppointmentsPage.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-06-09T08:09:42.686Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-06-14T09:50:31.869Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 18,
+              "Title": "Dashboard.razor",
+              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\Dashboard.razor",
+              "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorWasm\\Pages\\Dashboard.razor",
+              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\Dashboard.razor",
+              "RelativeToolTip": "MedicalBookingSystem.BlazorWasm\\Pages\\Dashboard.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-06-14T09:50:36.524Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
               "Title": "Doctors.razor",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\Doctors.razor",
               "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorWasm\\Pages\\Doctors.razor",
@@ -307,7 +456,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 15,
               "Title": "Login.razor",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\Login.razor",
               "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorWasm\\Pages\\Login.razor",
@@ -319,7 +468,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 14,
               "Title": "Register.razor",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\Register.razor",
               "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorWasm\\Pages\\Register.razor",
@@ -331,7 +480,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 17,
+              "DocumentIndex": 26,
               "Title": "DoctorsController .cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.WebAPI\\Controllers\\DoctorsController .cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.WebAPI\\Controllers\\DoctorsController .cs",
@@ -343,7 +492,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 19,
+              "DocumentIndex": 28,
               "Title": "DataSeeder.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.Infrastructure\\DataSeeder.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.Infrastructure\\DataSeeder.cs",
@@ -355,7 +504,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 20,
+              "DocumentIndex": 29,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\Program.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorServer\\Program.cs",
@@ -367,7 +516,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 12,
               "Title": "CreateSchedule.razor",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\Pages\\Admin\\CreateSchedule.razor",
               "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorServer\\Pages\\Admin\\CreateSchedule.razor",
@@ -379,7 +528,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 22,
+              "DocumentIndex": 30,
               "Title": "IDoctorScheduleRepository.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.Domain\\Contracts\\IDoctorScheduleRepository.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.Domain\\Contracts\\IDoctorScheduleRepository.cs",
@@ -391,7 +540,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 13,
               "Title": "DoctorService.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.Application\\Services\\DoctorService.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.Application\\Services\\DoctorService.cs",
@@ -403,19 +552,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 21,
-              "Title": "Program.cs",
-              "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.WebAPI\\Program.cs",
-              "RelativeDocumentMoniker": "MedicalBookingSystem.WebAPI\\Program.cs",
-              "ToolTip": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.WebAPI\\Program.cs",
-              "RelativeToolTip": "MedicalBookingSystem.WebAPI\\Program.cs",
-              "ViewState": "AgIAACIAAAAAAAAAAIA1wDMAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-06-09T13:18:38.323Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 18,
+              "DocumentIndex": 27,
               "Title": "CreateReviewDtoValidator.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.Application\\Validators\\CreateReviewDtoValidator.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.Application\\Validators\\CreateReviewDtoValidator.cs",
@@ -427,7 +564,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 23,
+              "DocumentIndex": 31,
               "Title": "IDoctorService.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.Application\\Services\\IDoctorService.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.Application\\Services\\IDoctorService.cs",
@@ -439,7 +576,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 16,
               "Title": "EditAppointment.razor",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorWasm\\Pages\\EditAppointment.razor",
               "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorWasm\\Pages\\EditAppointment.razor",
@@ -451,7 +588,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 27,
+              "DocumentIndex": 35,
               "Title": "MedicalRecordService.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.Application\\Services\\MedicalRecordService.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.Application\\Services\\MedicalRecordService.cs",
@@ -463,7 +600,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 11,
               "Title": "DoctorNotes.razor",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\Pages\\Admin\\DoctorNotes.razor",
               "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorServer\\Pages\\Admin\\DoctorNotes.razor",
@@ -475,7 +612,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 24,
+              "DocumentIndex": 32,
               "Title": "AppointmentService .cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.Application\\Services\\AppointmentService .cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.Application\\Services\\AppointmentService .cs",
@@ -487,7 +624,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 25,
+              "DocumentIndex": 33,
               "Title": "appsettings.json",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\appsettings.json",
               "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorServer\\appsettings.json",
@@ -499,7 +636,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 26,
+              "DocumentIndex": 34,
               "Title": "Counter.razor",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\Pages\\Counter.razor",
               "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorServer\\Pages\\Counter.razor",
@@ -511,7 +648,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 29,
+              "DocumentIndex": 37,
               "Title": "IMedicalRecordService.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.Application\\Services\\IMedicalRecordService.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.Application\\Services\\IMedicalRecordService.cs",
@@ -523,7 +660,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 33,
+              "DocumentIndex": 41,
               "Title": "CreatePrescriptionDto.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.SharedKernel\\Dto\\NotesPrescriptionDto\\CreatePrescriptionDto.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.SharedKernel\\Dto\\NotesPrescriptionDto\\CreatePrescriptionDto.cs",
@@ -535,7 +672,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 31,
+              "DocumentIndex": 39,
               "Title": "PrescriptionDto.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.SharedKernel\\Dto\\NotesPrescriptionDto\\PrescriptionDto.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.SharedKernel\\Dto\\NotesPrescriptionDto\\PrescriptionDto.cs",
@@ -547,7 +684,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 28,
+              "DocumentIndex": 36,
               "Title": "IAppointmentService.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.Application\\Services\\IAppointmentService.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.Application\\Services\\IAppointmentService.cs",
@@ -559,7 +696,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 10,
               "Title": "DoctorPrescriptions.razor",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\Pages\\Admin\\DoctorPrescriptions.razor",
               "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorServer\\Pages\\Admin\\DoctorPrescriptions.razor",
@@ -571,7 +708,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 30,
+              "DocumentIndex": 38,
               "Title": "App.razor",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.BlazorServer\\App.razor",
               "RelativeDocumentMoniker": "MedicalBookingSystem.BlazorServer\\App.razor",
@@ -583,7 +720,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 34,
+              "DocumentIndex": 42,
               "Title": "NoteDto.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.SharedKernel\\Dto\\NotesPrescriptionDto\\NoteDto.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.SharedKernel\\Dto\\NotesPrescriptionDto\\NoteDto.cs",
@@ -595,7 +732,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 32,
+              "DocumentIndex": 40,
               "Title": "Prescription .cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.Domain\\Models\\Prescription .cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.Domain\\Models\\Prescription .cs",
@@ -607,7 +744,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 35,
+              "DocumentIndex": 43,
               "Title": "Note.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.Domain\\Models\\Note.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.Domain\\Models\\Note.cs",
@@ -619,7 +756,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 36,
+              "DocumentIndex": 44,
               "Title": "Appointment.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.Domain\\Models\\Appointment.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.Domain\\Models\\Appointment.cs",
@@ -631,7 +768,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 37,
+              "DocumentIndex": 45,
               "Title": "AppointmentDto.cs",
               "DocumentMoniker": "C:\\ProjektyGitHub\\MedicalBookingSystem\\MedicalBookingSystem\\MedicalBookingSystem.SharedKernel\\Dto\\AppointmentsDto\\AppointmentDto.cs",
               "RelativeDocumentMoniker": "MedicalBookingSystem.SharedKernel\\Dto\\AppointmentsDto\\AppointmentDto.cs",
