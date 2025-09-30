@@ -1,0 +1,220 @@
+﻿@page "/appointments"
+@using MudBlazor
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject MudBlazor.ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<h3 class="mt-4">Moje wizyty</h3>
+
+@if (isLoading)
+{
+    <p>Ładowanie wizyt...</p>
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+else if (appointments.Count == 0)
+{
+    <div class="alert alert-info">Brak zaplanowanych wizyt</div>
+    <button class="btn btn-success mt-3" @onclick="CreateAppointment">Dodaj wizytę</button>
+}
+else
+{
+    <table class="table mt-3">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Godzina</th>
+                <th>Lekarz</th>
+                <th>Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var appointment in appointments)
+            {
+                <tr>
+                    <td>@appointment.Date.ToShortDateString()</td>
+                    <td>@appointment.Date.ToShortTimeString()</td>
+                    <td>@appointment.DoctorName</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" @onclick="() => ShowDetails(appointment.Id)">Szczegóły</button>
+                        <button class="btn btn-sm btn-primary me-2" @onclick="() => EditAppointment(appointment)">Edytuj</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => ShowDeleteConfirmation(appointment.Id)">Odwołaj wizytę</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <button class="btn btn-success mt-3" @onclick="CreateAppointment">Dodaj wizytę</button>
+
+    @if (selectedAppointment != null)
+    {
+        <div class="mt-3 alert alert-info">
+            <h5>Szczegóły wizyty</h5>
+            <p><strong>Data:</strong> @selectedAppointment.Date.ToString("yyyy-MM-dd")</p>
+            <p><strong>Lekarz:</strong> @selectedAppointment.Doctor.FirstName @selectedAppointment.Doctor.LastName</p>
+            <p><strong>Pacjent:</strong> @selectedAppointment.Patient.FirstName @selectedAppointment.Patient.LastName</p>
+            <p><strong>Notatka:</strong> @selectedAppointment.Note?.Content</p>
+            <p><strong>Recepta:</strong> @selectedAppointment.Prescription?.Medication @selectedAppointment.Prescription?.Dosage @selectedAppointment.Prescription?.Instructions</p>
+            <p><strong>Data ważności recepty:</strong> @selectedAppointment.Prescription?.ExpiryDate</p>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+
+}
+
+@code {
+    private List<AppointmentDto> appointments = new();
+    private bool isLoading = true;
+    private string? errorMessage;
+    private AppointmentDetailsDto? selectedAppointment;
+    private bool showConfirmation = false;
+    private int appointmentIdToDelete;
+    private string? successMessage;
+
+    private async Task ShowDeleteConfirmation(int appointmentId)
+    {
+        var parameters = new DialogParameters
+    {
+        { "ContentText", "Czy na pewno chcesz odwołać wizytę?" },
+        { "ButtonText", "Odwołaj" },
+        { "Color", Color.Error }
+    };
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = DialogService.Show<ConfirmDialog>("Potwierdzenie", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await DeleteAppointment(appointmentId);
+        }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var patientId = int.Parse(await localStorage.GetItemAsync<string>("patientId"));
+            var response = await Http.GetFromJsonAsync<List<AppointmentDto>>($"api/appointments/upcoming/{patientId}");
+
+            appointments = response ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Błąd podczas ładowania wizyt: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+    private void ConfirmDelete(int appointmentId)
+    {
+        appointmentIdToDelete = appointmentId;
+        showConfirmation = true;
+        errorMessage = null;
+        successMessage = null;
+    }
+    private void CreateAppointment()
+    {
+        Navigation.NavigateTo("/appointments/create");
+    }
+
+    private void EditAppointment(AppointmentDto appointment)
+    {
+        Navigation.NavigateTo($"/appointments/edit/{appointment.Id}");
+    }
+
+    private async Task DeleteAppointment(int appointmentId)
+    {
+        try
+        {
+            var patientId = int.Parse(await localStorage.GetItemAsync<string>("patientId"));
+            var result = await Http.DeleteAsync($"api/appointments/{appointmentId}?patientId={patientId}");
+
+            if (result.IsSuccessStatusCode)
+            {
+                appointments = appointments.Where(a => a.Id != appointmentId).ToList();
+                Snackbar.Add("Wizytę odwołano pomyślnie.", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Nie udało się odwołać wizyty.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Błąd: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ShowDetails(int appointmentId)
+    {
+        try
+        {
+            var patientId = int.Parse(await localStorage.GetItemAsync<string>("patientId"));
+            var response = await Http.GetAsync($"api/appointments/{appointmentId}?patientId={patientId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                selectedAppointment = await response.Content.ReadFromJsonAsync<AppointmentDetailsDto>();
+            }
+            else
+            {
+                selectedAppointment = null;
+                Console.WriteLine($"Nie udało się pobrać szczegółów wizyty: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Błąd podczas pobierania szczegółów: " + ex.Message);
+        }
+    }
+
+    public class AppointmentDto
+    {
+        public int Id { get; set; }
+        public DateTime Date { get; set; }
+        public string DoctorName { get; set; } = string.Empty;
+    }
+
+    public class AppointmentDetailsDto : AppointmentDto
+    {
+        public NoteDto? Note { get; set; }
+        public PrescriptionDto? Prescription { get; set; }
+        public PatientBasicDto Patient { get; set; } = new();
+        public DoctorBasicDto Doctor { get; set; } = new();
+    }
+
+    public class NoteDto
+    {
+        public string Content { get; set; } = string.Empty;
+    }
+
+    public class PrescriptionDto
+    {
+        public string Medication { get; set; } = string.Empty;
+        public string Dosage { get; set; } = string.Empty;
+        public string Instructions { get; set; } = string.Empty;
+        public DateTime ExpiryDate { get; set; }
+    }
+
+    public class PatientBasicDto
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+    }
+
+    public class DoctorBasicDto
+    {
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+    }
+}

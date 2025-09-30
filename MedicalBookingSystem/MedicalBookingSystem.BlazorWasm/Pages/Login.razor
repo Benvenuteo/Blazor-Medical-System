@@ -1,0 +1,74 @@
+﻿@page "/"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
+<h3>Logowanie</h3>
+
+<div class="mb-3">
+    <label>Email:</label>
+    <input @bind="loginDto.Email" class="form-control" />
+</div>
+<div class="mb-3">
+    <label>Hasło:</label>
+    <input type="password" @bind="loginDto.Password" class="form-control" />
+</div>
+<button class="btn btn-primary" @onclick="HandleLogin">Zaloguj się</button>
+<button class="btn btn-link" @onclick="Register">Zarejestruj się</button>
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger mt-2">@error</div>
+}
+
+@code {
+    private LoginDto loginDto = new();
+    private string? error;
+
+    private void Register(){
+        Navigation.NavigateTo($"/register");
+    }
+
+    private async Task HandleLogin()
+    {
+        error = null;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/auth/login", loginDto);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<AuthResult>();
+                await localStorage.SetItemAsync("patientId", result.Patient.Id.ToString());
+                Navigation.NavigateTo("/dashboard");
+            }
+            else
+            {
+                error = await response.Content.ReadAsStringAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            error = "Wystąpił błąd: " + ex.Message;
+        }
+    }
+
+    class AuthResult
+    {
+        public string Token { get; set; } = string.Empty;
+        public PatientDto Patient { get; set; } = new();
+    }
+
+    class PatientDto
+    {
+        public int Id { get; set; }
+        public string Email { get; set; } = string.Empty;
+        // Dodaj inne pola jeśli chcesz
+    }
+
+    class LoginDto
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

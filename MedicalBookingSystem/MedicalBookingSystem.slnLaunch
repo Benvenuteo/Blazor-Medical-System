@@ -1,0 +1,19 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "MedicalBookingSystem.WebAPI\\MedicalBookingSystem.WebAPI.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "MedicalBookingSystem.BlazorWasm\\MedicalBookingSystem.BlazorWasm.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "MedicalBookingSystem.BlazorServer\\MedicalBookingSystem.BlazorServer.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

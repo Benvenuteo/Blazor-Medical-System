@@ -1,0 +1,73 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35521.163
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MedicalBookingSystem.Domain", "MedicalBookingSystem.Domain\MedicalBookingSystem.Domain.csproj", "{162F8332-0D85-4AE5-90F5-354F3D6A8CFD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MedicalBookingSystem.Application", "MedicalBookingSystem.Application\MedicalBookingSystem.Application.csproj", "{EE519CF1-E42F-45F3-B835-7AE5BC18C957}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MedicalBookingSystem.Infrastructure", "MedicalBookingSystem.Infrastructure\MedicalBookingSystem.Infrastructure.csproj", "{AA63B1F4-5F19-43B7-9D47-A9C309F4AD73}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MedicalBookingSystem.SharedKernel", "MedicalBookingSystem.SharedKernel\MedicalBookingSystem.SharedKernel.csproj", "{2C171E96-EBF7-48FA-8175-F2C459374562}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MedicalBookingSystem.WebAPI", "MedicalBookingSystem.WebAPI\MedicalBookingSystem.WebAPI.csproj", "{E228DA18-F921-4769-B12E-BF390E841B57}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MedicalBookingSystem.BlazorServer", "MedicalBookingSystem.BlazorServer\MedicalBookingSystem.BlazorServer.csproj", "{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MedicalBookingSystem.BlazorWasm", "MedicalBookingSystem.BlazorWasm\MedicalBookingSystem.BlazorWasm.csproj", "{6324D4B1-A372-4DEC-9850-B2F8CCB26B62}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		BezSerwera|Any CPU = BezSerwera|Any CPU
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{162F8332-0D85-4AE5-90F5-354F3D6A8CFD}.BezSerwera|Any CPU.ActiveCfg = BezSerwera|Any CPU
+		{162F8332-0D85-4AE5-90F5-354F3D6A8CFD}.BezSerwera|Any CPU.Build.0 = BezSerwera|Any CPU
+		{162F8332-0D85-4AE5-90F5-354F3D6A8CFD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{162F8332-0D85-4AE5-90F5-354F3D6A8CFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{162F8332-0D85-4AE5-90F5-354F3D6A8CFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{162F8332-0D85-4AE5-90F5-354F3D6A8CFD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE519CF1-E42F-45F3-B835-7AE5BC18C957}.BezSerwera|Any CPU.ActiveCfg = BezSerwera|Any CPU
+		{EE519CF1-E42F-45F3-B835-7AE5BC18C957}.BezSerwera|Any CPU.Build.0 = BezSerwera|Any CPU
+		{EE519CF1-E42F-45F3-B835-7AE5BC18C957}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE519CF1-E42F-45F3-B835-7AE5BC18C957}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE519CF1-E42F-45F3-B835-7AE5BC18C957}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE519CF1-E42F-45F3-B835-7AE5BC18C957}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA63B1F4-5F19-43B7-9D47-A9C309F4AD73}.BezSerwera|Any CPU.ActiveCfg = BezSerwera|Any CPU
+		{AA63B1F4-5F19-43B7-9D47-A9C309F4AD73}.BezSerwera|Any CPU.Build.0 = BezSerwera|Any CPU
+		{AA63B1F4-5F19-43B7-9D47-A9C309F4AD73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA63B1F4-5F19-43B7-9D47-A9C309F4AD73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA63B1F4-5F19-43B7-9D47-A9C309F4AD73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA63B1F4-5F19-43B7-9D47-A9C309F4AD73}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C171E96-EBF7-48FA-8175-F2C459374562}.BezSerwera|Any CPU.ActiveCfg = BezSerwera|Any CPU
+		{2C171E96-EBF7-48FA-8175-F2C459374562}.BezSerwera|Any CPU.Build.0 = BezSerwera|Any CPU
+		{2C171E96-EBF7-48FA-8175-F2C459374562}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C171E96-EBF7-48FA-8175-F2C459374562}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C171E96-EBF7-48FA-8175-F2C459374562}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C171E96-EBF7-48FA-8175-F2C459374562}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E228DA18-F921-4769-B12E-BF390E841B57}.BezSerwera|Any CPU.ActiveCfg = BezSerwera|Any CPU
+		{E228DA18-F921-4769-B12E-BF390E841B57}.BezSerwera|Any CPU.Build.0 = BezSerwera|Any CPU
+		{E228DA18-F921-4769-B12E-BF390E841B57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E228DA18-F921-4769-B12E-BF390E841B57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E228DA18-F921-4769-B12E-BF390E841B57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E228DA18-F921-4769-B12E-BF390E841B57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}.BezSerwera|Any CPU.ActiveCfg = BezSerwera|Any CPU
+		{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}.BezSerwera|Any CPU.Build.0 = BezSerwera|Any CPU
+		{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1A4E5B3-637D-44AC-A048-581ED1FFD4C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6324D4B1-A372-4DEC-9850-B2F8CCB26B62}.BezSerwera|Any CPU.ActiveCfg = BezSerwera|Any CPU
+		{6324D4B1-A372-4DEC-9850-B2F8CCB26B62}.BezSerwera|Any CPU.Build.0 = BezSerwera|Any CPU
+		{6324D4B1-A372-4DEC-9850-B2F8CCB26B62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6324D4B1-A372-4DEC-9850-B2F8CCB26B62}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6324D4B1-A372-4DEC-9850-B2F8CCB26B62}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6324D4B1-A372-4DEC-9850-B2F8CCB26B62}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

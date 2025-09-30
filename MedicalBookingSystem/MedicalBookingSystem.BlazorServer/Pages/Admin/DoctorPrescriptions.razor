@@ -1,0 +1,103 @@
+﻿@page "/admin/doctors/prescriptions/{id:int}"
+@using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
+@using MedicalBookingSystem.SharedKernel.Dto.NotesPrescriptionDto
+@inject IAppointmentService AppointmentService
+@inject NavigationManager Navigation
+@inject IMedicalRecordService MedicalRecordService
+@using MudBlazor
+@using MudBlazor.Components
+@using System.ComponentModel.DataAnnotations
+
+<MudText Typo="Typo.h5" Class="mb-4">Dodaj recepty do przeszłych wizyt</MudText>
+
+@if (_appointments == null)
+{
+    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+}
+else if (!_appointments.Any())
+{
+    <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Brak wizyt do wypisania recepty.</MudText>
+}
+else
+{
+    @foreach (var appointment in _appointments)
+    {
+        <MudCard Class="mb-6 p-4">
+            <MudCardContent>
+                <MudText Typo="Typo.subtitle1">Data: @appointment.Date</MudText>
+                <MudText Typo="Typo.subtitle2">Status: @appointment.Status</MudText>
+                <MudText Typo="Typo.subtitle2">Pacjent ID: @appointment.PatientId</MudText>
+
+                <MudForm @ref="_forms[appointment.Id]">
+                    <MudTextField @bind-Value="_prescriptions[appointment.Id].Medication" Label="Lek" Required="true" />
+                    <MudTextField @bind-Value="_prescriptions[appointment.Id].Dosage" Label="Dawkowanie" Required="true" />
+                    <MudTextField @bind-Value="_prescriptions[appointment.Id].Instructions" Label="Instrukcje" Required="true" />
+                    <MudNumericField T="int" @bind-Value="_prescriptions[appointment.Id].ValidityDays"
+                                     Label="Dni ważności" Required="true" Min="1" Max="30" />
+
+                    <MudButton OnClick="@(() => AddPrescriptionAsync(appointment.Id))"
+                               Variant="MudBlazor.Variant.Filled" Color="Color.Primary" Class="mt-3">
+                        Zapisz receptę
+                    </MudButton>
+                </MudForm>
+            </MudCardContent>
+        </MudCard>
+    }
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private List<AppointmentDto> _appointments;
+    private Dictionary<int, CreatePrescriptionDto> _prescriptions = new();
+    private Dictionary<int, string> _successMessages = new();
+    private Dictionary<int, MudForm> _forms = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _appointments = AppointmentService.GetPreviousAppointmentsByDoctorId(Id);
+
+        foreach (var app in _appointments)
+        {
+            _prescriptions[app.Id] = new CreatePrescriptionDto
+                {
+                    AppointmentId = app.Id,
+                    ValidityDays = 7
+                };
+
+            _forms[app.Id] = new MudForm();
+        }
+    }
+
+    private async Task AddPrescriptionAsync(int appointmentId)
+    {
+        var form = _forms[appointmentId];
+        await form.Validate();
+
+        if (!form.IsValid)
+        {
+            Console.WriteLine("Formularz nie przeszedł walidacji.");
+            return;
+        }
+
+        var dto = _prescriptions[appointmentId];
+        var result = await MedicalRecordService.CreatePrescriptionAsync(dto, Id);
+
+        if (result.IsSuccess)
+        {
+            _successMessages[appointmentId] = "Recepta została dodana.";
+
+            // Usuwanie formularza z widoku
+            var appointmentToRemove = _appointments.FirstOrDefault(a => a.Id == appointmentId);
+            if (appointmentToRemove != null)
+                _appointments.Remove(appointmentToRemove);
+
+            _prescriptions.Remove(appointmentId);
+            _forms.Remove(appointmentId);
+        }
+        else
+        {
+            _successMessages[appointmentId] = "Błąd: " + result.Error;
+        }
+    }
+}

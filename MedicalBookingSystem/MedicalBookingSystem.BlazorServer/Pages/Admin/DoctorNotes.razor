@@ -1,0 +1,98 @@
+﻿@page "/admin/doctors/notes/{id:int}"
+@using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
+@using MedicalBookingSystem.SharedKernel.Dto.NotesPrescriptionDto
+@inject IAppointmentService AppointmentService
+@inject IMedicalRecordService MedicalRecordService
+
+<h3>Dodaj notatki do przyszłych wizyt</h3>
+
+@if (_appointments == null)
+{
+    <p><em>Ładowanie wizyt...</em></p>
+}
+else if (!_appointments.Any())
+{
+    <p><em>Brak wizyt do wypisania notatek.</em></p>
+}
+else
+{
+    @foreach (var appointment in _appointments)
+    {
+        <div class="mb-4 p-3 border rounded">
+            <p><b>Data:</b> @appointment.Date</p>
+            <p><b>Status:</b> @appointment.Status</p>
+            <p><b>Pacjent ID:</b> @appointment.PatientId</p>
+
+            @if (_noteContents.ContainsKey(appointment.Id))
+            {
+                <textarea class="form-control mb-2" @bind="_noteContents[appointment.Id]" placeholder="Wpisz notatkę..."></textarea>
+                <button class="btn btn-primary" @onclick="() => AddNoteAsync(appointment.Id)">Zapisz notatkę</button>
+            }
+
+            @if (_successMessages.TryGetValue(appointment.Id, out var msg))
+            {
+                <p class="text-success">@msg</p>
+            }
+
+            @if (_errorMessages.TryGetValue(appointment.Id, out var err))
+            {
+                <p class="text-danger">@err</p>
+            }
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private List<AppointmentDto> _appointments;
+    private Dictionary<int, string> _noteContents = new();
+    private Dictionary<int, string> _successMessages = new();
+    private Dictionary<int, string> _errorMessages = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _appointments = AppointmentService.GetNextAppointmentsByDoctorId(Id);
+
+        // Inicjalizacja treści notatek dla każdej wizyty
+        foreach (var appointment in _appointments)
+        {
+            _noteContents[appointment.Id] = string.Empty;
+        }
+    }
+
+    private async Task AddNoteAsync(int appointmentId)
+    {
+        _successMessages.Remove(appointmentId);
+        _errorMessages.Remove(appointmentId);
+
+        if (!_noteContents.TryGetValue(appointmentId, out var content) || string.IsNullOrWhiteSpace(content))
+        {
+            _errorMessages[appointmentId] = "Notatka nie może być pusta.";
+            return;
+        }
+
+        var dto = new CreateNoteDto
+            {
+                AppointmentId = appointmentId,
+                Content = content
+            };
+
+        var result = await MedicalRecordService.AddNoteToAppointmentAsync(dto, Id);
+
+        if (result.IsSuccess)
+        {
+            _successMessages[appointmentId] = "Notatka została dodana.";
+
+            // Usuń formularz i dane z listy
+            _appointments.RemoveAll(a => a.Id == appointmentId);
+            _noteContents.Remove(appointmentId);
+        }
+        else
+        {
+            _errorMessages[appointmentId] = "Błąd: " + result.Error;
+        }
+
+        StateHasChanged();
+    }
+}

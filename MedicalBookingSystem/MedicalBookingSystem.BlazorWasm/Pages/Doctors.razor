@@ -1,0 +1,326 @@
+﻿@page "/doctors/search"
+@inject HttpClient Http
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+<h3>Wyszukiwanie lekarzy</h3>
+
+<EditForm Model="@searchDto" OnValidSubmit="SearchDoctors">
+    <div class="mb-3">
+        <label>Specjalizacja</label>
+        <InputSelect class="form-control" @bind-Value="searchDto.SpecializationId">
+            <option value="">-- wybierz --</option>
+            @foreach (var spec in specializations)
+            {
+                <option value="@spec.Id">@spec.Name</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="mb-3">
+        <label>Region</label>
+        <InputText class="form-control" @bind-Value="searchDto.Region" />
+    </div>
+
+    <div class="mb-3">
+        <label>Data dostępności</label>
+        <InputDate class="form-control" @bind-Value="searchDto.Date" />
+    </div>
+
+    <div class="mb-3">
+        <label>Sortuj według</label>
+        <InputSelect class="form-control" @bind-Value="searchDto.SortBy">
+            <option value="">-- wybierz --</option>
+            <option value="rating">Ocena</option>
+            <option value="availability">Najbliższy termin</option>
+            <option value="distance">Najbliżej mnie</option>
+        </InputSelect>
+    </div>
+
+    <button class="btn btn-primary" type="submit">Szukaj</button>
+</EditForm>
+
+@if (isLoading)
+{
+    <p>Ładowanie...</p>
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+else if (doctors != null && doctors.Any())
+{
+    <table class="table table-bordered mt-3">
+        <thead>
+            <tr>
+                <th>Zdjęcie</th>
+                <th>Imię</th>
+                <th>Nazwisko</th>
+                <th>Region</th>
+                <th>Ocena</th>
+                <th>Liczba ocen</th>
+                <th>Akcje</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var doctor in doctors)
+            {
+                <tr>
+                    <td>
+                        <img src="@doctor.ImageUrl" alt="Zdjęcie lekarza" style="width: 64px; height: 64px; object-fit: cover; border-radius: 50%;" />
+                    </td>
+                    <td>@doctor.FirstName</td>
+                    <td>@doctor.LastName</td>
+                    <td>@doctor.Region</td>
+                    <td>
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            if (i <= doctor.AverageRating)
+                            {
+                                <span style="color:gold">★</span>
+                            }
+                            else
+                            {
+                                <span style="color:lightgray">☆</span>
+                            }
+                        }
+                    </td>
+                    <td>@doctor.ReviewCount</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-info" @onclick="() => ToggleReviews(doctor.Id)">
+                                @((expandedDoctorIds.Contains(doctor.Id)) ? "Ukryj opinie" : "Pokaż opinie")
+                            </button>
+                            <button class="btn btn-sm btn-success" @onclick="() => ShowReviewForm(doctor.Id)">Dodaj opinię</button>
+                        </div>
+                    </td>
+                </tr>
+
+                @if (expandedDoctorIds.Contains(doctor.Id))
+                {
+                    <tr>
+                        <td colspan="5">
+                            @if (loadingReviews.Contains(doctor.Id))
+                            {
+                                <p>Ładowanie opinii...</p>
+                            }
+                            else if (reviewsByDoctor.TryGetValue(doctor.Id, out var reviewList))
+                            {
+                                @if (reviewList.Any())
+                                {
+                                    <ul class="list-group">
+                                        @foreach (var review in reviewList)
+                                        {
+                                            <li class="list-group-item">
+                                                <strong>@review.Rating ★</strong><br />
+                                                @review.Comment
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <p>Brak opinii dla tego lekarza.</p>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-danger">Błąd podczas ładowania opinii.</p>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+    @if (showReviewForm)
+    {
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5>Dodaj opinię o lekarzu</h5>
+                <EditForm Model="@newReview" OnValidSubmit="SubmitReview">
+                    <div class="mb-3">
+                        <label>Ocena (1-5)</label>
+                        <InputNumber class="form-control" @bind-Value="newReview.Rating" Min="1" Max="5" />
+                    </div>
+                    <div class="mb-3">
+                        <label>Komentarz</label>
+                        <InputTextArea class="form-control" @bind-Value="newReview.Comment" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Wyślij opinię</button>
+                    <button type="button" class="btn btn-secondary ms-2" @onclick="CancelReview">Anuluj</button>
+                </EditForm>
+            </div>
+        </div>
+    }
+}
+else if (doctors != null)
+{
+    <div class="alert alert-info mt-3">Brak dostępnych lekarzy dla wybranych kryteriów.</div>
+}
+
+@code {
+    private List<DoctorSearchResultDto> doctors;
+    private List<SpecializationDto> specializations = new();
+    private SearchDoctorsDto searchDto = new();
+    private bool isLoading = false;
+    private string errorMessage;
+
+    private HashSet<int> expandedDoctorIds = new();
+    private HashSet<int> loadingReviews = new();
+    private Dictionary<int, List<ReviewDto>> reviewsByDoctor = new();
+    private bool showReviewForm = false;
+    private int selectedDoctorId;
+    private CreateReviewDto newReview = new();
+
+    private void ShowReviewForm(int doctorId)
+    {
+        selectedDoctorId = doctorId;
+        newReview = new CreateReviewDto { DoctorId = doctorId };
+        showReviewForm = true;
+    }
+    private void CancelReview()
+    {
+        showReviewForm = false;
+        newReview = new();
+    }
+    private async Task SubmitReview()
+    {
+        try
+        {
+            var patientId = int.Parse(await localStorage.GetItemAsync<string>("patientId"));
+            var response = await Http.PostAsJsonAsync($"api/reviews?patientId={patientId}", newReview);
+
+            if (response.IsSuccessStatusCode)
+            {
+                showReviewForm = false;
+                await ToggleReviews(selectedDoctorId);
+            }
+            else
+            {
+                var serverError = await response.Content.ReadAsStringAsync();
+                errorMessage = $"Błąd dodawania opinii: {serverError}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Błąd: " + ex.Message;
+        }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            specializations = await Http.GetFromJsonAsync<List<SpecializationDto>>("api/doctors/specializations");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Błąd podczas ładowania specjalizacji: " + ex.Message;
+        }
+    }
+
+    private async Task SearchDoctors()
+    {
+        isLoading = true;
+        errorMessage = null;
+        doctors = null;
+
+        try
+        {
+            var queryParams = new List<string>();
+
+            if (searchDto.SpecializationId.HasValue)
+                queryParams.Add($"SpecializationId={searchDto.SpecializationId.Value}");
+
+            if (!string.IsNullOrWhiteSpace(searchDto.Region))
+                queryParams.Add($"Region={Uri.EscapeDataString(searchDto.Region)}");
+
+            if (searchDto.Date.HasValue)
+                queryParams.Add($"Date={searchDto.Date.Value:yyyy-MM-dd}");
+
+            if (!string.IsNullOrWhiteSpace(searchDto.SortBy))
+                queryParams.Add($"SortBy={Uri.EscapeDataString(searchDto.SortBy)}");
+
+            var queryString = string.Join("&", queryParams);
+            doctors = await Http.GetFromJsonAsync<List<DoctorSearchResultDto>>($"api/doctors?{queryString}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Nie udało się pobrać lekarzy: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ToggleReviews(int doctorId)
+    {
+        if (expandedDoctorIds.Contains(doctorId))
+        {
+            expandedDoctorIds.Remove(doctorId);
+        }
+        else
+        {
+            expandedDoctorIds.Add(doctorId);
+
+            if (!reviewsByDoctor.ContainsKey(doctorId))
+            {
+                loadingReviews.Add(doctorId);
+                try
+                {
+                    var reviews = await Http.GetFromJsonAsync<List<ReviewDto>>($"api/reviews/doctor/{doctorId}");
+                    reviewsByDoctor[doctorId] = reviews ?? new();
+                }
+                catch
+                {
+                    reviewsByDoctor[doctorId] = null; // błąd
+                }
+                finally
+                {
+                    loadingReviews.Remove(doctorId);
+                }
+            }
+        }
+    }
+
+    public class DoctorSearchResultDto
+    {
+        public int Id { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string LicenseNumber { get; set; }
+        public string Region { get; set; }
+        public string Bio { get; set; }
+        public decimal AverageRating { get; set; }
+        public int ReviewCount { get; set; }
+        public string ImageUrl { get; set; }
+    }
+
+    public class SpecializationDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+    }
+
+    public class SearchDoctorsDto
+    {
+        public int? SpecializationId { get; set; }
+        public string? Region { get; set; }
+        public DateTime? Date { get; set; }
+        public string? SortBy { get; set; }
+    }
+
+    public class ReviewDto
+    {
+        public int Rating { get; set; }
+        public string Comment { get; set; }
+    }
+
+    public class CreateReviewDto
+    {
+        public int Rating { get; set; }
+
+        public string Comment { get; set; }
+
+        public int DoctorId { get; set; }
+    }
+}

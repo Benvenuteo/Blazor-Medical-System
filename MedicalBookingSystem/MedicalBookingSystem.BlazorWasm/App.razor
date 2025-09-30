@@ -1,0 +1,26 @@
+﻿@namespace MedicalBookingSystem.BlazorWasm
+@using Microsoft.AspNetCore.Components.Routing
+
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@GetLayout(routeData.PageType)" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <p>Nie znaleziono strony.</p>
+        </LayoutView>
+    </NotFound>
+</Router>
+
+@code {
+    private Type GetLayout(Type pageType)
+    {
+        if (pageType == typeof(MedicalBookingSystem.BlazorWasm.Pages.Login) ||
+            pageType == typeof(MedicalBookingSystem.BlazorWasm.Pages.Register))
+        {
+            return typeof(MedicalBookingSystem.BlazorWasm.Shared.EmptyLayout);
+        }
+
+        return typeof(MedicalBookingSystem.BlazorWasm.Shared.MainLayout);
+    }
+}

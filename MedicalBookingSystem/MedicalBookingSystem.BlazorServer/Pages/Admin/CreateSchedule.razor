@@ -1,0 +1,88 @@
+﻿@page "/admin/doctors/{DoctorId:int}/schedule"
+@using MedicalBookingSystem.SharedKernel.Dto
+@inject IDoctorService DoctorService
+@inject NavigationManager Navigation
+
+<h3>Dodaj grafik lekarza</h3>
+
+<EditForm Model="_dto" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="start-date" class="form-label">Data rozpoczęcia</label>
+        <InputDate id="start-date" class="form-control" @bind-Value="startDate" />
+    </div>
+
+    <div class="mb-3">
+        <label for="start-time" class="form-label">Godzina rozpoczęcia</label>
+        <input type="time" id="start-time" class="form-control" @bind="startTime" />
+    </div>
+
+    <div class="mb-3">
+        <label for="end-date" class="form-label">Data zakończenia</label>
+        <InputDate id="end-date" class="form-control" @bind-Value="endDate" />
+    </div>
+
+    <div class="mb-3">
+        <label for="end-time" class="form-label">Godzina zakończenia</label>
+        <input type="time" id="end-time" class="form-control" @bind="endTime" />
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Zapisz grafik</button>
+    <button type="button" class="btn btn-secondary mt-3 ms-2" @onclick="NavigateBack">Anuluj</button>
+
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger mt-3">@_error</div>
+    }
+
+    @if (!string.IsNullOrEmpty(_success))
+    {
+        <div class="alert alert-success mt-3">@_success</div>
+    }
+</EditForm>
+
+@code {
+    [Parameter] public int DoctorId { get; set; }
+
+    private CreateScheduleDto _dto = new();
+    private string _error;
+    private string _success;
+
+    private DateTime startDate = DateTime.Today;
+    private TimeOnly startTime = new(8, 0);
+
+    private DateTime endDate = DateTime.Today;
+    private TimeOnly endTime = new(16, 0);
+
+    private async Task HandleValidSubmit()
+    {
+        _error = _success = null;
+
+        _dto.DoctorId = DoctorId;
+        _dto.StartTime = startDate.Date + startTime.ToTimeSpan();
+        _dto.EndTime = endDate.Date + endTime.ToTimeSpan();
+
+        if (_dto.StartTime >= _dto.EndTime)
+        {
+            _error = "Data zakończenia musi być późniejsza niż rozpoczęcia.";
+            return;
+        }
+
+        var result = await DoctorService.CreateScheduleAsync(_dto);
+        if (result.IsSuccess)
+        {
+            _success = "Grafik został zapisany.";
+        }
+        else
+        {
+            _error = result.Error;
+        }
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo("/admin/doctors");
+    }
+}

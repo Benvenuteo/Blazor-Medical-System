@@ -1,0 +1,136 @@
+﻿@page "/admin/doctors"
+@using MedicalBookingSystem.BlazorServer.Service
+@using MedicalBookingSystem.SharedKernel.Dto
+@using Radzen.Blazor
+@inject IDoctorService DoctorService
+@inject DoctorImageUploader Uploader
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Lista lekarzy</PageTitle>
+<h3>Lista lekarzy</h3>
+
+<RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowAlternatingRows="false"
+                FilterMode="FilterMode.Advanced" AllowSorting="true" PageSize="5" AllowPaging="true"
+                PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true"
+                Data="@_doctorList" ColumnWidth="300px" LogicalFilterOperator="LogicalFilterOperator.Or"
+                SelectionMode="DataGridSelectionMode.Single">
+    <Columns>
+        <RadzenDataGridColumn Property="Id" Title="ID" Width="100px" />
+        <RadzenDataGridColumn Property="FirstName" Title="First Name" Width="150px" />
+        <RadzenDataGridColumn Property="LastName" Title="Last Name" Width="150px" />
+        <RadzenDataGridColumn Property="LicenseNumber" Title="License #" Width="150px" />
+        <RadzenDataGridColumn Property="Region" Title="Region" Width="150px" />
+        <RadzenDataGridColumn Property="Bio" Title="Biography" Width="200px" />
+        <RadzenDataGridColumn Property="AverageRating" Title="Avg. Rating" Width="120px" />
+        <RadzenDataGridColumn Property="ReviewCount" Title="Reviews" Width="60px" />
+        <RadzenDataGridColumn Title="Photo" Width="160px">
+            <Template Context="data">
+                <img src="@data.ImageUrl" alt="Doctor photo" style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%;" />
+                <div class="mt-1">
+                    <label class="btn btn-sm btn-outline-primary">
+                        Zmień
+                        <InputFile OnChange="@(e => OnImageSelected(e, data.Id))" style="display:none" />
+                    </label>
+                </div>
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Property="Id" Title="Recepty do wypisania" Width="180px">
+            <Template Context="data">
+                <RadzenButton ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="info" class="m-1" Click=@(() => OpenListPrescription(data.Id)) Text="Recepty" />
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Property="Id" Title="Notatki do wizyty" Width="180px">
+            <Template Context="data">
+                <RadzenButton ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="info" class="m-1" Click=@(() => OpenListNotes(data.Id)) Text="Notatki" />
+            </Template>
+        </RadzenDataGridColumn>
+        <RadzenDataGridColumn Title="Grafik" Width="150px">
+            <Template Context="data">
+                <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="calendar"
+                              Click=@(() => OpenCreateSchedule(data.Id))
+                              Text="Dodaj grafik" />
+            </Template>
+        </RadzenDataGridColumn>
+    </Columns>
+</RadzenDataGrid>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <div class="alert alert-danger mt-3">@_errorMessage</div>
+}
+@if (!string.IsNullOrWhiteSpace(_successMessage))
+{
+    <div class="alert alert-success mt-3">@_successMessage</div>
+}
+
+@code {
+    private List<DoctorDto> _doctorList = new();
+    private string _errorMessage;
+    private string _successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _doctorList = (await DoctorService.GetAllAsync()).Value?.ToList() ?? new List<DoctorDto>();
+    }
+
+    private void OpenListPrescription(int id)
+    {
+        Navigation.NavigateTo($"/admin/doctors/prescriptions/{id}");
+    }
+
+    private void OpenListNotes(int id)
+    {
+        Navigation.NavigateTo($"/admin/doctors/notes/{id}");
+    }
+
+    private async Task OnImageSelected(InputFileChangeEventArgs e, int doctorId)
+    {
+        _errorMessage = null;
+        _successMessage = null;
+
+        var file = e.File;
+        var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+
+        if (extension != ".jpg" && extension != ".jpeg" && extension != ".png")
+        {
+            _errorMessage = "Dozwolone formaty: JPG, PNG";
+            return;
+        }
+
+        try
+        {
+            using var stream = file.OpenReadStream(10 * 1024 * 1024); // max 10MB
+            var imageUrl = await Uploader.SaveDoctorImageAsync(stream, file.Name);
+            if (imageUrl == null)
+            {
+                _errorMessage = "Nie udało się zapisać pliku.";
+                return;
+            }
+
+            var result = await DoctorService.SetDoctorImageUrlAsync(doctorId, imageUrl);
+            if (!result)
+            {
+                _errorMessage = "Nie udało się zapisać linku do zdjęcia w bazie.";
+                return;
+            }
+
+            _successMessage = "Zdjęcie zaktualizowano pomyślnie.";
+            await RefreshDoctorsList();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = "Błąd podczas przesyłania pliku: " + ex.Message;
+        }
+    }
+
+    private async Task RefreshDoctorsList()
+    {
+        _doctorList = (await DoctorService.GetAllAsync()).Value?.ToList() ?? new List<DoctorDto>();
+    }
+
+    private void OpenCreateSchedule(int doctorId)
+    {
+        Navigation.NavigateTo($"/admin/doctors/{doctorId}/schedule");
+    }
+}
