@@ -4,6 +4,7 @@
 <h1>Panel personelu</h1>
 <AuthorizeView Roles="@Roles.Admin"><p><a href="/admin/doctors">Zarządzaj lekarzami i grafikami</a></p></AuthorizeView>
 <AuthorizeView Roles="@Roles.Doctor" Context="auth">
+    <p><a href="/doctor/appointments">Moje wizyty i ich zakończenie</a></p>
     <p><a href="/doctor/notes">Notatki do moich wizyt</a></p>
     <p><a href="/doctor/prescriptions">Recepty do moich wizyt</a></p>
     <p><a href="@($"/admin/doctors/{AccountClaims.ReadId(auth.User, AccountClaims.DoctorId)}/schedule")">Mój grafik</a></p>

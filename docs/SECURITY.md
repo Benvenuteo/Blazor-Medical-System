@@ -7,7 +7,7 @@
 | Katalog lekarzy, grafiki i publiczne opinie | Tak | Tak | Tak | Tak |
 | Profil, historia i rezerwacje pacjenta | Nie | Własne | Nie | Nie |
 | Odczyt notatki lub recepty | Nie | Własna wizyta | Wizyta przypisana do lekarza | Nie |
-| Wystawienie notatki lub recepty | Nie | Nie | Wizyta przypisana do lekarza | Nie |
+| Wystawienie notatki lub recepty | Nie | Nie | Odbyta wizyta przypisana do lekarza | Nie |
 | Dodanie lub usunięcie opinii | Nie | Własna opinia; obowiązują reguły odbycia wizyty | Nie | Nie |
 | Dodanie grafiku | Nie | Nie | Własny | Dowolnego lekarza |
 | Zmiana zdjęcia lekarza | Nie | Nie | Nie | Tak |
@@ -37,7 +37,7 @@ Zmiany kontraktu względem pierwotnej aplikacji:
 
 Logowanie odbywa się przez Razor Pages pod `/Account/Login`. Cookie jest HttpOnly, SameSite=Strict, ma godzinny czas ważności bez przedłużania i wymaga HTTPS poza Development/Testing. Formularze logowania i wylogowania sprawdzają token CSRF. GET wylogowania pokazuje formularz; dopiero POST usuwa sesję. Parametr przekierowania nie może wyprowadzić użytkownika poza panel.
 
-Panel i hub SignalR wymagają roli personelu. Tożsamość wewnątrz obwodu Blazor pochodzi z `AuthenticationStateProvider`, a nie z bieżącego `HttpContext`. Hub zamyka połączenie po wygaśnięciu uwierzytelnienia; usługi niezależnie sprawdzają termin sesji. Lekarz korzysta z `/doctor/notes` i `/doctor/prescriptions`, bez identyfikatora lekarza w adresie.
+Panel i hub SignalR wymagają roli personelu. Tożsamość wewnątrz obwodu Blazor pochodzi z `AuthenticationStateProvider`, a nie z bieżącego `HttpContext`. Hub zamyka połączenie po wygaśnięciu uwierzytelnienia; usługi niezależnie sprawdzają termin sesji. Lekarz korzysta z `/doctor/appointments`, `/doctor/notes` i `/doctor/prescriptions`, bez identyfikatora lekarza w adresie. Zakończenie wizyty wymaga przypisanego lekarza i upływu pełnych 30 minut jej terminu. Dokumentację można dodać po zakończeniu wizyty.
 
 Logowanie i rejestracja API mają wspólny limit 20 żądań na minutę z jednego adresu IP. Strona logowania personelu ma analogiczny limit w swoim procesie. Przekroczenie limitu zwraca 429.
 
@@ -45,4 +45,4 @@ Logowanie i rejestracja API mają wspólny limit 20 żądań na minutę z jedneg
 
 To lokalny projekt demonstracyjny. Token usunięty z przeglądarki pozostaje kryptograficznie ważny do wygaśnięcia. Zmiana hasła i dezaktywacja konta blokują kolejne logowania, lecz nie unieważniają już wydanych tokenów lub cookie. Wymuszone unieważnianie sesji, zarządzanie kontami, reset hasła i audyt dokumentacji są osobnymi zadaniami w `ROADMAP.md`.
 
-Token w localStorage jest dostępny dla kodu JavaScript działającego w originie aplikacji. Docelowe publiczne wdrożenie wymaga dopracowania ochrony XSS/CSP i przepływu sesji, trwałego magazynu kluczy Data Protection oraz konfiguracji zaufanego proxy dla HTTPS i limitów IP. Reguły uprawnień nie zastępują planowanej walidacji cyklu życia wizyty i atomowej rezerwacji.
+Token w localStorage jest dostępny dla kodu JavaScript działającego w originie aplikacji. Docelowe publiczne wdrożenie wymaga dopracowania ochrony XSS/CSP i przepływu sesji, trwałego magazynu kluczy Data Protection oraz konfiguracji zaufanego proxy dla HTTPS i limitów IP. Reguły cyklu życia wizyty i ochronę rezerwacji opisuje [BOOKING.md](BOOKING.md).

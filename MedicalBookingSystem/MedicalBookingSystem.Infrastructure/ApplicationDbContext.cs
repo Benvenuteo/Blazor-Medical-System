@@ -19,6 +19,26 @@ namespace MedicalBookingSystem.Infrastructure
         public DbSet<DoctorSchedule> DoctorSchedules { get; set; }
         public DbSet<DoctorSpecialization> DoctorSpecializations { get; set; }
 
+        // SQLite has no rowversion. Every appointment write gets an application-managed concurrency token.
+        private void StampAppointmentVersions()
+        {
+            foreach (var entry in ChangeTracker.Entries<Appointment>()
+                .Where(e => e.State is EntityState.Added or EntityState.Modified))
+                entry.Property(a => a.Version).CurrentValue = Guid.NewGuid();
+        }
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            StampAppointmentVersions();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+        {
+            StampAppointmentVersions();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<StaffAccount>(entity =>
@@ -64,6 +84,9 @@ namespace MedicalBookingSystem.Infrastructure
             {
                 entity.HasKey(a => a.Id);
                 entity.Property(a => a.Date).IsRequired();
+                entity.Property(a => a.Version).IsConcurrencyToken();
+                entity.HasIndex(a => new { a.DoctorId, a.Date }).IsUnique().HasFilter("Status <> 'Cancelled'");
+                entity.HasIndex(a => new { a.PatientId, a.Date }).IsUnique().HasFilter("Status <> 'Cancelled'");
                 entity.Property(a => a.Status)
                     .IsRequired()
                     .HasConversion<string>()
@@ -116,6 +139,7 @@ namespace MedicalBookingSystem.Infrastructure
             modelBuilder.Entity<Review>(entity =>
             {
                 entity.HasKey(r => r.Id);
+                entity.HasIndex(r => new { r.PatientId, r.DoctorId }).IsUnique();
                 entity.Property(r => r.Rating).IsRequired();
                 entity.Property(r => r.Comment).HasColumnType("text");
                 entity.Property(r => r.CreatedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");

@@ -57,6 +57,7 @@ else if (doctors != null && doctors.Any())
                 <th>Region</th>
                 <th>Ocena</th>
                 <th>Liczba ocen</th>
+                <th>Najbliższy termin</th>
                 <th>Akcje</th>
             </tr>
         </thead>
@@ -84,6 +85,7 @@ else if (doctors != null && doctors.Any())
                         }
                     </td>
                     <td>@doctor.ReviewCount</td>
+                    <td>@(doctor.NextAvailableSlot?.ToString("dd.MM.yyyy HH:mm") ?? "Brak wolnych terminów")</td>
                     <td>
                         <div class="btn-group">
                             <button class="btn btn-sm btn-info" @onclick="() => ToggleReviews(doctor.Id)">
@@ -295,6 +297,7 @@ else if (doctors != null)
         public string Bio { get; set; } = string.Empty;
         public decimal AverageRating { get; set; }
         public int ReviewCount { get; set; }
+        public DateTime? NextAvailableSlot { get; set; }
         public string ImageUrl { get; set; } = string.Empty;
     }
 

@@ -26,13 +26,13 @@ Każdy etap powinien kończyć się działającym buildem, testami regresyjnymi 
 
 ## 3. Rezerwacje i cykl życia wizyty
 
-- [ ] Jednoznaczny model długości wizyty i dostępnych slotów.
-- [ ] Poprawne wyszukiwanie po dacie i najbliższym wolnym terminie.
-- [ ] Atomowa rezerwacja i ochrona przed równoczesnym zajęciem tego samego terminu.
-- [ ] Oznaczanie wizyt jako odbytych i kontrola dozwolonych przejść statusów.
-- [ ] Bezpieczna zmiana terminu, z wykluczeniem własnej wizyty z konfliktów.
-- [ ] Wspólna walidacja dla API i bezpośrednich wywołań z panelu Server.
-- [ ] Testy współbieżności i pełnego scenariusza wizyta–dokumentacja–opinia.
+- [x] Jednoznaczny model długości wizyty i dostępnych slotów.
+- [x] Poprawne wyszukiwanie po dacie i najbliższym wolnym terminie.
+- [x] Atomowa rezerwacja i ochrona przed równoczesnym zajęciem tego samego terminu.
+- [x] Oznaczanie wizyt jako odbytych i kontrola dozwolonych przejść statusów.
+- [x] Bezpieczna zmiana terminu, z wykluczeniem własnej wizyty z konfliktów.
+- [x] Wspólna walidacja dla API i bezpośrednich wywołań z panelu Server.
+- [x] Testy współbieżności i pełnego scenariusza wizyta–dokumentacja–opinia.
 
 ## 4. API, wydajność i prezentacja
 
@@ -40,7 +40,7 @@ Każdy etap powinien kończyć się działającym buildem, testami regresyjnymi 
 - [ ] Paginacja, filtrowanie i agregacje wykonywane w bazie.
 - [ ] Kontekst EF o czasie życia dostosowanym do operacji w Blazor Server.
 - [ ] Usunięcie kopii DTO z komponentów WASM.
-- [ ] Odczyt bieżących danych podczas edycji wizyty i poprawne odświeżanie list.
+- [x] Edytor wczytuje bieżącą wizytę i dostępne sloty; konflikt odświeża terminy i dane wizyty.
 - [ ] Walidacja zawartości zdjęć, sprzątanie plików i publiczny adres mediów w konfiguracji.
 - [ ] Testy E2E w przeglądarce, pomiary wydajności i zrzuty ekranów do portfolio.
 

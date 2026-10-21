@@ -15,21 +15,23 @@ internal sealed class SecurityScenario : IDisposable
     public const string Password = "Original2026!";
     private static readonly string PatientHash = new PasswordHasher<Patient>().HashPassword(new Patient(), Password);
     private static readonly string StaffHash = new PasswordHasher<StaffAccount>().HashPassword(new StaffAccount(), Password);
-    public MedicalApiFactory Factory { get; } = new();
+    public MedicalApiFactory Factory { get; }
+    private SecurityScenario(MedicalApiFactory factory) => Factory = factory;
     public int PatientId { get; private set; }
     public int OtherPatientId { get; private set; }
     public int DoctorId { get; private set; }
     public int OtherDoctorId { get; private set; }
     public int AppointmentId { get; private set; }
     public int OtherAppointmentId { get; private set; }
+    public int ClinicalAppointmentId { get; private set; }
     public int NoteId { get; private set; }
     public int PrescriptionId { get; private set; }
     public int ReviewId { get; private set; }
     public DateTime BookingDate { get; private set; }
 
-    public static async Task<SecurityScenario> CreateAsync()
+    public static async Task<SecurityScenario> CreateAsync(MedicalApiFactory? factory = null)
     {
-        var scenario = new SecurityScenario();
+        var scenario = new SecurityScenario(factory ?? new MedicalApiFactory());
         await scenario.Factory.InitializeDatabaseAsync();
         await using var scope = scenario.Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -49,11 +51,12 @@ internal sealed class SecurityScenario : IDisposable
         db.DoctorSchedules.Add(new DoctorSchedule { DoctorId = doctor.Id, StartTime = scenario.BookingDate, EndTime = scenario.BookingDate.AddHours(4), IsAvailable = true });
         var appointment = new Appointment { PatientId = patient.Id, DoctorId = doctor.Id, Date = scenario.BookingDate.AddDays(1) };
         var otherAppointment = new Appointment { PatientId = otherPatient.Id, DoctorId = otherDoctor.Id, Date = scenario.BookingDate.AddDays(1) };
-        var completed = new Appointment { PatientId = patient.Id, DoctorId = doctor.Id, Date = clock.Now.AddDays(-2), Status = AppointmentStatus.Completed };
+        var completed = new Appointment { PatientId = patient.Id, DoctorId = doctor.Id, Date = clock.Today.AddDays(-2).AddHours(10), Status = AppointmentStatus.Completed };
+        var clinical = new Appointment { PatientId = patient.Id, DoctorId = doctor.Id, Date = clock.Today.AddDays(-3).AddHours(10), Status = AppointmentStatus.Completed };
         var note = new Note { Appointment = completed, Content = "Confidential clinical note", CreatedDate = clock.UtcNow };
         var prescription = new Prescription { Appointment = completed, Medication = "Confidential medication", Dosage = "1 daily", CreatedDate = clock.UtcNow, ExpiryDate = clock.Today.AddDays(7) };
         var review = new Review { PatientId = otherPatient.Id, DoctorId = otherDoctor.Id, Rating = 5, Comment = "Public review" };
-        db.AddRange(appointment, otherAppointment, completed, note, prescription, review);
+        db.AddRange(appointment, otherAppointment, completed, clinical, note, prescription, review);
         await db.SaveChangesAsync();
         scenario.PatientId = patient.Id;
         scenario.OtherPatientId = otherPatient.Id;
@@ -62,6 +65,7 @@ internal sealed class SecurityScenario : IDisposable
         scenario.AppointmentId = appointment.Id;
         scenario.OtherAppointmentId = otherAppointment.Id;
         scenario.NoteId = note.Id;
+        scenario.ClinicalAppointmentId = clinical.Id;
         scenario.PrescriptionId = prescription.Id;
         scenario.ReviewId = review.Id;
         return scenario;

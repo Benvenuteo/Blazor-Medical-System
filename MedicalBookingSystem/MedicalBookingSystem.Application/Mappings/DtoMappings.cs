@@ -78,6 +78,8 @@ public static class DtoMappings
     {
         Id = appointment.Id,
         PatientId = appointment.PatientId,
+        HasNote = appointment.Note is not null,
+        HasPrescription = appointment.Prescription is not null,
         DoctorId = appointment.DoctorId,
         Date = appointment.Date,
         Status = appointment.Status.ToString(),
@@ -87,6 +89,8 @@ public static class DtoMappings
     public static AppointmentDetailsDto ToDetailsDto(this Appointment appointment) => new()
     {
         Id = appointment.Id,
+        HasNote = appointment.Note is not null,
+        HasPrescription = appointment.Prescription is not null,
         PatientId = appointment.PatientId,
         DoctorId = appointment.DoctorId,
         Date = appointment.Date,

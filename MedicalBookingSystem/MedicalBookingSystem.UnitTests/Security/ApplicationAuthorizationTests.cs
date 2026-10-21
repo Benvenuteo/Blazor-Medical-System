@@ -39,7 +39,7 @@ public sealed class ApplicationAuthorizationTests
     {
         var repositories = new RepositoryMocks();
         repositories.Appointments.Setup(r => r.GetByIdAsync(3)).ReturnsAsync(new Appointment { Id = 3, DoctorId = 2, PatientId = 8 });
-        var service = new MedicalRecordService(repositories.UnitOfWork.Object, new TestTimeProvider().CreateClock(), TestUsers.Doctor(1));
+        var service = TestServices.Records(repositories.UnitOfWork.Object, new TestTimeProvider().CreateClock(), TestUsers.Doctor(1));
         await Assert.ThrowsAsync<AccessDeniedException>(() => service.AddNoteToAppointmentAsync(new CreateNoteDto { AppointmentId = 3, Content = "Clinical note" }, 1));
         await Assert.ThrowsAsync<AccessDeniedException>(() => service.CreatePrescriptionAsync(new CreatePrescriptionDto { AppointmentId = 3 }, 1));
         repositories.UnitOfWork.Verify(r => r.SaveChangesAsync(), Times.Never);

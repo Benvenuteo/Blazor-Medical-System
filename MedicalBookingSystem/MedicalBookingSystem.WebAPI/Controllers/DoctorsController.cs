@@ -82,6 +82,14 @@ namespace MedicalBookingSystem.WebAPI.Controllers
         }
 
         [AllowAnonymous]
+        [HttpGet("{doctorId:int}/slots")]
+        public async Task<IActionResult> GetAvailableSlots(int doctorId, DateTime? date, int? excludedAppointmentId)
+        {
+            var result = await _doctorService.GetAvailableSlotsAsync(doctorId, date, excludedAppointmentId);
+            return result.IsSuccess ? Ok(result.Value) : this.FailureResponse(result);
+        }
+
+        [AllowAnonymous]
         [HttpGet("{doctorId}/schedule")]
         public async Task<IActionResult> GetSchedule(int doctorId)
         {

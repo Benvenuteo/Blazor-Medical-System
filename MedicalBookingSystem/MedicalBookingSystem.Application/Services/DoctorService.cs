@@ -1,3 +1,6 @@
+using MedicalBookingSystem.Domain.Scheduling;
+using MedicalBookingSystem.Domain.Exceptions;
+using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto;
 using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.Application.Time;
 using MedicalBookingSystem.Application.Mappings;
@@ -72,48 +75,70 @@ namespace MedicalBookingSystem.Application.Services
         public async Task<Result<IEnumerable<DoctorDto>>> SearchDoctorsAsync(SearchDoctorsDto dto)
         {
             IEnumerable<Doctor> doctors = await _uow.Doctors.GetAllAsync();
-
             if (dto.SpecializationId.HasValue)
-            {
-                doctors = doctors
-                    .Where(d => d.DoctorSpecializations.Any(s => s.SpecializationId == dto.SpecializationId.Value));
-            }
-
+                doctors = doctors.Where(d => d.DoctorSpecializations.Any(s => s.SpecializationId == dto.SpecializationId.Value));
             if (!string.IsNullOrWhiteSpace(dto.Region))
+                doctors = doctors.Where(d => string.Equals(d.Region, dto.Region.Trim(), StringComparison.OrdinalIgnoreCase));
+            var mapped = doctors.Select(d => MapWithAvailability(d, dto.Date)).ToList();
+            if (dto.Date.HasValue) mapped = mapped.Where(d => d.NextAvailableSlot.HasValue).ToList();
+            IEnumerable<DoctorDto> ordered = dto.SortBy?.ToLowerInvariant() switch
             {
-                doctors = doctors
-                    .Where(d => string.Equals(d.Region, dto.Region, StringComparison.OrdinalIgnoreCase));
-            }
-
-            if (dto.Date.HasValue)
-            {
-                var availableDoctors = await _uow.Doctors.GetAvailableDoctorsAsync(dto.Date.Value);
-                var availableIds = availableDoctors.Select(d => d.Id).ToHashSet();
-                doctors = doctors.Where(d => availableIds.Contains(d.Id));
-            }
-
-            // Sortowanie
-            if (!string.IsNullOrWhiteSpace(dto.SortBy))
-            {
-                doctors = dto.SortBy?.ToLower() switch
-                {
-                    "rating" => doctors.OrderByDescending(d => d.AverageRating),
-                    "availability" => dto.Date.HasValue
-                        ? doctors.OrderBy(d => d.Schedules.Where(s => s.IsAvailable && s.StartTime >= _clock.Now).Select(s => s.StartTime).DefaultIfEmpty(DateTime.MaxValue).Min())
-                        : doctors,
-                    _ => doctors
-                };
-            }
-
-            IEnumerable<DoctorDto> mapped = doctors.Select(item => item.ToDto()).ToList();
-            return Result<IEnumerable<DoctorDto>>.Success(mapped);
+                "rating" => mapped.OrderByDescending(d => d.AverageRating).ThenBy(d => d.Id),
+                "availability" => mapped.OrderBy(d => d.NextAvailableSlot ?? DateTime.MaxValue).ThenBy(d => d.Id),
+                _ => mapped.OrderBy(d => d.Id)
+            };
+            return Result.Success(ordered);
         }
 
-        public async Task<Result<IEnumerable<DoctorDto>>> GetAllAsync()
+        public async Task<Result<IEnumerable<DoctorDto>>> GetAllAsync() => Result.Success(
+            (await _uow.Doctors.GetAllAsync()).Select(d => MapWithAvailability(d, null)));
+
+        public async Task<Result<IReadOnlyList<AvailableSlotDto>>> GetAvailableSlotsAsync(int doctorId,
+            DateTime? date = null, int? excludedAppointmentId = null)
         {
-            var doctors = await _uow.Doctors.GetAllAsync();
-            IEnumerable<DoctorDto> dto = doctors.Select(item => item.ToDto()).ToList();
-            return Result<IEnumerable<DoctorDto>>.Success(dto);
+            if (await _uow.Doctors.GetByIdAsync(doctorId) is null)
+                return Result.Failure<IReadOnlyList<AvailableSlotDto>>("Lekarz nie istnieje.", ErrorType.NotFound);
+            if (excludedAppointmentId.HasValue)
+            {
+                var appointment = await _uow.Appointments.GetByIdAsync(excludedAppointmentId.Value);
+                if (appointment is null) return Result.Failure<IReadOnlyList<AvailableSlotDto>>("Wizyta nie istnieje.", ErrorType.NotFound);
+                await _access.RequirePatientAsync(appointment.PatientId);
+                if (appointment.DoctorId != doctorId)
+                    return Result.Failure<IReadOnlyList<AvailableSlotDto>>("Wizyta jest przypisana do innego lekarza.");
+            }
+            var schedules = await _uow.DoctorSchedules.GetByDoctorIdAsync(doctorId);
+            var lower = _clock.MinimumBookingTime.Subtract(AppointmentSlots.Duration);
+            var upper = _clock.Now.AddMonths(3).Add(AppointmentSlots.Duration);
+            var patientId = await _access.PatientIdOrNullAsync();
+            var appointments = await _uow.Appointments.FindAsync(a => (a.DoctorId == doctorId || a.PatientId == patientId) &&
+                a.Id != excludedAppointmentId && a.Status != AppointmentStatus.Cancelled && a.Date >= lower && a.Date <= upper);
+            IReadOnlyList<AvailableSlotDto> result = AvailableStarts(schedules, appointments, date)
+                .Select(start => new AvailableSlotDto { DoctorId = doctorId, StartTime = start, EndTime = start.Add(AppointmentSlots.Duration) }).ToList();
+            return Result.Success(result);
+        }
+
+        private DoctorDto MapWithAvailability(Doctor doctor, DateTime? date)
+        {
+            var dto = doctor.ToDto();
+            var starts = AvailableStarts(doctor.Schedules, doctor.Appointments, date);
+            dto.NextAvailableSlot = starts.Count > 0 ? starts[0] : null;
+            return dto;
+        }
+
+        private IReadOnlyList<DateTime> AvailableStarts(IEnumerable<DoctorSchedule> schedules, IEnumerable<Appointment> appointments, DateTime? date)
+        {
+            var from = _clock.MinimumBookingTime;
+            var to = _clock.Now.AddMonths(3);
+            if (date.HasValue)
+            {
+                var day = DateTime.SpecifyKind(date.Value.Date, DateTimeKind.Unspecified);
+                if (day > to || day.AddDays(1) <= from) return [];
+                if (day > from) from = day;
+                var end = day.AddDays(1).AddTicks(-1);
+                if (end < to) to = end;
+            }
+            return AppointmentSlots.GetAvailableStarts(schedules, appointments, from, to)
+                .Where(start => _clock.IsUnambiguousLocalTime(start) && _clock.IsUnambiguousLocalTime(start.Add(AppointmentSlots.Duration))).ToList();
         }
 
         public async Task<Result<IEnumerable<SpecializationDto>>> GetSpecializationsAsync()
@@ -153,8 +178,11 @@ namespace MedicalBookingSystem.Application.Services
             };
 
             await _uow.DoctorSchedules.AddAsync(schedule);
-            await _uow.SaveChangesAsync();
-
+            try { await _uow.SaveChangesAsync(); }
+            catch (PersistenceConflictException)
+            {
+                return Result.Failure("Grafik nachodzi na przedział zapisany w innym żądaniu.", ErrorType.Conflict);
+            }
             return Result.Success();
         }
 

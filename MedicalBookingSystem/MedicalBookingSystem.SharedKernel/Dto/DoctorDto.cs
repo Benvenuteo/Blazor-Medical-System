@@ -10,6 +10,7 @@ namespace MedicalBookingSystem.SharedKernel.Dto
         public string Bio { get; set; } = string.Empty;
         public decimal AverageRating { get; set; }
         public int ReviewCount { get; set; }
+        public DateTime? NextAvailableSlot { get; set; }
         public string ImageUrl { get; set; } = string.Empty;
     }
 

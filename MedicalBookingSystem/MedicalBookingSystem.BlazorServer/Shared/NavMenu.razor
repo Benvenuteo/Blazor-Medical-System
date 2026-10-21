@@ -22,6 +22,7 @@
         </div>
         </AuthorizeView>
         <AuthorizeView Roles="@Roles.Doctor">
+            <NavLink class="nav-link px-3" href="/doctor/appointments">Moje wizyty</NavLink>
             <NavLink class="nav-link px-3" href="/doctor/notes">Moje notatki</NavLink>
             <NavLink class="nav-link px-3" href="/doctor/prescriptions">Moje recepty</NavLink>
         </AuthorizeView>

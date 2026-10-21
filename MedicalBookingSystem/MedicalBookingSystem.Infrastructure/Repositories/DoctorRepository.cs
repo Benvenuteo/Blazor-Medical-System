@@ -8,6 +8,9 @@ namespace MedicalBookingSystem.Infrastructure.Repositories
     {
         public DoctorRepository(ApplicationDbContext context) : base(context) { }
 
+        public override Task<Doctor?> GetByIdAsync(int id) => _dbSet.Include(d => d.Schedules).Include(d => d.Reviews)
+            .Include(d => d.DoctorSpecializations).ThenInclude(s => s.Specialization).FirstOrDefaultAsync(d => d.Id == id);
+
         public async Task<IEnumerable<Doctor>> GetBySpecializationAsync(int specializationId)
         {
             return await _dbSet
@@ -22,21 +25,6 @@ namespace MedicalBookingSystem.Infrastructure.Repositories
         {
             return await _dbSet
                 .Where(d => d.Region == region)
-                .AsNoTracking()
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<Doctor>> GetAvailableDoctorsAsync(DateTime date)
-        {
-            return await _dbSet
-                .Where(d => !d.Appointments.Any(a =>
-                    a.Date.Date == date.Date &&
-                    a.Status != AppointmentStatus.Cancelled))
-                .Include(d => d.Schedules)
-                .Where(d => d.Schedules.Any(s =>
-                    s.StartTime.TimeOfDay <= date.TimeOfDay &&
-                    s.EndTime.TimeOfDay >= date.TimeOfDay &&
-                    s.IsAvailable))
                 .AsNoTracking()
                 .ToListAsync();
         }
@@ -78,6 +66,7 @@ namespace MedicalBookingSystem.Infrastructure.Repositories
         public override async Task<IEnumerable<Doctor>> GetAllAsync()
         {
             var doctors = await _dbSet
+                .AsNoTracking()
                 .Include(d => d.Appointments)
                 .Include(d => d.Reviews)
                 .Include(d => d.Schedules)

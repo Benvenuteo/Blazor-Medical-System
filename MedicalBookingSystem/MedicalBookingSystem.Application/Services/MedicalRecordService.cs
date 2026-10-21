@@ -1,3 +1,6 @@
+using FluentValidation;
+using MedicalBookingSystem.Domain.Exceptions;
+using MedicalBookingSystem.Domain.Scheduling;
 using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.Application.Time;
 using MedicalBookingSystem.Application.Mappings;
@@ -14,80 +17,71 @@ namespace MedicalBookingSystem.Application.Services
         private readonly IUnitOfWork _uow;
         private readonly UserAccess _access;
         private readonly ClinicClock _clock;
+        private readonly IValidator<CreateNoteDto> _noteValidator;
+        private readonly IValidator<CreatePrescriptionDto> _prescriptionValidator;
 
 
-        public MedicalRecordService(IUnitOfWork unitOfWork, ClinicClock clock, UserAccess access)
+        public MedicalRecordService(IUnitOfWork unitOfWork, ClinicClock clock, UserAccess access, IValidator<CreateNoteDto> noteValidator, IValidator<CreatePrescriptionDto> prescriptionValidator)
         {
             _uow = unitOfWork;
             _access = access;
             _clock = clock;
+            _noteValidator = noteValidator;
+            _prescriptionValidator = prescriptionValidator;
 
         }
         public async Task<Result<NoteDto>> AddNoteToAppointmentAsync(CreateNoteDto dto, int doctorId)
         {
             await _access.RequireDoctorAsync(doctorId);
-            try
+            var appointment = await _uow.Appointments.GetByIdAsync(dto.AppointmentId);
+            if (appointment is null) return Result.Failure<NoteDto>("Wizyta nie istnieje.", ErrorType.NotFound);
+            await _access.RequireDoctorAsync(appointment.DoctorId);
+            var normalized = new CreateNoteDto { AppointmentId = dto.AppointmentId, Content = dto.Content?.Trim() ?? string.Empty };
+            var validation = await _noteValidator.ValidateAsync(normalized);
+            if (!validation.IsValid) return Result.Failure<NoteDto>(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
+            if (!CanDocument(appointment))
+                return Result.Failure<NoteDto>("Dokumentację można dodać wyłącznie do odbytej wizyty.", ErrorType.Conflict);
+            if (await _uow.Notes.AnyAsync(n => n.AppointmentId == dto.AppointmentId))
+                return Result.Failure<NoteDto>("Notatka została już dodana.", ErrorType.Conflict);
+            var note = new Note { AppointmentId = dto.AppointmentId, Content = normalized.Content, CreatedDate = _clock.UtcNow };
+            await _uow.Notes.AddAsync(note);
+            try { await _uow.SaveChangesAsync(); }
+            catch (PersistenceConflictException)
             {
-                var appointment = await _uow.Appointments.GetByIdAsync(dto.AppointmentId);
-                if (appointment == null)
-                    return Result<NoteDto>.Failure<NoteDto>("Wizyta nie istnieje.");
-
-                await _access.RequireDoctorAsync(appointment.DoctorId);
-
-                if (appointment.Note != null)
-                    return Result<NoteDto>.Failure<NoteDto>("Notatka została już dodana.");
-
-                var note = new Note
-                {
-                    AppointmentId = dto.AppointmentId,
-                    Content = dto.Content,
-                    CreatedDate = _clock.UtcNow
-                };
-
-                await _uow.Notes.AddAsync(note);
-                await _uow.SaveChangesAsync();
-
-                var noteDto = note.ToDto();
-                return Result<NoteDto>.Success(noteDto);
+                return Result.Failure<NoteDto>("Notatka została już dodana w innym żądaniu.", ErrorType.Conflict);
             }
-            catch (Exception ex) when (ex is not AccessDeniedException)
-            {
-                return Result<NoteDto>.Failure<NoteDto>("Wystąpił błąd podczas dodawania notatki.");
-            }
+            return Result.Success(note.ToDto());
         }
 
         public async Task<Result<PrescriptionDto>> CreatePrescriptionAsync(CreatePrescriptionDto dto, int doctorId)
         {
             await _access.RequireDoctorAsync(doctorId);
-            try
+            var appointment = await _uow.Appointments.GetByIdAsync(dto.AppointmentId);
+            if (appointment is null) return Result.Failure<PrescriptionDto>("Wizyta nie istnieje.", ErrorType.NotFound);
+            await _access.RequireDoctorAsync(appointment.DoctorId);
+            var validation = await _prescriptionValidator.ValidateAsync(dto);
+            if (!validation.IsValid) return Result.Failure<PrescriptionDto>(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
+            if (!CanDocument(appointment))
+                return Result.Failure<PrescriptionDto>("Receptę można wystawić wyłącznie do odbytej wizyty.", ErrorType.Conflict);
+            if (await _uow.Prescriptions.AnyAsync(p => p.AppointmentId == dto.AppointmentId))
+                return Result.Failure<PrescriptionDto>("Recepta została już dodana.", ErrorType.Conflict);
+            var prescription = new Prescription
             {
-                var appointment = await _uow.Appointments.GetByIdAsync(dto.AppointmentId);
-                if (appointment == null)
-                    return Result<PrescriptionDto>.Failure<PrescriptionDto>("Wizyta nie istnieje.");
-
-                await _access.RequireDoctorAsync(appointment.DoctorId);
-
-                var prescription = new Prescription
-                {
-                    AppointmentId = dto.AppointmentId,
-                    Medication = dto.Medication,
-                    Dosage = dto.Dosage,
-                    Instructions = dto.Instructions,
-                    CreatedDate = _clock.UtcNow,
-                    ExpiryDate = _clock.Today.AddDays(dto.ValidityDays)
-                };
-
-                await _uow.Prescriptions.AddAsync(prescription);
-                await _uow.SaveChangesAsync();
-
-                var prescriptionDto = prescription.ToDto();
-                return Result<PrescriptionDto>.Success(prescriptionDto);
-            }
-            catch (Exception ex) when (ex is not AccessDeniedException)
+                AppointmentId = dto.AppointmentId, Medication = dto.Medication.Trim(), Dosage = dto.Dosage.Trim(),
+                Instructions = dto.Instructions ?? string.Empty, CreatedDate = _clock.UtcNow,
+                ExpiryDate = _clock.Today.AddDays(dto.ValidityDays)
+            };
+            await _uow.Prescriptions.AddAsync(prescription);
+            try { await _uow.SaveChangesAsync(); }
+            catch (PersistenceConflictException)
             {
-                return Result<PrescriptionDto>.Failure<PrescriptionDto>("Wystąpił błąd podczas wystawiania recepty.");
+                return Result.Failure<PrescriptionDto>("Recepta została już dodana w innym żądaniu.", ErrorType.Conflict);
             }
+            return Result.Success(prescription.ToDto());
         }
+
+        private bool CanDocument(Appointment appointment) => appointment.Status == AppointmentStatus.Completed &&
+            appointment.Date <= _clock.Now.Subtract(AppointmentSlots.Duration);
 
         public async Task<Result<IEnumerable<MedicalDocumentDto>>> GetPatientDocumentsAsync(int patientId)
         {
@@ -114,7 +108,7 @@ namespace MedicalBookingSystem.Application.Services
         {
             var prescription = await _uow.Prescriptions.GetByIdAsync(id);
             if (prescription == null)
-                return Result<PrescriptionDto>.Failure<PrescriptionDto>("Nie znaleziono recepty.");
+                return Result<PrescriptionDto>.Failure<PrescriptionDto>("Nie znaleziono recepty.", ErrorType.NotFound);
 
             var appointment = await _uow.Appointments.GetByIdAsync(prescription.AppointmentId);
             if (appointment is null) throw new AccessDeniedException(true);
@@ -127,7 +121,7 @@ namespace MedicalBookingSystem.Application.Services
         {
             var note = await _uow.Notes.GetByIdAsync(id);
             if (note == null)
-                return Result<NoteDto>.Failure<NoteDto>("Nie znaleziono notatki.");
+                return Result<NoteDto>.Failure<NoteDto>("Nie znaleziono notatki.", ErrorType.NotFound);
 
             var appointment = await _uow.Appointments.GetByIdAsync(note.AppointmentId);
             if (appointment is null) throw new AccessDeniedException(true);

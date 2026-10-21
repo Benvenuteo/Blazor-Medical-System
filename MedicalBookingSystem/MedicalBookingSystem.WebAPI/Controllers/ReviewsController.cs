@@ -1,7 +1,6 @@
 using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.SharedKernel.Security;
 using Microsoft.AspNetCore.Authorization;
-using FluentValidation;
 using MedicalBookingSystem.Application.Services;
 using MedicalBookingSystem.SharedKernel.Dto.ReviewsDto;
 using Microsoft.AspNetCore.Mvc;
@@ -15,30 +14,23 @@ namespace MedicalBookingSystem.WebAPI.Controllers
     {
         private readonly UserAccess _access;
         private readonly IReviewService _reviewService;
-        private readonly IValidator<CreateReviewDto> _createValidator;
 
-        public ReviewsController(
-            IReviewService reviewService,
-            IValidator<CreateReviewDto> createValidator, UserAccess access)
+        public ReviewsController(IReviewService reviewService, UserAccess access)
         {
             _access = access;
             _reviewService = reviewService;
-            _createValidator = createValidator;
         }
 
         [HttpPost]
         public async Task<IActionResult> CreateReview([FromBody] CreateReviewDto dto)
         {
             var patientId = await _access.PatientIdAsync();
-            var validation = await _createValidator.ValidateAsync(dto);
-            if (!validation.IsValid)
-                return BadRequest(validation.Errors.Select(error => error.ErrorMessage));
             var result = await _reviewService.AddReviewAsync(dto, patientId);
 
             if (result.IsSuccess)
                 return CreatedAtAction(nameof(GetReview), new { id = result.Value.Id }, result.Value);
 
-            return BadRequest(result.Error);
+            return this.FailureResponse(result);
         }
 
         [HttpDelete("{id}")]
@@ -50,7 +42,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             if (result.IsSuccess)
                 return NoContent();
 
-            return BadRequest(result.Error);
+            return this.FailureResponse(result);
         }
 
         [AllowAnonymous]
@@ -62,7 +54,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             if (result.IsSuccess)
                 return Ok(result);
 
-            return NotFound(result.Error);
+            return this.FailureResponse(result);
         }
 
         [AllowAnonymous]
@@ -74,7 +66,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             if (result.IsSuccess)
                 return Ok(result.Value);
 
-            return NotFound(result.Error);
+            return this.FailureResponse(result);
         }
     }
 }

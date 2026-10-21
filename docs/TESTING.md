@@ -24,9 +24,9 @@ Raporty są również publikowane jako artefakty workflow `Build and test`. Pokr
 
 | Projekt | Co sprawdza | Izolacja |
 | --- | --- | --- |
-| `MedicalBookingSystem.UnitTests` | Hasła, anulowanie wizyt, walidacja grafiku, granice czasu i wartości, mapowanie DTO, uprawnienia usług i wygasłe sesje | xUnit, Moq, kontrolowany zegar |
-| `MedicalBookingSystem.IntegrationTests` | Rzeczywiste JWT i cookie, odmowa dostępu, własność zasobów, CSRF, limity logowania, migracje i ograniczenia SQLite | WebApplicationFactory i SQLite |
-| `MedicalBookingSystem.ComponentTests` | Obsługa opinii, zapis i usuwanie tokenu, wygasła sesja, nagłówek Bearer i reakcja na 401 | bUnit i kontrolowany HttpMessageHandler |
+| `MedicalBookingSystem.UnitTests` | Hasła, anulowanie wizyt, walidacja grafiku, granice czasu i wartości, mapowanie DTO, uprawnienia usług, sloty, statusy wizyty i zmiany czasu | xUnit, Moq, kontrolowany zegar |
+| `MedicalBookingSystem.IntegrationTests` | Rzeczywiste JWT i cookie, odmowa dostępu, własność zasobów, CSRF, limity logowania, migracje, ograniczenia SQLite, równoczesne zapisy i pełny przebieg wizyty | WebApplicationFactory i SQLite |
+| `MedicalBookingSystem.ComponentTests` | Obsługa opinii, zapis i usuwanie tokenu, wygasła sesja, nagłówek Bearer, reakcja na 401 oraz edycja/rezerwacja i odświeżenie slotów po 409 | bUnit i kontrolowany HttpMessageHandler |
 
 ## Reguły projektowania testów
 
@@ -44,4 +44,14 @@ Raporty są również publikowane jako artefakty workflow `Build and test`. Pokr
 
 ## Kolejne pakiety testów
 
-Plan dalszej pracy znajduje się w [ROADMAP.md](ROADMAP.md). Obecny zestaw zawiera 123 przypadki: 54 jednostkowe, 62 integracyjne i 7 komponentowych. Następny pakiet obejmuje rezerwacje i dozwolone przejścia statusów wizyty. Testy współbieżności rezerwacji będą używały oddzielnych kontekstów i połączeń do tej samej tymczasowej bazy plikowej; pojedyncze połączenie SQLite w pamięci nie odtwarza tego scenariusza.
+Plan dalszej pracy znajduje się w [ROADMAP.md](ROADMAP.md). Obecny zestaw zawiera 185 przypadków: 95 jednostkowych, 81 integracyjnych i 9 komponentowych. Kolejny etap obejmuje wydajność API, czas życia kontekstu EF w panelu Server i testy E2E w przeglądarce.
+
+## Współbieżność i czas
+
+- Testy równoczesnych rezerwacji używają osobnych połączeń i kontekstów do tej samej tymczasowej bazy plikowej SQLite. Pojedyncze połączenie do bazy w pamięci nie odtwarza tego scenariusza.
+- `ConcurrentSaveGate` zatrzymuje oba żądania po sprawdzeniu dostępności, przed zapisem. Testy wymuszają zatem wyścig zapisu, bez opóźnień typu `Sleep` i zależności od kolejności wątków.
+- Sprawdzany jest jeden zwycięzca i odpowiedź 409 dla drugiego żądania, kolizja dwóch lekarzy w kalendarzu pacjenta oraz zachowanie pierwotnej wizyty po przegranej zmianie terminu.
+- Test optymistycznej współbieżności ładuje tę samą wizytę do dwóch kontekstów i potwierdza, że spóźniony zapis nie nadpisuje zatwierdzonego anulowania.
+- Test pełnego przebiegu używa rzeczywistego HTTP: rejestracja, rezerwacja, odmowa przedwczesnego zakończenia/dokumentacji/opinii, zakończenie przez lekarza, dokumentacja, opinia i historia pacjenta. Przesuwany jest wyłącznie kontrolowany zegar. Daty i statusy zapisanej wizyty nie są ręcznie zmieniane w bazie.
+- W tym jednym scenariuszu walidator czasu JWT otrzymuje ten sam zegar testowy. Podpis, algorytm, wystawca, odbiorca i uprawnienia pozostają sprawdzane przez rzeczywisty handler. Pozostałe testy bezpieczeństwa korzystają z domyślnej walidacji czasu tokenów.
+- Osobne przypadki pokrywają obie zmiany czasu w `Europe/Warsaw`, pełne 24 godziny czasu rzeczywistego oraz granice grafiku i 3-miesięcznego horyzontu.

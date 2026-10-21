@@ -15,12 +15,15 @@ public sealed class BoundaryValidationTests
     [InlineData(1, true)]
     public void CreateAppointment_EnforcesInclusive24HourBoundary(int secondsFromBoundary, bool expected)
     {
-        var clock = new TestTimeProvider().CreateClock();
+        var time = new TestTimeProvider();
+        var fixedDate = time.CreateClock().Now;
+        time.Advance(TimeSpan.FromSeconds(-secondsFromBoundary));
+        var clock = time.CreateClock();
         var validator = new CreateAppointmentDtoValidator(clock);
 
         var result = validator.Validate(new CreateAppointmentDto
         {
-            DoctorId = 1, Date = clock.Now.AddHours(24).AddSeconds(secondsFromBoundary)
+            DoctorId = 1, Date = fixedDate.AddHours(24)
         });
 
         Assert.Equal(expected, result.IsValid);
@@ -46,11 +49,14 @@ public sealed class BoundaryValidationTests
     [InlineData(1, false)]
     public void CreateAppointment_EnforcesThreeMonthLimit(int secondsFromBoundary, bool expected)
     {
-        var clock = new TestTimeProvider().CreateClock();
+        var time = new TestTimeProvider();
+        var fixedDate = time.CreateClock().Now;
+        time.Advance(TimeSpan.FromSeconds(-secondsFromBoundary));
+        var clock = time.CreateClock();
         var validator = new CreateAppointmentDtoValidator(clock);
         var result = validator.Validate(new CreateAppointmentDto
         {
-            DoctorId = 1, Date = clock.Now.AddMonths(3).AddSeconds(secondsFromBoundary)
+            DoctorId = 1, Date = fixedDate.AddMonths(3)
         });
         Assert.Equal(expected, result.IsValid);
     }

@@ -41,6 +41,18 @@ public sealed class AuthorizationTests
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData("/api/medical-records/notes/99999")]
+    [InlineData("/api/medical-records/prescriptions/99999")]
+    [InlineData("/api/reviews/99999")]
+    public async Task MissingClinicalDocumentOrReview_Returns404(string path)
+    {
+        using var scenario = await SecurityScenario.CreateAsync();
+        using var client = await scenario.SignInAsync();
+        using var response = await client.GetAsync(path);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
     [Fact]
     public async Task Profile_IgnoresSpoofedPatientId_AndUpdatesOnlyAuthenticatedPatient()
     {
@@ -144,7 +156,7 @@ public sealed class AuthorizationTests
     {
         using var scenario = await SecurityScenario.CreateAsync();
         using var client = await scenario.SignInAsync("doctor@example.test", true);
-        using var note = await client.PostAsJsonAsync("/api/medical-records/notes", new { appointmentId = scenario.AppointmentId, content = "New confidential clinical note" });
+        using var note = await client.PostAsJsonAsync("/api/medical-records/notes", new { appointmentId = scenario.ClinicalAppointmentId, content = "New confidential clinical note" });
         Assert.Equal(HttpStatusCode.Created, note.StatusCode);
         using var read = await client.GetAsync(note.Headers.Location);
         Assert.Equal(HttpStatusCode.OK, read.StatusCode);

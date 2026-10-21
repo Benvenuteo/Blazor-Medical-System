@@ -1,31 +1,30 @@
-namespace MedicalBookingSystem.SharedKernel
+namespace MedicalBookingSystem.SharedKernel;
+
+public enum ErrorType { None, Validation, NotFound, Conflict }
+
+public class Result
 {
-    public class Result
+    public bool IsSuccess { get; }
+    public string? Error { get; }
+    public ErrorType ErrorType { get; }
+    public bool IsFailure => !IsSuccess;
+
+    protected Result(bool isSuccess, string? error, ErrorType errorType = ErrorType.None)
     {
-        public bool IsSuccess { get; }
-        public string? Error { get; }
-        public bool IsFailure => !IsSuccess;
-
-        protected Result(bool isSuccess, string? error)
-        {
-            IsSuccess = isSuccess;
-            Error = error;
-        }
-
-        public static Result Success() => new Result(true, null);
-        public static Result Failure(string error) => new Result(false, error);
-        public static Result<T> Success<T>(T value) => new Result<T>(value, true, null);
-        public static Result<T> Failure<T>(string error) => new Result<T>(default!, false, error);
+        IsSuccess = isSuccess;
+        Error = error;
+        ErrorType = errorType;
     }
 
-    public class Result<T> : Result
-    {
-        public T Value { get; }
+    public static Result Success() => new(true, null);
+    public static Result Failure(string error, ErrorType errorType = ErrorType.Validation) => new(false, error, errorType);
+    public static Result<T> Success<T>(T value) => new(value, true, null);
+    public static Result<T> Failure<T>(string error, ErrorType errorType = ErrorType.Validation) => new(default!, false, error, errorType);
+}
 
-        protected internal Result(T value, bool isSuccess, string? error)
-            : base(isSuccess, error)
-        {
-            Value = value;
-        }
-    }
+public class Result<T> : Result
+{
+    public T Value { get; }
+    protected internal Result(T value, bool isSuccess, string? error, ErrorType errorType = ErrorType.None)
+        : base(isSuccess, error, errorType) => Value = value;
 }

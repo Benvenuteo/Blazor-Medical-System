@@ -1,3 +1,4 @@
+using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto;
 using MedicalBookingSystem.SharedKernel;
 using MedicalBookingSystem.SharedKernel.Dto;
 using MedicalBookingSystem.SharedKernel.Dto.DtoHelp;
@@ -15,5 +16,6 @@ namespace MedicalBookingSystem.Application.Services
         Task<Result<IEnumerable<SpecializationDto>>> GetSpecializationsAsync();
         Task<bool> SetDoctorImageUrlAsync(int doctorId, string imageUrl);
         Task<Result> CreateScheduleAsync(CreateScheduleDto dto);
+        Task<Result<IReadOnlyList<AvailableSlotDto>>> GetAvailableSlotsAsync(int doctorId, DateTime? date = null, int? excludedAppointmentId = null);
     }
 }

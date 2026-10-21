@@ -18,6 +18,16 @@ public sealed class UserAccess(ICurrentUser currentUser, ClinicClock clock)
         return user;
     }
 
+    public async Task<int?> PatientIdOrNullAsync()
+    {
+        try
+        {
+            var user = await GetUserAsync();
+            return user.IsInRole(Roles.Patient) ? AccountClaims.ReadId(user, AccountClaims.PatientId) : null;
+        }
+        catch (AccessDeniedException) { return null; }
+    }
+
     public async Task<int> PatientIdAsync()
     {
         var user = await GetUserAsync();

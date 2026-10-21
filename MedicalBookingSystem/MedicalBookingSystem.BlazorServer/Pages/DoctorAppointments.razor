@@ -1,0 +1,46 @@
+@page "/doctor/appointments"
+@attribute [Authorize(Roles = Roles.Doctor)]
+@using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
+@using MedicalBookingSystem.Application.Time
+@using MedicalBookingSystem.Domain.Scheduling
+@inject IAppointmentService Service
+@inject UserAccess Access
+@inject ClinicClock Clock
+
+<h3>Moje zaplanowane wizyty</h3>
+@if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
+@if (appointments is null) { <p>Ładowanie...</p> }
+else if (appointments.Count == 0) { <p>Brak zaplanowanych wizyt.</p> }
+else
+{
+    <table class="table"><thead><tr><th>Termin</th><th>Pacjent</th><th>Akcja</th></tr></thead><tbody>
+    @foreach (var appointment in appointments)
+    {
+        <tr @key="appointment.Id"><td>@appointment.Date.ToString("dd.MM.yyyy HH:mm")</td><td>@appointment.PatientId</td><td>
+            <button class="btn btn-primary" disabled="@(saving || appointment.Date.Add(AppointmentSlots.Duration) > Clock.Now)"
+                @onclick="() => CompleteAsync(appointment.Id)">Oznacz jako odbytą</button>
+        </td></tr>
+    }
+    </tbody></table>
+}
+<p><a href="/doctor/notes">Notatki do odbytych wizyt</a> · <a href="/doctor/prescriptions">Recepty do odbytych wizyt</a></p>
+
+@code {
+    private List<AppointmentDto>? appointments;
+    private string? error;
+    private bool saving;
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+    private async Task ReloadAsync() => appointments = await Service.GetScheduledAppointmentsByDoctorIdAsync(await Access.DoctorIdAsync());
+    private async Task CompleteAsync(int id)
+    {
+        if (saving) return;
+        saving = true;
+        try
+        {
+            var result = await Service.CompleteAppointmentAsync(id);
+            error = result.Error;
+            await ReloadAsync();
+        }
+        finally { saving = false; }
+    }
+}

@@ -10,25 +10,13 @@ namespace MedicalBookingSystem.Infrastructure.Repositories
         private readonly ClinicClock _clock;
         public AppointmentRepository(ApplicationDbContext context, ClinicClock clock) : base(context) => _clock = clock;
 
-        public async Task CancelAppointmentAsync(int id)
-        {
-            var appointment = await _dbSet.FindAsync(id);
-            if (appointment == null) throw new KeyNotFoundException("Appointment not found");
-
-            if (appointment.Date < _clock.Now.AddHours(24))
-                throw new InvalidOperationException("Cannot cancel within 24 hours");
-
-            appointment.Status = AppointmentStatus.Cancelled;
-            _dbSet.Update(appointment);
-        }
-
         public async Task<IEnumerable<Appointment>> GetUpcomingByPatientIdAsync(int patientId)
         {
             return await _dbSet
                 .Include(a => a.Doctor)
                 .Where(a => a.PatientId == patientId &&
-                           a.Date > _clock.Now &&
                            a.Status == AppointmentStatus.Scheduled)
+                .OrderBy(a => a.Date)
                 .AsNoTracking()
                 .ToListAsync();
         }
@@ -61,24 +49,23 @@ namespace MedicalBookingSystem.Infrastructure.Repositories
                     .FirstOrDefaultAsync();
         }
 
-        public List<Appointment> GetNextAppointmentsByDoctorId(int doctorId)
+        public async Task<IEnumerable<Appointment>> GetScheduledByDoctorIdAsync(int doctorId)
         {
-            return _dbSet
+            return await _dbSet
                 .Include(a => a.Doctor)
                 .Where(a => a.DoctorId == doctorId)
                 .Include(a => a.Note)
                 .Include(a => a.Prescription)
                 .Include(a => a.Patient)
-                .Where(a => a.Date > _clock.Now &&
-                           a.Status == AppointmentStatus.Scheduled)
-                .OrderByDescending(a => a.Date)
+                .Where(a => a.Status == AppointmentStatus.Scheduled)
+                .OrderBy(a => a.Date)
                 .AsNoTracking()
-                .ToList();
+                .ToListAsync();
         }
 
-        public List<Appointment> GetPreviousAppointmentsByDoctorId(int doctorId)
+        public async Task<IEnumerable<Appointment>> GetCompletedByDoctorIdAsync(int doctorId)
         {
-            return _dbSet
+            return await _dbSet
                 .Include(a => a.Doctor)
                 .Where(a => a.DoctorId == doctorId)
                 .Include(a => a.Note)
@@ -88,7 +75,7 @@ namespace MedicalBookingSystem.Infrastructure.Repositories
                            a.Status == AppointmentStatus.Completed)
                 .OrderByDescending(a => a.Date)
                 .AsNoTracking()
-                .ToList();
+                .ToListAsync();
         }
     }
 }

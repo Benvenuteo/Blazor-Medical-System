@@ -69,8 +69,8 @@
         _error = _success = null;
 
         _dto.DoctorId = DoctorId;
-        _dto.StartTime = startDate.Date + startTime.ToTimeSpan();
-        _dto.EndTime = endDate.Date + endTime.ToTimeSpan();
+        _dto.StartTime = DateTime.SpecifyKind(startDate.Date + startTime.ToTimeSpan(), DateTimeKind.Unspecified);
+        _dto.EndTime = DateTime.SpecifyKind(endDate.Date + endTime.ToTimeSpan(), DateTimeKind.Unspecified);
 
         if (_dto.StartTime >= _dto.EndTime)
         {

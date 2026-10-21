@@ -1,3 +1,7 @@
+using MedicalBookingSystem.Domain.Exceptions;
+using MedicalBookingSystem.Domain.Models;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using MedicalBookingSystem.Application.Time;
 using MedicalBookingSystem.Domain.Contracts;
 using MedicalBookingSystem.Infrastructure.Repositories;
@@ -32,7 +36,28 @@ namespace MedicalBookingSystem.Infrastructure
         public INoteRepository Notes { get; }
         public ISpecializationRepository Specializations { get; }
 
-        public Task<int> SaveChangesAsync() => _context.SaveChangesAsync();
+        public async Task<int> SaveChangesAsync()
+        {
+            try { return await _context.SaveChangesAsync(); }
+            catch (DbUpdateConcurrencyException exception)
+            {
+                _context.ChangeTracker.Clear();
+                throw new PersistenceConflictException(PersistenceConflictKind.ConcurrentChange, exception);
+            }
+            catch (DbUpdateException exception) when (exception.InnerException is SqliteException sqlite &&
+                sqlite.SqliteExtendedErrorCode is 2067 or 1811)
+            {
+                var kind = exception.Entries.Any(e => e.Entity is Appointment) ? PersistenceConflictKind.AppointmentSlot
+                    : exception.Entries.Any(e => e.Entity is DoctorSchedule) ? PersistenceConflictKind.ScheduleOverlap
+                    : exception.Entries.Any(e => e.Entity is Review) ? PersistenceConflictKind.DuplicateReview
+                    : exception.Entries.Any(e => e.Entity is Note or Prescription) ? PersistenceConflictKind.DuplicateDocument
+                    : (PersistenceConflictKind?)null;
+                if (kind is null) throw;
+                // A rejected entity must not be written accidentally by a later action in the same circuit.
+                _context.ChangeTracker.Clear();
+                throw new PersistenceConflictException(kind.Value, exception);
+            }
+        }
 
         public async Task BeginTransactionAsync()
         {

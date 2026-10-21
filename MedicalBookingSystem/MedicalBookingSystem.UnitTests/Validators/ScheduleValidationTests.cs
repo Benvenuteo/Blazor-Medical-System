@@ -9,6 +9,20 @@ namespace MedicalBookingSystem.UnitTests.Validators;
 public sealed class ScheduleValidationTests
 {
     [Theory]
+    [InlineData(30, false)]
+    [InlineData(45, true)]
+    public async Task UnalignedShift_MustContainACompleteAlignedVisit(int durationMinutes, bool expected)
+    {
+        var repositories = new RepositoryMocks();
+        repositories.Schedules.Setup(r => r.GetByDoctorIdAsync(1)).ReturnsAsync(Array.Empty<DoctorSchedule>());
+        var clock = new TestTimeProvider().CreateClock();
+        var start = clock.Today.AddDays(2).AddHours(9).AddMinutes(15);
+        var validator = new CreateScheduleDtoValidator(repositories.UnitOfWork.Object, clock);
+        var result = await validator.ValidateAsync(new CreateScheduleDto { DoctorId = 1, StartTime = start, EndTime = start.AddMinutes(durationMinutes) });
+        Assert.Equal(expected, result.IsValid);
+    }
+
+    [Theory]
     [InlineData(7, 8, true)]
     [InlineData(8, 9, false)]
     [InlineData(8, 10, false)]

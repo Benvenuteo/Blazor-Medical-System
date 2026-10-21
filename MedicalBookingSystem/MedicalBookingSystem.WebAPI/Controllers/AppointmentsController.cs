@@ -1,7 +1,6 @@
 using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.SharedKernel.Security;
 using Microsoft.AspNetCore.Authorization;
-using FluentValidation;
 using MedicalBookingSystem.Application.Services;
 using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto;
 using Microsoft.AspNetCore.Mvc;
@@ -15,49 +14,34 @@ namespace MedicalBookingSystem.WebAPI.Controllers
     {
         private readonly UserAccess _access;
         private readonly IAppointmentService _appointmentService;
-        private readonly IValidator<CreateAppointmentDto> _createValidator;
-        private readonly IValidator<UpdateAppointmentDto> _updateValidator;
 
-        public AppointmentsController(
-            IAppointmentService appointmentService,
-            IValidator<CreateAppointmentDto> createValidator,
-            IValidator<UpdateAppointmentDto> updateValidator, UserAccess access)
+        public AppointmentsController(IAppointmentService appointmentService, UserAccess access)
         {
             _access = access;
             _appointmentService = appointmentService;
-            _createValidator = createValidator;
-            _updateValidator = updateValidator;
         }
 
         [HttpPost]
         public async Task<IActionResult> CreateAppointment([FromBody] CreateAppointmentDto dto)
         {
-            var validationResult = await _createValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-                return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
-
             var patientId = await _access.PatientIdAsync();
             var result = await _appointmentService.CreateAppointmentAsync(dto, patientId);
 
             if (result.IsSuccess)
                 return CreatedAtAction(nameof(GetAppointment), new { id = result.Value.Id }, result.Value);
 
-            return BadRequest(result.Error);
+            return this.FailureResponse(result);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateAppointment(int id, [FromBody] UpdateAppointmentDto dto)
         {
-            var validationResult = await _updateValidator.ValidateAsync(dto);
-            if (!validationResult.IsValid)
-                return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
-
             var result = await _appointmentService.UpdateAppointmentAsync(id, dto);
 
             if (result.IsSuccess)
                 return Ok(result);
 
-            return NotFound(result.Error);
+            return this.FailureResponse(result);
         }
 
         [HttpDelete("{id}")]
@@ -69,7 +53,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             if (result.IsSuccess)
                 return NoContent();
 
-            return NotFound(result.Error);
+            return this.FailureResponse(result);
         }
 
         [HttpGet("upcoming")]
@@ -81,7 +65,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             if (result.IsSuccess)
                 return Ok(result.Value);
 
-            return NotFound(result.Error);
+            return this.FailureResponse(result);
         }
 
         [HttpGet("history")]
@@ -93,7 +77,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             if (result.IsSuccess)
                 return Ok(result.Value);
 
-            return NotFound(result.Error);
+            return this.FailureResponse(result);
         }
 
         [HttpGet("{id}")]
@@ -105,7 +89,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             if (result.IsSuccess)
                 return Ok(result.Value);
 
-            return NotFound(result.Error);
+            return this.FailureResponse(result);
         }
     }
 }

@@ -11,6 +11,6 @@ namespace MedicalBookingSystem.Domain.Contracts
         Task AddRangeAsync(IEnumerable<DoctorSchedule> schedules);
         void Update(DoctorSchedule schedule);
         void Remove(DoctorSchedule schedule);
-        Task<bool> IsTimeSlotAvailableAsync(int doctorId, DateTime date);
+        Task<bool> IsTimeSlotAvailableAsync(int doctorId, DateTime date, int? excludedAppointmentId = null);
     }
 }

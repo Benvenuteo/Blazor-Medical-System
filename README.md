@@ -2,7 +2,7 @@
 
 System rezerwacji wizyt medycznych z API ASP.NET Core, aplikacją pacjenta w Blazor WebAssembly i panelem obsługi w Blazor Server. Dane przechowywane są w SQLite przez Entity Framework Core.
 
-Projekt jest rozwijany etapami. Wdrożono .NET 10 LTS, migracje, automatyczne testy oraz role i kontrolę własności danych w API i panelu personelu. Kolejny etap obejmuje atomowe rezerwacje i cykl życia wizyty. Stan prac znajduje się w [planie](docs/ROADMAP.md), a zasady dostępu i ograniczenia sesji w [opisie zabezpieczeń](docs/SECURITY.md).
+Projekt jest rozwijany etapami. Wdrożono .NET 10 LTS, migracje, testy, kontrolę dostępu oraz rezerwacje z ochroną przed równoczesnym zajęciem terminu. Pacjent wybiera rzeczywisty slot, lekarz oznacza wizytę jako odbytą, a następnie dodaje dokumentację. Stan kolejnych prac opisuje [plan](docs/ROADMAP.md), [zasady rezerwacji](docs/BOOKING.md) i [kontrola dostępu](docs/SECURITY.md).
 
 ## Wymagania
 
@@ -53,9 +53,9 @@ dotnet run --project MedicalBookingSystem/MedicalBookingSystem.BlazorServer
 | Lekarz | `doctor@example.test` | `DemoStaff2026!` |
 | Administrator | `admin@example.test` | `DemoStaff2026!` |
 
-To publiczne dane demonstracyjne, dostępne po włączeniu seeda. Lekarz, pacjent i wizyty są fikcyjne. API uruchomione po aktualizacji dodaje konta personelu również do wcześniejszej bazy demo, bez resetowania istniejących haseł. Lekarz widzi swoje notatki, recepty i grafik; administrator zarządza listą lekarzy, zdjęciami i grafikami.
+To publiczne dane demonstracyjne, dostępne po włączeniu seeda. Lekarz, pacjent i wizyty są fikcyjne. API uruchomione po aktualizacji dodaje konta personelu również do wcześniejszej bazy demo, bez resetowania istniejących haseł. Lekarz widzi swoje zaplanowane wizyty, notatki, recepty i grafik; administrator zarządza listą lekarzy, zdjęciami i grafikami.
 
-Przyszłe grafiki powstają względem daty pierwszego uruchomienia. Gdy baza demo przestanie zawierać przyszłe terminy, dodaj grafik przez panel lub utwórz nową, pustą bazę demo pod inną ścieżką.
+Świeża baza demo zawiera odbytą wizytę oraz zaplanowaną wizytę z poprzedniego dnia, gotową do oznaczenia jako odbyta w panelu lekarza. Przyszłe grafiki powstają względem daty pierwszego uruchomienia. Gdy baza demo przestanie zawierać przyszłe terminy, dodaj grafik przez panel lub utwórz nową, pustą bazę demo pod inną ścieżką.
 
 ## Konfiguracja
 
@@ -100,4 +100,4 @@ Początkowa migracja służy do tworzenia nowej bazy. Stara baza utworzona przez
 
 Testy jednostkowe korzystają z xUnit i Moq, integracyjne z rzeczywistego API i SQLite, a komponentowe z bUnit. Workflow `Build and test` sprawdza rozwiązanie na Linux i Windows oraz zapisuje raporty TRX i Cobertura.
 
-Szczegóły: [strategia testowania](docs/TESTING.md), [kontrola dostępu](docs/SECURITY.md) i [plan dalszych etapów](docs/ROADMAP.md).
+Szczegóły: [zasady rezerwacji](docs/BOOKING.md), [strategia testowania](docs/TESTING.md), [kontrola dostępu](docs/SECURITY.md) i [plan dalszych etapów](docs/ROADMAP.md).

@@ -54,6 +54,11 @@ public sealed class DataSeeder(
                 DoctorId = doctor.Id, PatientId = patient.Id, Date = clock.Today.AddDays(-2).AddHours(10),
                 Status = AppointmentStatus.Completed
             });
+            context.Appointments.Add(new Appointment
+            {
+                DoctorId = doctor.Id, PatientId = patient.Id, Date = clock.Today.AddDays(-1).AddHours(11),
+                Status = AppointmentStatus.Scheduled
+            });
             await context.SaveChangesAsync(cancellationToken);
         }
         // Upgrade an existing synthetic demo without touching real doctors or replacing credentials.

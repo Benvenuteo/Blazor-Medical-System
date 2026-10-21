@@ -37,11 +37,19 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("DoctorId");
+                    b.HasIndex("DoctorId", "Date")
+                        .IsUnique()
+                        .HasFilter("Status <> 'Cancelled'");
 
-                    b.HasIndex("PatientId");
+                    b.HasIndex("PatientId", "Date")
+                        .IsUnique()
+                        .HasFilter("Status <> 'Cancelled'");
 
                     b.ToTable("Appointments");
                 });
@@ -268,7 +276,8 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
 
                     b.HasIndex("DoctorId");
 
-                    b.HasIndex("PatientId");
+                    b.HasIndex("PatientId", "DoctorId")
+                        .IsUnique();
 
                     b.ToTable("Reviews");
                 });
@@ -444,11 +453,9 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
 
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Appointment", b =>
                 {
-                    b.Navigation("Note")
-                        .IsRequired();
+                    b.Navigation("Note");
 
-                    b.Navigation("Prescription")
-                        .IsRequired();
+                    b.Navigation("Prescription");
                 });
 
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Doctor", b =>
