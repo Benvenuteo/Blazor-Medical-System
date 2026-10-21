@@ -1,4 +1,4 @@
-﻿namespace MedicalBookingSystem.SharedKernel.Dto.ReviewsDto
+namespace MedicalBookingSystem.SharedKernel.Dto.ReviewsDto
 {
     public class ReviewDto
     {
@@ -6,7 +6,7 @@
         public int DoctorId { get; set; }
         public int PatientId { get; set; }
         public int Rating { get; set; }
-        public string Comment { get; set; }
+        public string Comment { get; set; } = string.Empty;
     }
 
 }

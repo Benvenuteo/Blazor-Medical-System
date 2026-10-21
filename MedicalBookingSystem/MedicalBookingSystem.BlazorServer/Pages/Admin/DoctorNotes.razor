@@ -1,4 +1,4 @@
-﻿@page "/admin/doctors/notes/{id:int}"
+@page "/admin/doctors/notes/{id:int}"
 @using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
 @using MedicalBookingSystem.SharedKernel.Dto.NotesPrescriptionDto
 @inject IAppointmentService AppointmentService
@@ -45,7 +45,7 @@ else
 @code {
     [Parameter] public int Id { get; set; }
 
-    private List<AppointmentDto> _appointments;
+    private List<AppointmentDto>? _appointments;
     private Dictionary<int, string> _noteContents = new();
     private Dictionary<int, string> _successMessages = new();
     private Dictionary<int, string> _errorMessages = new();
@@ -85,7 +85,7 @@ else
             _successMessages[appointmentId] = "Notatka została dodana.";
 
             // Usuń formularz i dane z listy
-            _appointments.RemoveAll(a => a.Id == appointmentId);
+            _appointments?.RemoveAll(a => a.Id == appointmentId);
             _noteContents.Remove(appointmentId);
         }
         else

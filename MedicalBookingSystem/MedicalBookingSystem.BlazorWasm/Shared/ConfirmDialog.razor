@@ -1,4 +1,4 @@
-﻿@using MudBlazor
+@using MudBlazor
 
 <MudDialog>
     <DialogContent>
@@ -11,7 +11,7 @@
 </MudDialog>
 
 @code {
-    [CascadingParameter] MudDialogInstance DialogInstance { get; set; } = default!;
+    [CascadingParameter] IMudDialogInstance DialogInstance { get; set; } = default!;
 
     [Parameter] public string ContentText { get; set; } = "Czy na pewno?";
     [Parameter] public string ButtonText { get; set; } = "OK";

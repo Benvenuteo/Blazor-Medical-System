@@ -1,4 +1,4 @@
-﻿using MedicalBookingSystem.Domain.Models;
+using MedicalBookingSystem.Domain.Models;
 
 namespace MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
 {

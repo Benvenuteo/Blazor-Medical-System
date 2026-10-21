@@ -1,5 +1,7 @@
-﻿using AutoMapper;
+using MedicalBookingSystem.Application.Time;
+using MedicalBookingSystem.Application.Mappings;
 using MedicalBookingSystem.Application.Validators;
+using FluentValidation;
 using MedicalBookingSystem.Domain.Contracts;
 using MedicalBookingSystem.Domain.Models;
 using MedicalBookingSystem.SharedKernel;
@@ -12,12 +14,16 @@ namespace MedicalBookingSystem.Application.Services
     public class DoctorService : IDoctorService
     {
         private readonly IUnitOfWork _uow;
-        private readonly IMapper _mapper;
+        private readonly ClinicClock _clock;
+        private readonly IValidator<CreateScheduleDto> _scheduleValidator;
 
-        public DoctorService(IUnitOfWork uow, IMapper mapper)
+
+        public DoctorService(IUnitOfWork uow, IValidator<CreateScheduleDto> scheduleValidator, ClinicClock clock)
         {
             _uow = uow;
-            _mapper = mapper;
+            _clock = clock;
+            _scheduleValidator = scheduleValidator;
+
         }
 
         public async Task<Result<DoctorDetailsDto>> GetDoctorDetailsAsync(int id)
@@ -26,7 +32,7 @@ namespace MedicalBookingSystem.Application.Services
             if (doctor == null)
                 return Result<DoctorDetailsDto>.Failure<DoctorDetailsDto>("Lekarz nie został znaleziony.");
 
-            var dto = _mapper.Map<DoctorDetailsDto>(doctor);
+            var dto = doctor.ToDetailsDto();
             return Result<DoctorDetailsDto>.Success(dto);
         }
 
@@ -56,7 +62,7 @@ namespace MedicalBookingSystem.Application.Services
             if (schedules == null)
                 return Result<IEnumerable<DoctorScheduleDto>>.Failure<IEnumerable<DoctorScheduleDto>>("Nie znaleziono harmonogramu.");
 
-            var dto = _mapper.Map<IEnumerable<DoctorScheduleDto>>(schedules);
+            IEnumerable<DoctorScheduleDto> dto = schedules.Select(item => item.ToDto()).ToList();
             return Result<IEnumerable<DoctorScheduleDto>>.Success(dto);
         }
 
@@ -84,33 +90,33 @@ namespace MedicalBookingSystem.Application.Services
             }
 
             // Sortowanie
-            if (!string.IsNullOrWhiteSpace(dto.Region))
+            if (!string.IsNullOrWhiteSpace(dto.SortBy))
             {
                 doctors = dto.SortBy?.ToLower() switch
                 {
                     "rating" => doctors.OrderByDescending(d => d.AverageRating),
                     "availability" => dto.Date.HasValue
-                        ? doctors.OrderBy(d => d.Schedules.Any(s => s.StartTime == dto.Date.Value && s.IsAvailable))
+                        ? doctors.OrderBy(d => d.Schedules.Where(s => s.IsAvailable && s.StartTime >= _clock.Now).Select(s => s.StartTime).DefaultIfEmpty(DateTime.MaxValue).Min())
                         : doctors,
                     _ => doctors
                 };
             }
 
-            var mapped = _mapper.Map<IEnumerable<DoctorDto>>(doctors);
+            IEnumerable<DoctorDto> mapped = doctors.Select(item => item.ToDto()).ToList();
             return Result<IEnumerable<DoctorDto>>.Success(mapped);
         }
 
         public async Task<Result<IEnumerable<DoctorDto>>> GetAllAsync()
         {
             var doctors = await _uow.Doctors.GetAllAsync();
-            var dto = _mapper.Map<IEnumerable<DoctorDto>>(doctors);
+            IEnumerable<DoctorDto> dto = doctors.Select(item => item.ToDto()).ToList();
             return Result<IEnumerable<DoctorDto>>.Success(dto);
         }
 
         public async Task<Result<IEnumerable<SpecializationDto>>> GetSpecializationsAsync()
         {
             var specializations = await _uow.Specializations.GetAllAsync();
-            var dto = _mapper.Map<IEnumerable<SpecializationDto>>(specializations);
+            IEnumerable<SpecializationDto> dto = specializations.Select(item => item.ToDto()).ToList();
             return Result<IEnumerable<SpecializationDto>>.Success(dto);
         }
 
@@ -126,11 +132,12 @@ namespace MedicalBookingSystem.Application.Services
 
         public async Task<Result> CreateScheduleAsync(CreateScheduleDto dto)
         {
-            var validator = new CreateScheduleDtoValidator(_uow);
-            var validationResult = validator.ValidateAsync(dto);
+            var validationResult = await _scheduleValidator.ValidateAsync(dto);
+            if (!validationResult.IsValid)
+                return Result.Failure(string.Join("; ", validationResult.Errors.Select(error => error.ErrorMessage)));
 
-            if (!validationResult.IsCompletedSuccessfully)
-                return Result.Failure(string.Join("; ", validationResult?.Exception?.Message));
+            if (await _uow.Doctors.GetByIdAsync(dto.DoctorId) is null)
+                return Result.Failure("Lekarz nie istnieje.");
 
             var schedule = new DoctorSchedule
             {
@@ -140,7 +147,7 @@ namespace MedicalBookingSystem.Application.Services
                 IsAvailable = true
             };
 
-            _uow.DoctorSchedules.AddAsync(schedule);
+            await _uow.DoctorSchedules.AddAsync(schedule);
             await _uow.SaveChangesAsync();
 
             return Result.Success();

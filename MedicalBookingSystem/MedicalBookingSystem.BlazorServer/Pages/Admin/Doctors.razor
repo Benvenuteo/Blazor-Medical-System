@@ -1,4 +1,4 @@
-﻿@page "/admin/doctors"
+@page "/admin/doctors"
 @using MedicalBookingSystem.BlazorServer.Service
 @using MedicalBookingSystem.SharedKernel.Dto
 @using Radzen.Blazor
@@ -38,12 +38,12 @@
         </RadzenDataGridColumn>
         <RadzenDataGridColumn Property="Id" Title="Recepty do wypisania" Width="180px">
             <Template Context="data">
-                <RadzenButton ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="info" class="m-1" Click=@(() => OpenListPrescription(data.Id)) Text="Recepty" />
+                <RadzenButton ButtonStyle="ButtonStyle.Info" Variant="Radzen.Variant.Flat" Shade="Shade.Lighter" Icon="info" class="m-1" Click=@(() => OpenListPrescription(data.Id)) Text="Recepty" />
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn Property="Id" Title="Notatki do wizyty" Width="180px">
             <Template Context="data">
-                <RadzenButton ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="info" class="m-1" Click=@(() => OpenListNotes(data.Id)) Text="Notatki" />
+                <RadzenButton ButtonStyle="ButtonStyle.Info" Variant="Radzen.Variant.Flat" Shade="Shade.Lighter" Icon="info" class="m-1" Click=@(() => OpenListNotes(data.Id)) Text="Notatki" />
             </Template>
         </RadzenDataGridColumn>
         <RadzenDataGridColumn Title="Grafik" Width="150px">
@@ -67,8 +67,8 @@
 
 @code {
     private List<DoctorDto> _doctorList = new();
-    private string _errorMessage;
-    private string _successMessage;
+    private string? _errorMessage;
+    private string? _successMessage;
 
     protected override async Task OnInitializedAsync()
     {

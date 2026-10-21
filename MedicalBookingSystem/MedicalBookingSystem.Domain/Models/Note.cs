@@ -1,13 +1,13 @@
-﻿namespace MedicalBookingSystem.Domain.Models
+namespace MedicalBookingSystem.Domain.Models
 {
     public class Note
     {
         public int Id { get; set; }
-        public string Content { get; set; }
+        public string Content { get; set; } = string.Empty;
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
         public int AppointmentId { get; set; }
 
         // Relacja
-        public Appointment Appointment { get; set; }
+        public Appointment Appointment { get; set; } = null!;
     }
 }

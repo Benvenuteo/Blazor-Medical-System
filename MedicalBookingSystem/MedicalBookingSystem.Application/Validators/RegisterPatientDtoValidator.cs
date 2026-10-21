@@ -1,11 +1,12 @@
-﻿using FluentValidation;
+using MedicalBookingSystem.Application.Time;
+using FluentValidation;
 using MedicalBookingSystem.SharedKernel.Dto;
 
 namespace MedicalBookingSystem.Application.Validators
 {
     public class RegisterPatientDtoValidator : AbstractValidator<RegisterPatientDto>
     {
-        public RegisterPatientDtoValidator()
+        public RegisterPatientDtoValidator(ClinicClock clock)
         {
             RuleFor(p => p.Email)
                 .NotEmpty().WithMessage("Email jest wymagany")
@@ -28,7 +29,7 @@ namespace MedicalBookingSystem.Application.Validators
 
             RuleFor(p => p.DateOfBirth)
                 .NotEmpty().WithMessage("Data urodzenia jest wymagana")
-                .LessThan(DateTime.Now.AddYears(-18)).WithMessage("Pacjent musi mieć ukończone 18 lat");
+                .Must(value => value.Date <= clock.Today.AddYears(-18)).WithMessage("Pacjent musi mieć ukończone 18 lat");
         }
     }
 }

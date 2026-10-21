@@ -1,4 +1,4 @@
-﻿@page "/appointments/edit/{appointmentId:int}"
+@page "/appointments/edit/{appointmentId:int}"
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
@@ -37,7 +37,7 @@ else
     public int appointmentId { get; set; }
 
     private UpdateAppointmentDto appointment = new();
-    private string errorMessage;
+    private string? errorMessage;
     private bool isLoading = true;
 
     private DateTime selectedDate = DateTime.Today;

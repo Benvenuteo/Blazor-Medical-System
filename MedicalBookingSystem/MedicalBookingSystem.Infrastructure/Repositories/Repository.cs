@@ -1,4 +1,4 @@
-﻿using MedicalBookingSystem.Domain.Contracts;
+using MedicalBookingSystem.Domain.Contracts;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -15,12 +15,12 @@ namespace MedicalBookingSystem.Infrastructure.Repositories
             _dbSet = context.Set<TEntity>();
         }
 
-        public async Task<TEntity> GetByIdAsync(int id)
+        public virtual async Task<TEntity?> GetByIdAsync(int id)
         {
             return await _dbSet.FindAsync(id);
         }
 
-        public async Task<IEnumerable<TEntity>> GetAllAsync()
+        public virtual async Task<IEnumerable<TEntity>> GetAllAsync()
         {
             return await _dbSet.AsNoTracking().ToListAsync();
         }
@@ -45,7 +45,7 @@ namespace MedicalBookingSystem.Infrastructure.Repositories
             _dbSet.Remove(entity);
         }
 
-        public async Task<int> CountAsync(Expression<Func<TEntity, bool>> predicate = null)
+        public async Task<int> CountAsync(Expression<Func<TEntity, bool>>? predicate = null)
         {
             if (predicate == null)
                 return await _dbSet.CountAsync();

@@ -1,4 +1,4 @@
-﻿using MedicalBookingSystem.Domain.Models;
+using MedicalBookingSystem.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace MedicalBookingSystem.Infrastructure
@@ -24,7 +24,7 @@ namespace MedicalBookingSystem.Infrastructure
             modelBuilder.Entity<Patient>(entity =>
             {
                 entity.HasKey(p => p.Id);
-                entity.Property(p => p.Email).IsRequired().HasMaxLength(255);
+                entity.Property(p => p.Email).IsRequired().HasMaxLength(255).UseCollation("NOCASE");
                 entity.HasIndex(p => p.Email).IsUnique();
                 entity.Property(p => p.FirstName).IsRequired().HasMaxLength(100);
                 entity.Property(p => p.LastName).IsRequired().HasMaxLength(100);

@@ -1,4 +1,4 @@
-﻿@page "/admin/doctors/{DoctorId:int}/schedule"
+@page "/admin/doctors/{DoctorId:int}/schedule"
 @using MedicalBookingSystem.SharedKernel.Dto
 @inject IDoctorService DoctorService
 @inject NavigationManager Navigation
@@ -47,8 +47,8 @@
     [Parameter] public int DoctorId { get; set; }
 
     private CreateScheduleDto _dto = new();
-    private string _error;
-    private string _success;
+    private string? _error;
+    private string? _success;
 
     private DateTime startDate = DateTime.Today;
     private TimeOnly startTime = new(8, 0);

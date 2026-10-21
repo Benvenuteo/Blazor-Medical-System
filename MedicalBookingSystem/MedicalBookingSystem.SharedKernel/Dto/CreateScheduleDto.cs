@@ -1,4 +1,4 @@
-﻿namespace MedicalBookingSystem.SharedKernel.Dto
+namespace MedicalBookingSystem.SharedKernel.Dto
 {
     public class CreateScheduleDto
     {

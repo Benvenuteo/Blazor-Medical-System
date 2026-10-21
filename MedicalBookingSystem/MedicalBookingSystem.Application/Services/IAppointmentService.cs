@@ -1,4 +1,4 @@
-﻿using MedicalBookingSystem.SharedKernel;
+using MedicalBookingSystem.SharedKernel;
 using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto;
 
 namespace MedicalBookingSystem.Application.Services

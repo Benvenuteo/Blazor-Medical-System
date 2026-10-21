@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+using MedicalBookingSystem.Application.Time;
+using MedicalBookingSystem.Application.Mappings;
 using MedicalBookingSystem.Domain.Contracts;
 using MedicalBookingSystem.Domain.Models;
 using MedicalBookingSystem.SharedKernel;
@@ -9,12 +10,14 @@ namespace MedicalBookingSystem.Application.Services
     public class ReviewService : IReviewService
     {
         private readonly IUnitOfWork _uow;
-        private readonly IMapper _mapper;
+        private readonly ClinicClock _clock;
 
-        public ReviewService(IUnitOfWork uow, IMapper mapper)
+
+        public ReviewService(IUnitOfWork uow, ClinicClock clock)
         {
             _uow = uow;
-            _mapper = mapper;
+            _clock = clock;
+
         }
         public async Task<Result<ReviewDto>> AddReviewAsync(CreateReviewDto dto, int patientId)
         {
@@ -48,15 +51,15 @@ namespace MedicalBookingSystem.Application.Services
                     PatientId = patientId,
                     Rating = dto.Rating,
                     Comment = dto.Comment,
-                    CreatedDate = DateTime.UtcNow
+                    CreatedDate = _clock.UtcNow
                 };
 
                 await _uow.Reviews.AddAsync(review);
                 await _uow.SaveChangesAsync();
 
-                return Result<ReviewDto>.Success(_mapper.Map<ReviewDto>(review));
+                return Result<ReviewDto>.Success(review.ToDto());
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return Result<ReviewDto>.Failure<ReviewDto>("Wystąpił błąd podczas dodawania opinii");
             }
@@ -80,7 +83,7 @@ namespace MedicalBookingSystem.Application.Services
 
                 return Result.Success();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return Result.Failure("Wystąpił błąd podczas usuwania opinii");
             }
@@ -93,10 +96,10 @@ namespace MedicalBookingSystem.Application.Services
                 var reviews = await _uow.Reviews
                     .GetByDoctorIdAsync(doctorId);
 
-                var reviewDtos = _mapper.Map<IEnumerable<ReviewDto>>(reviews);
+                IEnumerable<ReviewDto> reviewDtos = reviews.Select(item => item.ToDto()).ToList();
                 return Result<IEnumerable<ReviewDto>>.Success(reviewDtos);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return Result<IEnumerable<ReviewDto>>.Failure<IEnumerable<ReviewDto>>("Wystąpił błąd podczas pobierania opinii");
             }
@@ -108,7 +111,7 @@ namespace MedicalBookingSystem.Application.Services
             if (review == null)
                 return Result<ReviewDto>.Failure<ReviewDto>("Nie znaleziono opinii.");
 
-            var dto = _mapper.Map<ReviewDto>(review);
+            var dto = review.ToDto();
             return Result<ReviewDto>.Success(dto);
         }
     }

@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using MedicalBookingSystem.SharedKernel.Dto;
 
 namespace MedicalBookingSystem.Application.Validators

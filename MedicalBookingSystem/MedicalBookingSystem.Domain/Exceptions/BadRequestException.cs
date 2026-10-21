@@ -1,4 +1,4 @@
-﻿namespace MedicalBookingSystem.Domain.Exceptions
+namespace MedicalBookingSystem.Domain.Exceptions
 {
     // Wyjątek: żądanie użytkownika zawiera błędy
     public class BadRequestException : Exception

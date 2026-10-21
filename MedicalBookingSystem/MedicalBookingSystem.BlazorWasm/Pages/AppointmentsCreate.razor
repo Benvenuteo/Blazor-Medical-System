@@ -1,4 +1,4 @@
-﻿@page "/appointments/create"
+@page "/appointments/create"
 @using System.Net.Http.Json
 @using MudBlazor
 @inject HttpClient Http
@@ -16,7 +16,7 @@
     <MudSelect T="int" Label="Wybierz lekarza"
                Value="@selectedDoctorId"
                ValueChanged="OnDoctorChanged"
-               ValueExpression="() => selectedDoctorId">
+               >
         @foreach (var doctor in doctors)
         {
             <MudSelectItem Value="doctor.Id">@doctor.FirstName @doctor.LastName</MudSelectItem>
@@ -65,7 +65,7 @@
     {
         try
         {
-            doctors = await Http.GetFromJsonAsync<List<DoctorDto>>("api/doctors/all");
+            doctors = await Http.GetFromJsonAsync<List<DoctorDto>>("api/doctors/all") ?? [];
         }
         catch (Exception ex)
         {
@@ -75,16 +75,17 @@
 
     private async Task OnDoctorChanged(int doctorId)
     {
+        selectedDoctorId = doctorId;
         schedules.Clear();
         selectedSlot = null;
 
-        if (doctorId == null)
+        if (doctorId <= 0)
             return;
 
         try
         {
             var result = await Http.GetFromJsonAsync<List<DoctorScheduleDto>>($"api/doctors/{doctorId}/schedule");
-            schedules = result
+            schedules = (result ?? [])
                 .Where(s => s.IsAvailable && s.StartTime.Date <= DateTime.Today.AddDays(30))
                 .OrderBy(s => s.StartTime)
                 .ToList();
@@ -102,6 +103,11 @@
 
     private async Task HandleCreate()
     {
+        if (selectedSlot is null)
+        {
+            errorMessage = "Najpierw wybierz termin wizyty.";
+            return;
+        }
         try
         {
             var patientIdStr = await localStorage.GetItemAsync<string>("patientId");

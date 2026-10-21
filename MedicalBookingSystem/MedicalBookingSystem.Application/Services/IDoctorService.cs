@@ -1,4 +1,4 @@
-﻿using MedicalBookingSystem.SharedKernel;
+using MedicalBookingSystem.SharedKernel;
 using MedicalBookingSystem.SharedKernel.Dto;
 using MedicalBookingSystem.SharedKernel.Dto.DtoHelp;
 using MedicalBookingSystem.SharedKernel.Dto.ReviewsDto;

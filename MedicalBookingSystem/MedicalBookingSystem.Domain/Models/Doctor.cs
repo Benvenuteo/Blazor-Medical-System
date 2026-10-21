@@ -1,14 +1,14 @@
-﻿namespace MedicalBookingSystem.Domain.Models
+namespace MedicalBookingSystem.Domain.Models
 {
     public class Doctor
     {
         public int Id { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string LicenseNumber { get; set; }
-        public string Region { get; set; }
-        public string Bio { get; set; }
-        public string ImageUrl { get; set; } = "/images/no-image-icon.png";
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string LicenseNumber { get; set; } = string.Empty;
+        public string Region { get; set; } = string.Empty;
+        public string Bio { get; set; } = string.Empty;
+        public string ImageUrl { get; set; } = "/images/no-image-icon.svg";
         public decimal AverageRating { get; private set; }
 
         // Relacje
@@ -20,10 +20,7 @@
         // Metoda do aktualizacji średniej oceny
         public void UpdateAverageRating()
         {
-            if (Reviews?.Any() == true)
-            {
-                AverageRating = (decimal)Reviews.Average(r => r.Rating);
-            }
+            AverageRating = Reviews.Count == 0 ? 0 : (decimal)Reviews.Average(review => review.Rating);
         }
     }
 }

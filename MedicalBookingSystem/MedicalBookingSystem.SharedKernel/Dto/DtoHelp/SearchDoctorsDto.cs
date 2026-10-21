@@ -1,4 +1,4 @@
-﻿namespace MedicalBookingSystem.SharedKernel.Dto.DtoHelp
+namespace MedicalBookingSystem.SharedKernel.Dto.DtoHelp
 {
     public class SearchDoctorsDto
     {

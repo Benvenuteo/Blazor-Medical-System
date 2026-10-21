@@ -1,4 +1,4 @@
-﻿namespace MedicalBookingSystem.WebAPI.JWT
+namespace MedicalBookingSystem.WebAPI.JWT
 {
     using MedicalBookingSystem.Domain.Models;
     using Microsoft.Extensions.Options;

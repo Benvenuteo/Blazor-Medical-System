@@ -1,4 +1,4 @@
-﻿@page "/historyAppointments"
+@page "/historyAppointments"
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @inject Blazored.LocalStorage.ILocalStorageService localStorage
@@ -68,7 +68,7 @@ else
     {
         try
         {
-            var patientId = int.Parse(await localStorage.GetItemAsync<string>("patientId"));
+            var patientId = await localStorage.GetRequiredPatientIdAsync();
             var response = await Http.GetFromJsonAsync<List<AppointmentDto>>($"api/appointments/history/{patientId}");
 
             appointments = response ?? new();
@@ -87,7 +87,7 @@ else
     {
         try
         {
-            var patientId = int.Parse(await localStorage.GetItemAsync<string>("patientId"));
+            var patientId = await localStorage.GetRequiredPatientIdAsync();
             var response = await Http.GetAsync($"api/appointments/{appointmentId}?patientId={patientId}");
 
             if (response.IsSuccessStatusCode)

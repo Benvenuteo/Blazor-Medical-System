@@ -1,4 +1,4 @@
-﻿@page "/appointments"
+@page "/appointments"
 @using MudBlazor
 @inject HttpClient Http
 @inject NavigationManager Navigation
@@ -63,10 +63,6 @@ else
             <p><strong>Data ważności recepty:</strong> @selectedAppointment.Prescription?.ExpiryDate</p>
         </div>
     }
-    @if (!string.IsNullOrEmpty(successMessage))
-    {
-        <div class="alert alert-success">@successMessage</div>
-    }
 
 }
 
@@ -75,9 +71,6 @@ else
     private bool isLoading = true;
     private string? errorMessage;
     private AppointmentDetailsDto? selectedAppointment;
-    private bool showConfirmation = false;
-    private int appointmentIdToDelete;
-    private string? successMessage;
 
     private async Task ShowDeleteConfirmation(int appointmentId)
     {
@@ -89,10 +82,10 @@ else
     };
 
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = DialogService.Show<ConfirmDialog>("Potwierdzenie", parameters, options);
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Potwierdzenie", parameters, options);
         var result = await dialog.Result;
 
-        if (!result.Canceled)
+        if (result is { Canceled: false })
         {
             await DeleteAppointment(appointmentId);
         }
@@ -101,7 +94,7 @@ else
     {
         try
         {
-            var patientId = int.Parse(await localStorage.GetItemAsync<string>("patientId"));
+            var patientId = await localStorage.GetRequiredPatientIdAsync();
             var response = await Http.GetFromJsonAsync<List<AppointmentDto>>($"api/appointments/upcoming/{patientId}");
 
             appointments = response ?? new();
@@ -114,13 +107,6 @@ else
         {
             isLoading = false;
         }
-    }
-    private void ConfirmDelete(int appointmentId)
-    {
-        appointmentIdToDelete = appointmentId;
-        showConfirmation = true;
-        errorMessage = null;
-        successMessage = null;
     }
     private void CreateAppointment()
     {
@@ -136,7 +122,7 @@ else
     {
         try
         {
-            var patientId = int.Parse(await localStorage.GetItemAsync<string>("patientId"));
+            var patientId = await localStorage.GetRequiredPatientIdAsync();
             var result = await Http.DeleteAsync($"api/appointments/{appointmentId}?patientId={patientId}");
 
             if (result.IsSuccessStatusCode)
@@ -159,7 +145,7 @@ else
     {
         try
         {
-            var patientId = int.Parse(await localStorage.GetItemAsync<string>("patientId"));
+            var patientId = await localStorage.GetRequiredPatientIdAsync();
             var response = await Http.GetAsync($"api/appointments/{appointmentId}?patientId={patientId}");
 
             if (response.IsSuccessStatusCode)

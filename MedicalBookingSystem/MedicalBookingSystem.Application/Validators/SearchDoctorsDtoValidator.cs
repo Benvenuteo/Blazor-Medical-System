@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using MedicalBookingSystem.SharedKernel.Dto.DtoHelp;
 
 namespace MedicalBookingSystem.Application.Validators
@@ -20,10 +20,10 @@ namespace MedicalBookingSystem.Application.Validators
                 .When(s => !string.IsNullOrEmpty(s.SortBy));
         }
 
-        private bool BeValidSortOption(string sortBy)
+        private bool BeValidSortOption(string? sortBy)
         {
-            var validOptions = new[] { "rating", "distance", "availability" };
-            return validOptions.Contains(sortBy.ToLower());
+            var validOptions = new[] { "rating", "availability" };
+            return sortBy is not null && validOptions.Contains(sortBy.ToLowerInvariant());
         }
     }
 }

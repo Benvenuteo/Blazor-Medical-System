@@ -1,4 +1,4 @@
-﻿@page "/doctors/search"
+@page "/doctors/search"
 @inject HttpClient Http
 @inject Blazored.LocalStorage.ILocalStorageService localStorage
 <h3>Wyszukiwanie lekarzy</h3>
@@ -31,7 +31,6 @@
             <option value="">-- wybierz --</option>
             <option value="rating">Ocena</option>
             <option value="availability">Najbliższy termin</option>
-            <option value="distance">Najbliżej mnie</option>
         </InputSelect>
     </div>
 
@@ -104,7 +103,7 @@ else if (doctors != null && doctors.Any())
                             }
                             else if (reviewsByDoctor.TryGetValue(doctor.Id, out var reviewList))
                             {
-                                @if (reviewList.Any())
+                                @if (reviewList is not null && reviewList.Any())
                                 {
                                     <ul class="list-group">
                                         @foreach (var review in reviewList)
@@ -115,6 +114,10 @@ else if (doctors != null && doctors.Any())
                                             </li>
                                         }
                                     </ul>
+                                }
+                                else if (reviewList is null)
+                                {
+                                    <p class="text-danger">Nie udało się pobrać opinii. Spróbuj ponownie.</p>
                                 }
                                 else
                                 {
@@ -158,15 +161,15 @@ else if (doctors != null)
 }
 
 @code {
-    private List<DoctorSearchResultDto> doctors;
+    private List<DoctorSearchResultDto>? doctors;
     private List<SpecializationDto> specializations = new();
     private SearchDoctorsDto searchDto = new();
     private bool isLoading = false;
-    private string errorMessage;
+    private string? errorMessage;
 
     private HashSet<int> expandedDoctorIds = new();
     private HashSet<int> loadingReviews = new();
-    private Dictionary<int, List<ReviewDto>> reviewsByDoctor = new();
+    private Dictionary<int, List<ReviewDto>?> reviewsByDoctor = new();
     private bool showReviewForm = false;
     private int selectedDoctorId;
     private CreateReviewDto newReview = new();
@@ -186,7 +189,7 @@ else if (doctors != null)
     {
         try
         {
-            var patientId = int.Parse(await localStorage.GetItemAsync<string>("patientId"));
+            var patientId = await localStorage.GetRequiredPatientIdAsync();
             var response = await Http.PostAsJsonAsync($"api/reviews?patientId={patientId}", newReview);
 
             if (response.IsSuccessStatusCode)
@@ -209,7 +212,7 @@ else if (doctors != null)
     {
         try
         {
-            specializations = await Http.GetFromJsonAsync<List<SpecializationDto>>("api/doctors/specializations");
+            specializations = await Http.GetFromJsonAsync<List<SpecializationDto>>("api/doctors/specializations") ?? [];
         }
         catch (Exception ex)
         {
@@ -285,20 +288,20 @@ else if (doctors != null)
     public class DoctorSearchResultDto
     {
         public int Id { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string LicenseNumber { get; set; }
-        public string Region { get; set; }
-        public string Bio { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string LicenseNumber { get; set; } = string.Empty;
+        public string Region { get; set; } = string.Empty;
+        public string Bio { get; set; } = string.Empty;
         public decimal AverageRating { get; set; }
         public int ReviewCount { get; set; }
-        public string ImageUrl { get; set; }
+        public string ImageUrl { get; set; } = string.Empty;
     }
 
     public class SpecializationDto
     {
         public int Id { get; set; }
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
     }
 
     public class SearchDoctorsDto
@@ -312,14 +315,14 @@ else if (doctors != null)
     public class ReviewDto
     {
         public int Rating { get; set; }
-        public string Comment { get; set; }
+        public string Comment { get; set; } = string.Empty;
     }
 
     public class CreateReviewDto
     {
         public int Rating { get; set; }
 
-        public string Comment { get; set; }
+        public string Comment { get; set; } = string.Empty;
 
         public int DoctorId { get; set; }
     }

@@ -1,11 +1,10 @@
-﻿@page "/admin/doctors/prescriptions/{id:int}"
+@page "/admin/doctors/prescriptions/{id:int}"
 @using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
 @using MedicalBookingSystem.SharedKernel.Dto.NotesPrescriptionDto
 @inject IAppointmentService AppointmentService
 @inject NavigationManager Navigation
 @inject IMedicalRecordService MedicalRecordService
 @using MudBlazor
-@using MudBlazor.Components
 @using System.ComponentModel.DataAnnotations
 
 <MudText Typo="Typo.h5" Class="mb-4">Dodaj recepty do przeszłych wizyt</MudText>
@@ -48,7 +47,7 @@ else
 @code {
     [Parameter] public int Id { get; set; }
 
-    private List<AppointmentDto> _appointments;
+    private List<AppointmentDto>? _appointments;
     private Dictionary<int, CreatePrescriptionDto> _prescriptions = new();
     private Dictionary<int, string> _successMessages = new();
     private Dictionary<int, MudForm> _forms = new();
@@ -72,7 +71,7 @@ else
     private async Task AddPrescriptionAsync(int appointmentId)
     {
         var form = _forms[appointmentId];
-        await form.Validate();
+        await form.ValidateAsync();
 
         if (!form.IsValid)
         {
@@ -88,9 +87,9 @@ else
             _successMessages[appointmentId] = "Recepta została dodana.";
 
             // Usuwanie formularza z widoku
-            var appointmentToRemove = _appointments.FirstOrDefault(a => a.Id == appointmentId);
+            var appointmentToRemove = _appointments?.FirstOrDefault(a => a.Id == appointmentId);
             if (appointmentToRemove != null)
-                _appointments.Remove(appointmentToRemove);
+                _appointments!.Remove(appointmentToRemove);
 
             _prescriptions.Remove(appointmentId);
             _forms.Remove(appointmentId);

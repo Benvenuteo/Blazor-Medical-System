@@ -1,4 +1,4 @@
-﻿namespace MedicalBookingSystem.BlazorServer.Service
+namespace MedicalBookingSystem.BlazorServer.Service
 {
     public class DoctorImageUploader
     {
@@ -28,7 +28,9 @@
                 await stream.CopyToAsync(fileStream);
             }
 
-            var baseUrl = $"{_httpContextAccessor.HttpContext.Request.Scheme}://{_httpContextAccessor.HttpContext.Request.Host}";
+            var request = _httpContextAccessor.HttpContext?.Request
+                ?? throw new InvalidOperationException("The current request is unavailable. Configure a public media URL before uploading outside an HTTP request.");
+            var baseUrl = $"{request.Scheme}://{request.Host}";
             return $"{baseUrl}/images/doctors/{newFileName}";
         }
     }

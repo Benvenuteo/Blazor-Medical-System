@@ -1,4 +1,4 @@
-﻿namespace MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
+namespace MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
 {
     public class CreateAppointmentDto
     {

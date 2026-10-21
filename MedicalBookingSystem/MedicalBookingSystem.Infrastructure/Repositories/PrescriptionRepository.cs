@@ -1,4 +1,4 @@
-﻿using MedicalBookingSystem.Domain.Contracts;
+using MedicalBookingSystem.Domain.Contracts;
 using MedicalBookingSystem.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 

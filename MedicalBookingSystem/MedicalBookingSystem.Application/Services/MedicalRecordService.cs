@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+using MedicalBookingSystem.Application.Time;
+using MedicalBookingSystem.Application.Mappings;
 using MedicalBookingSystem.Domain.Contracts;
 using MedicalBookingSystem.Domain.Models;
 using MedicalBookingSystem.SharedKernel;
@@ -10,12 +11,14 @@ namespace MedicalBookingSystem.Application.Services
     public class MedicalRecordService : IMedicalRecordService
     {
         private readonly IUnitOfWork _uow;
-        private readonly IMapper _mapper;
+        private readonly ClinicClock _clock;
 
-        public MedicalRecordService(IUnitOfWork unitOfWork, IMapper mapper)
+
+        public MedicalRecordService(IUnitOfWork unitOfWork, ClinicClock clock)
         {
             _uow = unitOfWork;
-            _mapper = mapper;
+            _clock = clock;
+
         }
         public async Task<Result<NoteDto>> AddNoteToAppointmentAsync(CreateNoteDto dto, int doctorId)
         {
@@ -32,13 +35,13 @@ namespace MedicalBookingSystem.Application.Services
                 {
                     AppointmentId = dto.AppointmentId,
                     Content = dto.Content,
-                    CreatedDate = DateTime.UtcNow
+                    CreatedDate = _clock.UtcNow
                 };
 
                 await _uow.Notes.AddAsync(note);
                 await _uow.SaveChangesAsync();
 
-                var noteDto = _mapper.Map<NoteDto>(note);
+                var noteDto = note.ToDto();
                 return Result<NoteDto>.Success(noteDto);
             }
             catch (Exception)
@@ -61,14 +64,14 @@ namespace MedicalBookingSystem.Application.Services
                     Medication = dto.Medication,
                     Dosage = dto.Dosage,
                     Instructions = dto.Instructions,
-                    CreatedDate = DateTime.Now,
-                    ExpiryDate = DateTime.Today.AddDays(dto.ValidityDays)
+                    CreatedDate = _clock.Now,
+                    ExpiryDate = _clock.Today.AddDays(dto.ValidityDays)
                 };
 
                 await _uow.Prescriptions.AddAsync(prescription);
                 await _uow.SaveChangesAsync();
 
-                var prescriptionDto = _mapper.Map<PrescriptionDto>(prescription);
+                var prescriptionDto = prescription.ToDto();
                 return Result<PrescriptionDto>.Success(prescriptionDto);
             }
             catch (Exception)
@@ -83,8 +86,8 @@ namespace MedicalBookingSystem.Application.Services
             var notes = await _uow.Notes.GetByPatientIdAsync(patientId);
 
             // Mapowanie do klas pochodnych
-            var prescriptionDtos = _mapper.Map<IEnumerable<PrescriptionDto>>(prescriptions);
-            var noteDtos = _mapper.Map<IEnumerable<NoteDto>>(notes);
+            var prescriptionDtos = prescriptions.Select(item => item.ToDto()).ToList();
+            var noteDtos = notes.Select(item => item.ToDto()).ToList();
 
             // Rzutowanie do typu bazowego
             var allDocs = prescriptionDtos
@@ -103,7 +106,7 @@ namespace MedicalBookingSystem.Application.Services
             if (prescription == null)
                 return Result<PrescriptionDto>.Failure<PrescriptionDto>("Nie znaleziono recepty.");
 
-            var dto = _mapper.Map<PrescriptionDto>(prescription);
+            var dto = prescription.ToDto();
             return Result<PrescriptionDto>.Success(dto);
         }
 
@@ -113,7 +116,7 @@ namespace MedicalBookingSystem.Application.Services
             if (note == null)
                 return Result<NoteDto>.Failure<NoteDto>("Nie znaleziono notatki.");
 
-            var dto = _mapper.Map<NoteDto>(note);
+            var dto = note.ToDto();
             return Result<NoteDto>.Success(dto);
         }
     }

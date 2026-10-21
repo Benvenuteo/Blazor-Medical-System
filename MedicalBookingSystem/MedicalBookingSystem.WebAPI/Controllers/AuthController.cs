@@ -1,10 +1,10 @@
-﻿using AutoMapper;
+using MedicalBookingSystem.Application.Mappings;
 using FluentValidation;
 using MedicalBookingSystem.Domain.Contracts;
 using MedicalBookingSystem.Domain.Models;
 using MedicalBookingSystem.SharedKernel.Dto;
 using MedicalBookingSystem.WebAPI.JWT;
-using Microsoft.AspNet.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 [Route("api/auth")]
@@ -12,25 +12,24 @@ using Microsoft.AspNetCore.Mvc;
 public class AuthController : ControllerBase
 {
     private readonly IUnitOfWork _uow;
-    private readonly IPasswordHasher _passwordHasher;
+    private readonly IPasswordHasher<Patient> _passwordHasher;
     private readonly IValidator<RegisterPatientDto> _registerValidator;
     private readonly IValidator<LoginDto> _loginValidator;
-    private readonly IMapper _mapper;
+
     private readonly JwtService _jwtService;
 
     public AuthController(
         IUnitOfWork uow,
-        IPasswordHasher passwordHasher,
+        IPasswordHasher<Patient> passwordHasher,
         IValidator<RegisterPatientDto> registerValidator,
         IValidator<LoginDto> loginValidator,
-        IMapper mapper,
         JwtService jwtService)
     {
         _uow = uow;
         _passwordHasher = passwordHasher;
         _registerValidator = registerValidator;
         _loginValidator = loginValidator;
-        _mapper = mapper;
+
         _jwtService = jwtService;
     }
 
@@ -45,13 +44,13 @@ public class AuthController : ControllerBase
         if (existing != null)
             return BadRequest("Użytkownik z podanym adresem e-mail już istnieje.");
 
-        var patient = _mapper.Map<Patient>(dto);
-        patient.PasswordHash = _passwordHasher.HashPassword(dto.Password);
+        var patient = new Patient { FirstName = dto.FirstName.Trim(), LastName = dto.LastName.Trim(), Email = dto.Email.Trim().ToLowerInvariant(), PhoneNumber = dto.PhoneNumber, DateOfBirth = dto.DateOfBirth };
+        patient.PasswordHash = _passwordHasher.HashPassword(patient, dto.Password);
 
         await _uow.Patients.AddAsync(patient);
         await _uow.SaveChangesAsync();
 
-        var patientDto = _mapper.Map<PatientDto>(patient);
+        var patientDto = patient.ToDto();
         var token = _jwtService.GenerateToken(patient);
 
         return Ok(new { token, patient = patientDto });
@@ -68,11 +67,11 @@ public class AuthController : ControllerBase
         if (patient == null)
             return Unauthorized("Nieprawidłowy email lub hasło");
 
-        var result = _passwordHasher.VerifyHashedPassword(patient.PasswordHash, dto.Password);
+        var result = _passwordHasher.VerifyHashedPassword(patient, patient.PasswordHash, dto.Password);
         if (result == PasswordVerificationResult.Failed)
             return Unauthorized("Nieprawidłowy email lub hasło");
 
-        var patientDto = _mapper.Map<PatientDto>(patient);
+        var patientDto = patient.ToDto();
         var token = _jwtService.GenerateToken(patient);
 
         return Ok(new { token, patient = patientDto });

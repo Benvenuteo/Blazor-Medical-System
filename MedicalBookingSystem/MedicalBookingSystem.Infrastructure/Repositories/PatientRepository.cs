@@ -1,4 +1,4 @@
-﻿using MedicalBookingSystem.Domain.Contracts;
+using MedicalBookingSystem.Domain.Contracts;
 using MedicalBookingSystem.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,11 +8,10 @@ namespace MedicalBookingSystem.Infrastructure.Repositories
     {
         public PatientRepository(ApplicationDbContext context) : base(context) { }
 
-        public async Task<Patient> GetByEmailAsync(string email)
+        public async Task<Patient?> GetByEmailAsync(string email)
         {
-            return await _dbSet
-                .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.Email == email);
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+            return await _dbSet.AsNoTracking().FirstOrDefaultAsync(patient => patient.Email == normalizedEmail);
         }
     }
 }

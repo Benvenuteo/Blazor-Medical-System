@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace MedicalBookingSystem.SharedKernel.Dto.NotesPrescriptionDto
 {
@@ -8,7 +8,7 @@ namespace MedicalBookingSystem.SharedKernel.Dto.NotesPrescriptionDto
         public int AppointmentId { get; set; }
 
         [Required, MinLength(10)]
-        public string Content { get; set; }
+        public string Content { get; set; } = string.Empty;
     }
 
 }

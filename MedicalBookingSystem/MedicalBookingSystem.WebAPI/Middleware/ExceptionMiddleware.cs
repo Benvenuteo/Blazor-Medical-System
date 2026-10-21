@@ -1,4 +1,4 @@
-﻿using MedicalBookingSystem.Domain.Exceptions;
+using MedicalBookingSystem.Domain.Exceptions;
 
 namespace MedicalBookingSystem.WebAPI.Middleware
 {

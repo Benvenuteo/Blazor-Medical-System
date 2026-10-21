@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+using MedicalBookingSystem.Application.Time;
+using FluentValidation;
 using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ namespace MedicalBookingSystem.Application.Validators
 {
     public class CreateAppointmentDtoValidator : AbstractValidator<CreateAppointmentDto>
     {
-        public CreateAppointmentDtoValidator()
+        public CreateAppointmentDtoValidator(ClinicClock clock)
         {
             RuleFor(a => a.DoctorId)
                 .NotEmpty().WithMessage("Wybór lekarza jest wymagany")
@@ -18,8 +19,8 @@ namespace MedicalBookingSystem.Application.Validators
 
             RuleFor(a => a.Date)
                 .NotEmpty().WithMessage("Data wizyty jest wymagana")
-                .GreaterThan(DateTime.Now.AddHours(24)).WithMessage("Wizyta musi być zaplanowana z co najmniej 24-godzinnym wyprzedzeniem")
-                .LessThan(DateTime.Now.AddMonths(3)).WithMessage("Nie można rezerwować wizyt z więcej niż 3-miesięcznym wyprzedzeniem");
+                .GreaterThanOrEqualTo(_ => clock.Now.AddHours(24)).WithMessage("Wizyta musi być zaplanowana z co najmniej 24-godzinnym wyprzedzeniem")
+                .LessThanOrEqualTo(_ => clock.Now.AddMonths(3)).WithMessage("Nie można rezerwować wizyt z więcej niż 3-miesięcznym wyprzedzeniem");
         }
     }
 }

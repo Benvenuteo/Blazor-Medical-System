@@ -1,4 +1,4 @@
-﻿namespace MedicalBookingSystem.SharedKernel.Dto.ReviewsDto
+namespace MedicalBookingSystem.SharedKernel.Dto.ReviewsDto
 {
     public class DoctorRatingDto
     {
