@@ -2,7 +2,7 @@
 
 System rezerwacji wizyt medycznych z API ASP.NET Core, aplikacją pacjenta w Blazor WebAssembly i panelem obsługi w Blazor Server. Dane przechowywane są w SQLite przez Entity Framework Core.
 
-Projekt jest rozwijany etapami. Pierwszy etap dopracowania obejmuje .NET 10 LTS, przenośną konfigurację, migracje i automatyczne testy regresyjne. Pełna kontrola dostępu, atomowe rezerwacje i cykl życia wizyty są kolejnymi zadaniami opisanymi w [planie prac](docs/ROADMAP.md). Obecną wersję uruchamiaj lokalnie na fikcyjnych danych; etap zabezpieczeń nie jest jeszcze zakończony.
+Projekt jest rozwijany etapami. Wdrożono .NET 10 LTS, migracje, automatyczne testy oraz role i kontrolę własności danych w API i panelu personelu. Kolejny etap obejmuje atomowe rezerwacje i cykl życia wizyty. Stan prac znajduje się w [planie](docs/ROADMAP.md), a zasady dostępu i ograniczenia sesji w [opisie zabezpieczeń](docs/SECURITY.md).
 
 ## Wymagania
 
@@ -44,10 +44,18 @@ dotnet run --project MedicalBookingSystem/MedicalBookingSystem.BlazorServer
 | --- | --- |
 | Aplikacja pacjenta | http://localhost:5016 |
 | API i Swagger | http://localhost:5031/swagger |
-| Panel obsługi | http://localhost:5187/admin/doctors |
+| Logowanie personelu | http://localhost:5187/Account/Login |
 | Kontrola działania API | http://localhost:5031/health/live |
 
-Konto pacjenta demo: `patient@example.test`, hasło `DemoPatient2026!`. To publiczne dane demonstracyjne, dostępne wyłącznie po włączeniu seeda. Lekarz, pacjent i wizyty są fikcyjne; przyszłe grafiki są tworzone względem daty pierwszego uruchomienia. Jeżeli istniejąca baza demo z czasem przestanie zawierać przyszłe terminy, dodaj grafik przez panel lub utwórz nową, pustą bazę demo pod inną ścieżką.
+| Rola demo | Email | Hasło |
+| --- | --- | --- |
+| Pacjent | `patient@example.test` | `DemoPatient2026!` |
+| Lekarz | `doctor@example.test` | `DemoStaff2026!` |
+| Administrator | `admin@example.test` | `DemoStaff2026!` |
+
+To publiczne dane demonstracyjne, dostępne po włączeniu seeda. Lekarz, pacjent i wizyty są fikcyjne. API uruchomione po aktualizacji dodaje konta personelu również do wcześniejszej bazy demo, bez resetowania istniejących haseł. Lekarz widzi swoje notatki, recepty i grafik; administrator zarządza listą lekarzy, zdjęciami i grafikami.
+
+Przyszłe grafiki powstają względem daty pierwszego uruchomienia. Gdy baza demo przestanie zawierać przyszłe terminy, dodaj grafik przez panel lub utwórz nową, pustą bazę demo pod inną ścieżką.
 
 ## Konfiguracja
 
@@ -58,7 +66,7 @@ Ustawienia można nadpisać przez zmienne środowiskowe .NET, np.:
 - `ConnectionStrings__MedicalBookingSystem` — pełny connection string SQLite.
 - `Clinic__TimeZone` — strefa placówki; domyślnie `Europe/Warsaw`.
 - `Database__InitializeOnStartup` — nakładanie migracji przy starcie API; domyślnie wyłączone poza Development.
-- `Seed__Enabled` i `Seed__PatientPassword` — opcjonalne fikcyjne dane demonstracyjne.
+- `Seed__Enabled`, `Seed__PatientPassword` i `Seed__StaffPassword` — opcjonalne fikcyjne dane demonstracyjne.
 - `JwtSettings__SecretKey` — co najmniej 32 bajty; wymagany poza Development.
 - `Cors__AllowedOrigins__0` — dozwolony adres aplikacji pacjenta.
 - `AllowedHosts` — nazwy hostów obsługiwane przez wdrożenie.
@@ -92,4 +100,4 @@ Początkowa migracja służy do tworzenia nowej bazy. Stara baza utworzona przez
 
 Testy jednostkowe korzystają z xUnit i Moq, integracyjne z rzeczywistego API i SQLite, a komponentowe z bUnit. Workflow `Build and test` sprawdza rozwiązanie na Linux i Windows oraz zapisuje raporty TRX i Cobertura.
 
-Szczegóły: [strategia testowania](docs/TESTING.md) i [plan dalszych etapów](docs/ROADMAP.md).
+Szczegóły: [strategia testowania](docs/TESTING.md), [kontrola dostępu](docs/SECURITY.md) i [plan dalszych etapów](docs/ROADMAP.md).

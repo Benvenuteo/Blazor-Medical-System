@@ -1,9 +1,10 @@
 @page "/appointments/create"
+@attribute [Authorize(Roles = Roles.Patient)]
 @using System.Net.Http.Json
 @using MudBlazor
 @inject HttpClient Http
 @inject NavigationManager Navigation
-@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
 
 <MudPaper Class="p-4">
     <MudText Typo="Typo.h5">Zarezerwuj wizytę</MudText>
@@ -110,18 +111,10 @@
         }
         try
         {
-            var patientIdStr = await localStorage.GetItemAsync<string>("patientId");
-            if (!int.TryParse(patientIdStr, out int patientId))
-            {
-                errorMessage = "Nieprawidłowy identyfikator pacjenta.";
-                return;
-            }
-
             var appointment = new CreateAppointmentDto
             {
                 DoctorId = selectedSlot.DoctorId,
-                Date = selectedSlot.StartTime,
-                PatientId = patientId
+                Date = selectedSlot.StartTime
             };
 
             var response = await Http.PostAsJsonAsync("api/appointments", appointment);
@@ -143,7 +136,6 @@
     public class CreateAppointmentDto
     {
         public DateTime Date { get; set; }
-        public int PatientId { get; set; }
         public int DoctorId { get; set; }
     }
 

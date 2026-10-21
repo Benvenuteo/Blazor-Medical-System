@@ -1,3 +1,4 @@
+using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.Application.Mappings;
 using MedicalBookingSystem.Domain.Contracts;
 using MedicalBookingSystem.Domain.Models;
@@ -11,17 +12,20 @@ namespace MedicalBookingSystem.Application.Services
     public class PatientService : IPatientService
     {
         private readonly IUnitOfWork _uow;
+        private readonly UserAccess _access;
 
         private readonly IPasswordHasher<Patient> _passwordHasher;
-        public PatientService(IUnitOfWork unitOfWork, IPasswordHasher<Patient> passwordHasher)
+        public PatientService(IUnitOfWork unitOfWork, IPasswordHasher<Patient> passwordHasher, UserAccess access)
         {
             _uow = unitOfWork;
+            _access = access;
 
             _passwordHasher = passwordHasher;
         }
 
         public async Task<Result<PatientDto>> GetPatientProfileAsync(int id)
         {
+            await _access.RequirePatientAsync(id);
             try
             {
                 var patient = await _uow.Patients.GetByIdAsync(id);
@@ -31,7 +35,7 @@ namespace MedicalBookingSystem.Application.Services
                 var patientDto = patient.ToDto();
                 return Result<PatientDto>.Success(patientDto);
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is not AccessDeniedException)
             {
                 return Result<PatientDto>.Failure<PatientDto>("Wystąpił błąd podczas pobierania danych pacjenta");
             }
@@ -51,7 +55,7 @@ namespace MedicalBookingSystem.Application.Services
                 var patientDto = patient.ToDto();
                 return Result<PatientDto>.Success(patientDto);
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is not AccessDeniedException)
             {
                 return Result<PatientDto>.Failure<PatientDto>("Wystąpił błąd podczas logowania");
             }
@@ -73,6 +77,7 @@ namespace MedicalBookingSystem.Application.Services
 
         public async Task<Result> UpdatePatientAsync(int id, UpdatePatientDto dto)
         {
+            await _access.RequirePatientAsync(id);
             try
             {
                 var patient = await _uow.Patients.GetByIdAsync(id);
@@ -98,7 +103,7 @@ namespace MedicalBookingSystem.Application.Services
 
                 return Result.Success();
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is not AccessDeniedException)
             {
                 return Result.Failure("Wystąpił błąd podczas aktualizacji danych");
             }

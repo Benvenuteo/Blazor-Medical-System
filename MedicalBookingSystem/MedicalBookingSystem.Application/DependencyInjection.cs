@@ -1,4 +1,5 @@
 using FluentValidation;
+using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.Application.Services;
 using MedicalBookingSystem.Application.Time;
 using MedicalBookingSystem.Application.Validators;
@@ -17,6 +18,9 @@ public static class DependencyInjection
             provider.GetRequiredService<TimeProvider>(), TimeZoneInfo.FindSystemTimeZoneById(timeZoneId)));
         services.AddValidatorsFromAssemblyContaining<LoginDtoValidator>();
         services.AddScoped<IPasswordHasher<Patient>, PasswordHasher<Patient>>();
+        services.AddScoped<IPasswordHasher<StaffAccount>, PasswordHasher<StaffAccount>>();
+        services.AddScoped<StaffAuthenticationService>();
+        services.AddScoped<UserAccess>();
         services.AddScoped<IAppointmentService, AppointmentService>();
         services.AddScoped<IDoctorService, DoctorService>();
         services.AddScoped<IMedicalRecordService, MedicalRecordService>();

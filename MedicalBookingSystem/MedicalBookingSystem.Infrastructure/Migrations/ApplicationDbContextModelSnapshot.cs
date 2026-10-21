@@ -296,6 +296,52 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                     b.ToTable("Specializations");
                 });
 
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.StaffAccount", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("DoctorId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DoctorId")
+                        .IsUnique();
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.ToTable("StaffAccounts", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_StaffAccount_Role", "(Role = 'Doctor' AND DoctorId IS NOT NULL) OR (Role = 'Admin' AND DoctorId IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Appointment", b =>
                 {
                     b.HasOne("MedicalBookingSystem.Domain.Models.Doctor", "Doctor")
@@ -384,6 +430,16 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                     b.Navigation("Doctor");
 
                     b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.StaffAccount", b =>
+                {
+                    b.HasOne("MedicalBookingSystem.Domain.Models.Doctor", "Doctor")
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Doctor");
                 });
 
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Appointment", b =>

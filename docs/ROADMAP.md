@@ -17,12 +17,12 @@ Każdy etap powinien kończyć się działającym buildem, testami regresyjnymi 
 
 ## 2. Uwierzytelnianie i uprawnienia
 
-- [ ] Wymagane uwierzytelnienie dla wszystkich prywatnych operacji API.
-- [ ] Identyfikator pacjenta i lekarza pobierany ze zweryfikowanej tożsamości.
-- [ ] Konta i role pacjenta, lekarza oraz administratora; zabezpieczony panel Server.
-- [ ] Wysyłanie tokenu przez WASM, poprawne wylogowanie i obsługa wygaśnięcia sesji.
-- [ ] Kontrola własności wizyt i dokumentów również w warstwie aplikacyjnej.
-- [ ] Testy żądań anonimowych, niewłaściwej roli i dostępu do cudzych danych.
+- [x] Wymagane uwierzytelnienie dla wszystkich prywatnych operacji API.
+- [x] Identyfikator pacjenta i lekarza pobierany ze zweryfikowanej tożsamości.
+- [x] Konta i role pacjenta, lekarza oraz administratora; zabezpieczony panel Server.
+- [x] Wysyłanie tokenu przez WASM, poprawne wylogowanie i obsługa wygaśnięcia sesji.
+- [x] Kontrola własności wizyt i dokumentów również w warstwie aplikacyjnej.
+- [x] Testy żądań anonimowych, niewłaściwej roli i dostępu do cudzych danych.
 
 ## 3. Rezerwacje i cykl życia wizyty
 
@@ -43,6 +43,12 @@ Każdy etap powinien kończyć się działającym buildem, testami regresyjnymi 
 - [ ] Odczyt bieżących danych podczas edycji wizyty i poprawne odświeżanie list.
 - [ ] Walidacja zawartości zdjęć, sprzątanie plików i publiczny adres mediów w konfiguracji.
 - [ ] Testy E2E w przeglądarce, pomiary wydajności i zrzuty ekranów do portfolio.
+
+## Dalsze zabezpieczenia przed publicznym wdrożeniem
+
+- [ ] Zarządzanie kontami personelu, reset hasła i wymuszone unieważnianie istniejących sesji po zmianie hasła lub dezaktywacji konta.
+- [ ] Audyt odczytów i zmian dokumentacji oraz testy odzyskiwania danych z kopii zapasowej.
+- [ ] Docelowy przepływ sesji przeglądarkowej, polityka CSP, trwałe klucze Data Protection i konfiguracja zaufanego reverse proxy.
 
 ## Kryteria ukończenia
 

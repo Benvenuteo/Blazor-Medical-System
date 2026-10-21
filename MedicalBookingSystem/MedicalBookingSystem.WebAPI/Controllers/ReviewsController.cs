@@ -1,3 +1,6 @@
+using MedicalBookingSystem.Application.Security;
+using MedicalBookingSystem.SharedKernel.Security;
+using Microsoft.AspNetCore.Authorization;
 using FluentValidation;
 using MedicalBookingSystem.Application.Services;
 using MedicalBookingSystem.SharedKernel.Dto.ReviewsDto;
@@ -7,22 +10,26 @@ namespace MedicalBookingSystem.WebAPI.Controllers
 {
     [Route("api/reviews")]
     [ApiController]
+    [Authorize(Roles = Roles.Patient)]
     public class ReviewsController : ControllerBase
     {
+        private readonly UserAccess _access;
         private readonly IReviewService _reviewService;
         private readonly IValidator<CreateReviewDto> _createValidator;
 
         public ReviewsController(
             IReviewService reviewService,
-            IValidator<CreateReviewDto> createValidator)
+            IValidator<CreateReviewDto> createValidator, UserAccess access)
         {
+            _access = access;
             _reviewService = reviewService;
             _createValidator = createValidator;
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateReview([FromBody] CreateReviewDto dto, int patientId)
+        public async Task<IActionResult> CreateReview([FromBody] CreateReviewDto dto)
         {
+            var patientId = await _access.PatientIdAsync();
             var validation = await _createValidator.ValidateAsync(dto);
             if (!validation.IsValid)
                 return BadRequest(validation.Errors.Select(error => error.ErrorMessage));
@@ -35,8 +42,9 @@ namespace MedicalBookingSystem.WebAPI.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteReview(int id, int patientId)
+        public async Task<IActionResult> DeleteReview(int id)
         {
+            var patientId = await _access.PatientIdAsync();
             var result = await _reviewService.DeleteReviewAsync(id, patientId);
 
             if (result.IsSuccess)
@@ -45,6 +53,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             return BadRequest(result.Error);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetReview(int id)
         {
@@ -56,6 +65,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             return NotFound(result.Error);
         }
 
+        [AllowAnonymous]
         [HttpGet("doctor/{doctorId}")]
         public async Task<IActionResult> GetDoctorReviews(int doctorId)
         {

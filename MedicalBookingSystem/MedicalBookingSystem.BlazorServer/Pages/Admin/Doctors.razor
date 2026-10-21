@@ -1,4 +1,5 @@
 @page "/admin/doctors"
+@attribute [Authorize(Roles = Roles.Admin)]
 @using MedicalBookingSystem.BlazorServer.Service
 @using MedicalBookingSystem.SharedKernel.Dto
 @using Radzen.Blazor
@@ -36,16 +37,6 @@
                 </div>
             </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn Property="Id" Title="Recepty do wypisania" Width="180px">
-            <Template Context="data">
-                <RadzenButton ButtonStyle="ButtonStyle.Info" Variant="Radzen.Variant.Flat" Shade="Shade.Lighter" Icon="info" class="m-1" Click=@(() => OpenListPrescription(data.Id)) Text="Recepty" />
-            </Template>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn Property="Id" Title="Notatki do wizyty" Width="180px">
-            <Template Context="data">
-                <RadzenButton ButtonStyle="ButtonStyle.Info" Variant="Radzen.Variant.Flat" Shade="Shade.Lighter" Icon="info" class="m-1" Click=@(() => OpenListNotes(data.Id)) Text="Notatki" />
-            </Template>
-        </RadzenDataGridColumn>
         <RadzenDataGridColumn Title="Grafik" Width="150px">
             <Template Context="data">
                 <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="calendar"
@@ -73,16 +64,6 @@
     protected override async Task OnInitializedAsync()
     {
         _doctorList = (await DoctorService.GetAllAsync()).Value?.ToList() ?? new List<DoctorDto>();
-    }
-
-    private void OpenListPrescription(int id)
-    {
-        Navigation.NavigateTo($"/admin/doctors/prescriptions/{id}");
-    }
-
-    private void OpenListNotes(int id)
-    {
-        Navigation.NavigateTo($"/admin/doctors/notes/{id}");
     }
 
     private async Task OnImageSelected(InputFileChangeEventArgs e, int doctorId)

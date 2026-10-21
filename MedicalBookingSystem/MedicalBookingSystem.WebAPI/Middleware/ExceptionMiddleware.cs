@@ -1,3 +1,4 @@
+using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.Domain.Exceptions;
 
 namespace MedicalBookingSystem.WebAPI.Middleware
@@ -16,6 +17,14 @@ namespace MedicalBookingSystem.WebAPI.Middleware
             try
             {
                 await next.Invoke(context);
+            }
+            catch (AccessDeniedException ex)
+            {
+                context.Response.StatusCode = ex.Authenticated ? StatusCodes.Status403Forbidden : StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(new Microsoft.AspNetCore.Mvc.ProblemDetails
+                {
+                    Status = context.Response.StatusCode, Title = ex.Authenticated ? "Brak dostępu." : "Wymagane logowanie."
+                });
             }
             catch (NotFoundException ex)
             {

@@ -19,7 +19,7 @@ public sealed class DoctorServiceTests
         var validator = new Mock<IValidator<CreateScheduleDto>>();
         validator.Setup(item => item.ValidateAsync(It.IsAny<CreateScheduleDto>(), It.IsAny<CancellationToken>()))
             .Returns(completion.Task);
-        var service = new DoctorService(repositories.UnitOfWork.Object, validator.Object, new TestTimeProvider().CreateClock());
+        var service = new DoctorService(repositories.UnitOfWork.Object, validator.Object, new TestTimeProvider().CreateClock(), TestUsers.Admin());
 
         var operation = service.CreateScheduleAsync(new CreateScheduleDto());
         Assert.False(operation.IsCompleted);
@@ -81,6 +81,6 @@ public sealed class DoctorServiceTests
         var validator = new Mock<IValidator<CreateScheduleDto>>();
         validator.Setup(item => item.ValidateAsync(It.IsAny<CreateScheduleDto>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ValidationResult());
-        return new DoctorService(repositories.UnitOfWork.Object, validator.Object, new TestTimeProvider().CreateClock());
+        return new DoctorService(repositories.UnitOfWork.Object, validator.Object, new TestTimeProvider().CreateClock(), TestUsers.Admin());
     }
 }

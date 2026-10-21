@@ -1,3 +1,6 @@
+using MedicalBookingSystem.Application.Security;
+using MedicalBookingSystem.SharedKernel.Security;
+using Microsoft.AspNetCore.Authorization;
 using FluentValidation;
 using MedicalBookingSystem.Application.Services;
 using MedicalBookingSystem.SharedKernel.Dto;
@@ -7,21 +10,25 @@ namespace MedicalBookingSystem.WebAPI.Controllers
 {
     [Route("api/patients")]
     [ApiController]
+    [Authorize(Roles = Roles.Patient)]
     public class PatientsController : ControllerBase
     {
+        private readonly UserAccess _access;
         private readonly IPatientService _patientService;
         private readonly IValidator<UpdatePatientDto> _updateValidator;
 
         public PatientsController(
             IPatientService patientService,
-            IValidator<UpdatePatientDto> updateValidator)
+            IValidator<UpdatePatientDto> updateValidator, UserAccess access)
         {
+            _access = access;
             _patientService = patientService;
             _updateValidator = updateValidator;
         }
         [HttpGet("profile")]
-        public async Task<IActionResult> GetProfile(int patientId)
+        public async Task<IActionResult> GetProfile()
         {
+            var patientId = await _access.PatientIdAsync();
             var result = await _patientService.GetPatientProfileAsync(patientId);
             if (result.IsSuccess)
                 return Ok(result.Value);
@@ -30,8 +37,9 @@ namespace MedicalBookingSystem.WebAPI.Controllers
         }
 
         [HttpPut("profile")]
-        public async Task<IActionResult> UpdateProfile([FromBody] UpdatePatientDto dto, int patientId)
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdatePatientDto dto)
         {
+            var patientId = await _access.PatientIdAsync();
             var validationResult = await _updateValidator.ValidateAsync(dto);
             if (!validationResult.IsValid)
                 return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));

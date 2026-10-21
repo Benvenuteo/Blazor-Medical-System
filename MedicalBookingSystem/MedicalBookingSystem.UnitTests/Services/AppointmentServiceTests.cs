@@ -1,3 +1,4 @@
+using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.Application.Services;
 using MedicalBookingSystem.Domain.Models;
 using MedicalBookingSystem.UnitTests.Support;
@@ -21,7 +22,7 @@ public sealed class AppointmentServiceTests
             Status = AppointmentStatus.Scheduled
         };
         repositories.Appointments.Setup(repository => repository.GetByIdAsync(7)).ReturnsAsync(appointment);
-        var service = new AppointmentService(repositories.UnitOfWork.Object, clock);
+        var service = new AppointmentService(repositories.UnitOfWork.Object, clock, TestUsers.Patient());
 
         var result = await service.CancelAppointmentAsync(7, 2);
 
@@ -37,11 +38,9 @@ public sealed class AppointmentServiceTests
         var clock = new TestTimeProvider().CreateClock();
         var appointment = new Appointment { Id = 7, PatientId = 2, Date = clock.Now.AddDays(2) };
         repositories.Appointments.Setup(repository => repository.GetByIdAsync(7)).ReturnsAsync(appointment);
-        var service = new AppointmentService(repositories.UnitOfWork.Object, clock);
+        var service = new AppointmentService(repositories.UnitOfWork.Object, clock, TestUsers.Patient());
 
-        var result = await service.CancelAppointmentAsync(7, 3);
-
-        Assert.True(result.IsFailure);
+        await Assert.ThrowsAsync<AccessDeniedException>(() => service.CancelAppointmentAsync(7, 3));
         Assert.Equal(AppointmentStatus.Scheduled, appointment.Status);
         repositories.UnitOfWork.Verify(unit => unit.SaveChangesAsync(), Times.Never);
     }
@@ -55,7 +54,7 @@ public sealed class AppointmentServiceTests
         {
             Id = 7, PatientId = 2, Date = clock.Now.AddDays(2), Status = AppointmentStatus.Cancelled
         });
-        var service = new AppointmentService(repositories.UnitOfWork.Object, clock);
+        var service = new AppointmentService(repositories.UnitOfWork.Object, clock, TestUsers.Patient());
 
         var result = await service.CancelAppointmentAsync(7, 2);
 

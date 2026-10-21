@@ -1,0 +1,5 @@
+@inject NavigationManager Navigation
+<p>Sesja wygasła. Przekierowanie do logowania...</p>
+@code {
+    protected override void OnInitialized() => Navigation.NavigateTo("/", replace: true);
+}

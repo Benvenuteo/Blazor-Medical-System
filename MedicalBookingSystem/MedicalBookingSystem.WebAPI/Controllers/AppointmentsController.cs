@@ -1,3 +1,6 @@
+using MedicalBookingSystem.Application.Security;
+using MedicalBookingSystem.SharedKernel.Security;
+using Microsoft.AspNetCore.Authorization;
 using FluentValidation;
 using MedicalBookingSystem.Application.Services;
 using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto;
@@ -7,8 +10,10 @@ namespace MedicalBookingSystem.WebAPI.Controllers
 {
     [Route("api/appointments")]
     [ApiController]
+    [Authorize(Roles = Roles.Patient)]
     public class AppointmentsController : ControllerBase
     {
+        private readonly UserAccess _access;
         private readonly IAppointmentService _appointmentService;
         private readonly IValidator<CreateAppointmentDto> _createValidator;
         private readonly IValidator<UpdateAppointmentDto> _updateValidator;
@@ -16,8 +21,9 @@ namespace MedicalBookingSystem.WebAPI.Controllers
         public AppointmentsController(
             IAppointmentService appointmentService,
             IValidator<CreateAppointmentDto> createValidator,
-            IValidator<UpdateAppointmentDto> updateValidator)
+            IValidator<UpdateAppointmentDto> updateValidator, UserAccess access)
         {
+            _access = access;
             _appointmentService = appointmentService;
             _createValidator = createValidator;
             _updateValidator = updateValidator;
@@ -30,7 +36,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             if (!validationResult.IsValid)
                 return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
 
-            var patientId = dto.PatientId;
+            var patientId = await _access.PatientIdAsync();
             var result = await _appointmentService.CreateAppointmentAsync(dto, patientId);
 
             if (result.IsSuccess)
@@ -55,8 +61,9 @@ namespace MedicalBookingSystem.WebAPI.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> CancelAppointment(int id, int patientId)
+        public async Task<IActionResult> CancelAppointment(int id)
         {
+            var patientId = await _access.PatientIdAsync();
             var result = await _appointmentService.CancelAppointmentAsync(id, patientId);
 
             if (result.IsSuccess)
@@ -65,9 +72,10 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             return NotFound(result.Error);
         }
 
-        [HttpGet("upcoming/{patientId}")]
-        public async Task<IActionResult> GetUpcomingAppointments(int patientId)
+        [HttpGet("upcoming")]
+        public async Task<IActionResult> GetUpcomingAppointments()
         {
+            var patientId = await _access.PatientIdAsync();
             var result = await _appointmentService.GetUpcomingAppointmentsAsync(patientId);
 
             if (result.IsSuccess)
@@ -76,9 +84,10 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             return NotFound(result.Error);
         }
 
-        [HttpGet("history/{patientId}")]
-        public async Task<IActionResult> GetAppointmentHistory(int patientId)
+        [HttpGet("history")]
+        public async Task<IActionResult> GetAppointmentHistory()
         {
+            var patientId = await _access.PatientIdAsync();
             var result = await _appointmentService.GetPastAppointmentsAsync(patientId);
 
             if (result.IsSuccess)
@@ -88,8 +97,9 @@ namespace MedicalBookingSystem.WebAPI.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetAppointment(int id, int patientId)
+        public async Task<IActionResult> GetAppointment(int id)
         {
+            var patientId = await _access.PatientIdAsync();
             var result = await _appointmentService.GetAppointmentDetailsAsync(id, patientId);
 
             if (result.IsSuccess)

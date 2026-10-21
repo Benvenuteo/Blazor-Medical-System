@@ -1,15 +1,19 @@
+using MedicalBookingSystem.Application.Security;
+using MedicalBookingSystem.SharedKernel.Security;
+using Microsoft.AspNetCore.Authorization;
 using FluentValidation;
 using MedicalBookingSystem.Application.Services;
 using MedicalBookingSystem.SharedKernel.Dto.NotesPrescriptionDto;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace MedicalBookingSystem.WebAPI.Controllers
 {
     [Route("api/medical-records")]
     [ApiController]
+    [Authorize]
     public class MedicalRecordsController : ControllerBase
     {
+        private readonly UserAccess _access;
         private readonly IMedicalRecordService _medicalRecordService;
         private readonly IValidator<CreatePrescriptionDto> _prescriptionValidator;
         private readonly IValidator<CreateNoteDto> _noteValidator;
@@ -17,20 +21,23 @@ namespace MedicalBookingSystem.WebAPI.Controllers
         public MedicalRecordsController(
             IMedicalRecordService medicalRecordService,
             IValidator<CreatePrescriptionDto> prescriptionValidator,
-            IValidator<CreateNoteDto> noteValidator)
+            IValidator<CreateNoteDto> noteValidator, UserAccess access)
         {
+            _access = access;
             _medicalRecordService = medicalRecordService;
             _prescriptionValidator = prescriptionValidator;
             _noteValidator = noteValidator;
         }
 
+        [Authorize(Roles = Roles.Patient)]
         [HttpGet("patient/{patientId}")]
         public async Task<IActionResult> GetPatientDocuments(int patientId)
         {
             var result = await _medicalRecordService.GetPatientDocumentsAsync(patientId);
-            return Ok(result);
+            return result.IsSuccess ? Ok(result.Value) : BadRequest(result.Error);
         }
 
+        [Authorize(Roles = Roles.Doctor)]
         [HttpPost("prescriptions")]
         public async Task<IActionResult> CreatePrescription([FromBody] CreatePrescriptionDto dto)
         {
@@ -38,8 +45,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             if (!validationResult.IsValid)
                 return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
 
-            if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var doctorId))
-                return Unauthorized();
+            var doctorId = await _access.DoctorIdAsync();
             var result = await _medicalRecordService.CreatePrescriptionAsync(dto, doctorId);
 
             if (result.IsSuccess)
@@ -48,9 +54,11 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             return BadRequest(result.Error);
         }
 
+        [Authorize(Roles = Roles.Doctor)]
         [HttpPost("notes")]
-        public async Task<IActionResult> AddNote([FromBody] CreateNoteDto dto, int doctorId)
+        public async Task<IActionResult> AddNote([FromBody] CreateNoteDto dto)
         {
+            var doctorId = await _access.DoctorIdAsync();
             var validationResult = await _noteValidator.ValidateAsync(dto);
             if (!validationResult.IsValid)
                 return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
@@ -62,6 +70,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             return BadRequest(result.Error);
         }
 
+        [Authorize(Roles = Roles.Patient + "," + Roles.Doctor)]
         [HttpGet("prescriptions/{id}")]
         public async Task<IActionResult> GetPrescription(int id)
         {
@@ -72,6 +81,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             return NotFound(result.Error);
         }
 
+        [Authorize(Roles = Roles.Patient + "," + Roles.Doctor)]
         [HttpGet("notes/{id}")]
         public async Task<IActionResult> GetNote(int id)
         {

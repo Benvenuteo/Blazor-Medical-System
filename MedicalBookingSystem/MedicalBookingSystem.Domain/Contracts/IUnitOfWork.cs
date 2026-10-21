@@ -3,6 +3,7 @@ namespace MedicalBookingSystem.Domain.Contracts
     public interface IUnitOfWork : IDisposable
     {
         IPatientRepository Patients { get; }
+        IRepository<MedicalBookingSystem.Domain.Models.StaffAccount> StaffAccounts { get; }
         IDoctorRepository Doctors { get; }
         IAppointmentRepository Appointments { get; }
         IReviewRepository Reviews { get; }

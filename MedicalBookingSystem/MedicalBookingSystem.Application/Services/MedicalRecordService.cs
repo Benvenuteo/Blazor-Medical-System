@@ -1,3 +1,4 @@
+using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.Application.Time;
 using MedicalBookingSystem.Application.Mappings;
 using MedicalBookingSystem.Domain.Contracts;
@@ -11,22 +12,27 @@ namespace MedicalBookingSystem.Application.Services
     public class MedicalRecordService : IMedicalRecordService
     {
         private readonly IUnitOfWork _uow;
+        private readonly UserAccess _access;
         private readonly ClinicClock _clock;
 
 
-        public MedicalRecordService(IUnitOfWork unitOfWork, ClinicClock clock)
+        public MedicalRecordService(IUnitOfWork unitOfWork, ClinicClock clock, UserAccess access)
         {
             _uow = unitOfWork;
+            _access = access;
             _clock = clock;
 
         }
         public async Task<Result<NoteDto>> AddNoteToAppointmentAsync(CreateNoteDto dto, int doctorId)
         {
+            await _access.RequireDoctorAsync(doctorId);
             try
             {
                 var appointment = await _uow.Appointments.GetByIdAsync(dto.AppointmentId);
                 if (appointment == null)
                     return Result<NoteDto>.Failure<NoteDto>("Wizyta nie istnieje.");
+
+                await _access.RequireDoctorAsync(appointment.DoctorId);
 
                 if (appointment.Note != null)
                     return Result<NoteDto>.Failure<NoteDto>("Notatka została już dodana.");
@@ -44,7 +50,7 @@ namespace MedicalBookingSystem.Application.Services
                 var noteDto = note.ToDto();
                 return Result<NoteDto>.Success(noteDto);
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is not AccessDeniedException)
             {
                 return Result<NoteDto>.Failure<NoteDto>("Wystąpił błąd podczas dodawania notatki.");
             }
@@ -52,11 +58,14 @@ namespace MedicalBookingSystem.Application.Services
 
         public async Task<Result<PrescriptionDto>> CreatePrescriptionAsync(CreatePrescriptionDto dto, int doctorId)
         {
+            await _access.RequireDoctorAsync(doctorId);
             try
             {
                 var appointment = await _uow.Appointments.GetByIdAsync(dto.AppointmentId);
                 if (appointment == null)
                     return Result<PrescriptionDto>.Failure<PrescriptionDto>("Wizyta nie istnieje.");
+
+                await _access.RequireDoctorAsync(appointment.DoctorId);
 
                 var prescription = new Prescription
                 {
@@ -64,7 +73,7 @@ namespace MedicalBookingSystem.Application.Services
                     Medication = dto.Medication,
                     Dosage = dto.Dosage,
                     Instructions = dto.Instructions,
-                    CreatedDate = _clock.Now,
+                    CreatedDate = _clock.UtcNow,
                     ExpiryDate = _clock.Today.AddDays(dto.ValidityDays)
                 };
 
@@ -74,7 +83,7 @@ namespace MedicalBookingSystem.Application.Services
                 var prescriptionDto = prescription.ToDto();
                 return Result<PrescriptionDto>.Success(prescriptionDto);
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is not AccessDeniedException)
             {
                 return Result<PrescriptionDto>.Failure<PrescriptionDto>("Wystąpił błąd podczas wystawiania recepty.");
             }
@@ -82,6 +91,7 @@ namespace MedicalBookingSystem.Application.Services
 
         public async Task<Result<IEnumerable<MedicalDocumentDto>>> GetPatientDocumentsAsync(int patientId)
         {
+            await _access.RequirePatientAsync(patientId);
             var prescriptions = await _uow.Prescriptions.GetByPatientIdAsync(patientId);
             var notes = await _uow.Notes.GetByPatientIdAsync(patientId);
 
@@ -106,6 +116,9 @@ namespace MedicalBookingSystem.Application.Services
             if (prescription == null)
                 return Result<PrescriptionDto>.Failure<PrescriptionDto>("Nie znaleziono recepty.");
 
+            var appointment = await _uow.Appointments.GetByIdAsync(prescription.AppointmentId);
+            if (appointment is null) throw new AccessDeniedException(true);
+            await _access.RequireMedicalRecordAsync(appointment.PatientId, appointment.DoctorId);
             var dto = prescription.ToDto();
             return Result<PrescriptionDto>.Success(dto);
         }
@@ -116,6 +129,9 @@ namespace MedicalBookingSystem.Application.Services
             if (note == null)
                 return Result<NoteDto>.Failure<NoteDto>("Nie znaleziono notatki.");
 
+            var appointment = await _uow.Appointments.GetByIdAsync(note.AppointmentId);
+            if (appointment is null) throw new AccessDeniedException(true);
+            await _access.RequireMedicalRecordAsync(appointment.PatientId, appointment.DoctorId);
             var dto = note.ToDto();
             return Result<NoteDto>.Success(dto);
         }

@@ -1,3 +1,4 @@
+using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.Application.Time;
 using MedicalBookingSystem.Application.Mappings;
 using MedicalBookingSystem.Domain.Contracts;
@@ -10,18 +11,21 @@ namespace MedicalBookingSystem.Application.Services
     public class AppointmentService : IAppointmentService
     {
         private readonly IUnitOfWork _uow;
+        private readonly UserAccess _access;
         private readonly ClinicClock _clock;
 
 
-        public AppointmentService(IUnitOfWork unitOfWork, ClinicClock clock)
+        public AppointmentService(IUnitOfWork unitOfWork, ClinicClock clock, UserAccess access)
         {
             _uow = unitOfWork;
+            _access = access;
             _clock = clock;
 
         }
 
         public async Task<Result> CancelAppointmentAsync(int id, int patientId)
         {
+            await _access.RequirePatientAsync(patientId);
             try
             {
                 var appointment = await _uow.Appointments
@@ -31,7 +35,7 @@ namespace MedicalBookingSystem.Application.Services
                     return Result.Failure("Nie znaleziono wizyty");
 
                 if (appointment.PatientId != patientId)
-                    return Result.Failure("Wizyta nie należy do danego pacjenta");
+                    throw new AccessDeniedException(true);
 
                 if (appointment.Status == AppointmentStatus.Cancelled)
                     return Result.Failure("Wizyta już jest anulowana.");
@@ -43,7 +47,7 @@ namespace MedicalBookingSystem.Application.Services
                 await _uow.SaveChangesAsync();
                 return Result.Success();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AccessDeniedException)
             {
                 return Result.Failure($"Nie udało się anulować wizyty: {ex.Message}");
             }
@@ -51,6 +55,7 @@ namespace MedicalBookingSystem.Application.Services
 
         public async Task<Result<AppointmentDto>> CreateAppointmentAsync(CreateAppointmentDto dto, int patientId)
         {
+            await _access.RequirePatientAsync(patientId);
             var doctor = await _uow.Doctors.GetByIdAsync(dto.DoctorId);
             if (doctor == null)
                 return Result<AppointmentDto>.Failure<AppointmentDto>("Lekarz nie istnieje");
@@ -75,6 +80,7 @@ namespace MedicalBookingSystem.Application.Services
 
         public async Task<Result<IEnumerable<AppointmentDto>>> GetPastAppointmentsAsync(int patientId)
         {
+            await _access.RequirePatientAsync(patientId);
             try
             {
                 var appointments = await _uow.Appointments.GetHistoryByPatientIdAsync(patientId);
@@ -83,7 +89,7 @@ namespace MedicalBookingSystem.Application.Services
 
                 return Result.Success<IEnumerable<AppointmentDto>>(mappedAppointments);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AccessDeniedException)
             {
                 return Result.Failure<IEnumerable<AppointmentDto>>($"Nie udało się załadować historii wizyt: {ex.Message}");
             }
@@ -91,6 +97,7 @@ namespace MedicalBookingSystem.Application.Services
 
         public async Task<Result<IEnumerable<AppointmentDto>>> GetUpcomingAppointmentsAsync(int patientId)
         {
+            await _access.RequirePatientAsync(patientId);
             try
             {
                 var appointments = await _uow.Appointments.GetUpcomingByPatientIdAsync(patientId);
@@ -99,7 +106,7 @@ namespace MedicalBookingSystem.Application.Services
 
                 return Result.Success<IEnumerable<AppointmentDto>>(mappedAppointments);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AccessDeniedException)
             {
                 return Result.Failure<IEnumerable<AppointmentDto>>($"Nie udało się załadować przyszłych wizyt: {ex.Message}");
             }
@@ -113,6 +120,8 @@ namespace MedicalBookingSystem.Application.Services
                 if (appointment == null)
                     return Result.Failure("Nie znaleziono wizyty.");
 
+                await _access.RequirePatientAsync(appointment.PatientId);
+
                 bool isDoctorAvailable = await _uow.DoctorSchedules.IsTimeSlotAvailableAsync(appointment.DoctorId, dto.NewDate);
 
                 if (!isDoctorAvailable)
@@ -123,7 +132,7 @@ namespace MedicalBookingSystem.Application.Services
                 await _uow.SaveChangesAsync();
                 return Result.Success();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AccessDeniedException)
             {
                 return Result.Failure($"Failed to update appointment: {ex.Message}");
             }
@@ -131,17 +140,20 @@ namespace MedicalBookingSystem.Application.Services
 
         public async Task<Result<AppointmentDetailsDto>> GetAppointmentDetailsAsync(int appointmentId, int patientId)
         {
+            await _access.RequirePatientAsync(patientId);
             var appointment = await _uow.Appointments.GetAppointmentByIdAsync(appointmentId);
 
-            if (appointment == null || appointment.PatientId != patientId)
+            if (appointment == null)
                 return Result<AppointmentDetailsDto>.Failure<AppointmentDetailsDto>("Nie znaleziono wizyty lub nie masz do niej dostępu.");
 
+            await _access.RequirePatientAsync(appointment.PatientId);
             var dto = appointment.ToDetailsDto();
             return Result<AppointmentDetailsDto>.Success(dto);
         }
 
-        public List<AppointmentDto> GetNextAppointmentsByDoctorId(int doctorId)
+        public async Task<List<AppointmentDto>> GetNextAppointmentsByDoctorIdAsync(int doctorId)
         {
+            await _access.RequireDoctorAsync(doctorId);
             var appointments = _uow.Appointments.GetNextAppointmentsByDoctorId(doctorId);
 
             if (appointments == null)
@@ -153,8 +165,9 @@ namespace MedicalBookingSystem.Application.Services
             return mappedAppointments.ToList();
         }
 
-        public List<AppointmentDto> GetPreviousAppointmentsByDoctorId(int doctorId)
+        public async Task<List<AppointmentDto>> GetPreviousAppointmentsByDoctorIdAsync(int doctorId)
         {
+            await _access.RequireDoctorAsync(doctorId);
             var appointments = _uow.Appointments.GetPreviousAppointmentsByDoctorId(doctorId);
 
             if (appointments == null)

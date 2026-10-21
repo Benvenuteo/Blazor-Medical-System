@@ -12,5 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../MedicalBookingSystem.WebAPI/MedicalBookingSystem.WebAPI.csproj" />
+    <ProjectReference Include="../MedicalBookingSystem.BlazorServer/MedicalBookingSystem.BlazorServer.csproj" />
   </ItemGroup>
 </Project>

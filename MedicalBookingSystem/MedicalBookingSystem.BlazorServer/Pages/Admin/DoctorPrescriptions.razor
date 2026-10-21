@@ -1,4 +1,6 @@
-@page "/admin/doctors/prescriptions/{id:int}"
+@page "/doctor/prescriptions"
+@attribute [Authorize(Roles = Roles.Doctor)]
+@inject UserAccess Access
 @using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
 @using MedicalBookingSystem.SharedKernel.Dto.NotesPrescriptionDto
 @inject IAppointmentService AppointmentService
@@ -45,7 +47,7 @@ else
 }
 
 @code {
-    [Parameter] public int Id { get; set; }
+    private int Id { get; set; }
 
     private List<AppointmentDto>? _appointments;
     private Dictionary<int, CreatePrescriptionDto> _prescriptions = new();
@@ -54,7 +56,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        _appointments = AppointmentService.GetPreviousAppointmentsByDoctorId(Id);
+        Id = await Access.DoctorIdAsync();
+        _appointments = await AppointmentService.GetPreviousAppointmentsByDoctorIdAsync(Id);
 
         foreach (var app in _appointments)
         {

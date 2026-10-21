@@ -1,42 +1,28 @@
-namespace MedicalBookingSystem.WebAPI.JWT
+using System.Globalization;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using MedicalBookingSystem.Application.Time;
+using MedicalBookingSystem.Domain.Models;
+using MedicalBookingSystem.SharedKernel.Security;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+
+namespace MedicalBookingSystem.WebAPI.JWT;
+
+public sealed class JwtService(IOptions<JwtSettings> settings, ClinicClock clock)
 {
-    using MedicalBookingSystem.Domain.Models;
-    using Microsoft.Extensions.Options;
-    using Microsoft.IdentityModel.Tokens;
-    using System;
-    using System.IdentityModel.Tokens.Jwt;
-    using System.Security.Claims;
-    using System.Text;
+    public string GenerateToken(Patient patient) => GenerateToken(AccountClaims.Create(patient.Id,
+        $"{patient.FirstName} {patient.LastName}", patient.Email, Roles.Patient, new DateTimeOffset(clock.UtcNow).AddHours(1)));
 
-    public class JwtService
+    public string GenerateToken(ClaimsPrincipal principal)
     {
-        private readonly JwtSettings _jwtSettings;
-
-        public JwtService(IOptions<JwtSettings> jwtSettings)
-        {
-            _jwtSettings = jwtSettings.Value;
-        }
-
-        public string GenerateToken(Patient patient)
-        {
-            var claims = new[]
-            {
-            new Claim(ClaimTypes.NameIdentifier, patient.Id.ToString()),
-            new Claim(ClaimTypes.Name, $"{patient.FirstName} {patient.LastName}"),
-            new Claim(ClaimTypes.Email, patient.Email)
-        };
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: _jwtSettings.Issuer,
-                audience: _jwtSettings.Audience,
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(6),
-                signingCredentials: creds);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.Value.SecretKey));
+        var expires = DateTimeOffset.FromUnixTimeSeconds(long.Parse(
+            principal.FindFirst(AccountClaims.ExpiresAt)?.Value!, CultureInfo.InvariantCulture));
+        var token = new JwtSecurityToken(settings.Value.Issuer, settings.Value.Audience,
+            principal.Claims, notBefore: clock.UtcNow, expires: expires.UtcDateTime,
+            signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

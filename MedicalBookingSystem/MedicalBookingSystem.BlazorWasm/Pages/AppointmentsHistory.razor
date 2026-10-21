@@ -1,7 +1,8 @@
 @page "/historyAppointments"
+@attribute [Authorize(Roles = Roles.Patient)]
 @inject HttpClient Http
 @inject NavigationManager Navigation
-@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
 
 <h3 class="mt-4">Moje odbyte wizyty</h3>
 
@@ -68,8 +69,7 @@ else
     {
         try
         {
-            var patientId = await localStorage.GetRequiredPatientIdAsync();
-            var response = await Http.GetFromJsonAsync<List<AppointmentDto>>($"api/appointments/history/{patientId}");
+            var response = await Http.GetFromJsonAsync<List<AppointmentDto>>("api/appointments/history");
 
             appointments = response ?? new();
         }
@@ -87,8 +87,7 @@ else
     {
         try
         {
-            var patientId = await localStorage.GetRequiredPatientIdAsync();
-            var response = await Http.GetAsync($"api/appointments/{appointmentId}?patientId={patientId}");
+            var response = await Http.GetAsync($"api/appointments/{appointmentId}");
 
             if (response.IsSuccessStatusCode)
             {

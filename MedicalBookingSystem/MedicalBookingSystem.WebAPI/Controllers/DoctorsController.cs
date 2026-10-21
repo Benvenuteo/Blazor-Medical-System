@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using FluentValidation;
 using MedicalBookingSystem.Application.Services;
 using MedicalBookingSystem.SharedKernel.Dto.DtoHelp;
@@ -22,6 +23,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             _searchValidator = searchValidator;
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> SearchDoctors([FromQuery] SearchDoctorsDto dto)
         {
@@ -33,6 +35,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             return Ok(result.Value);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetDoctorDetails(int id)
         {
@@ -43,6 +46,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             return NotFound(result.Error);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id}/reviews")]
         public async Task<IActionResult> GetDoctorReviews(int id)
         {
@@ -53,6 +57,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             return NotFound(result.Error);
         }
 
+        [AllowAnonymous]
         [HttpGet("all")]
         public async Task<IActionResult> GetAll()
         {
@@ -64,6 +69,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             return BadRequest(result.Error);
         }
 
+        [AllowAnonymous]
         [HttpGet("specializations")]
         public async Task<IActionResult> GetSpecializations()
         {
@@ -75,6 +81,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             return BadRequest(result.Error);
         }
 
+        [AllowAnonymous]
         [HttpGet("{doctorId}/schedule")]
         public async Task<IActionResult> GetSchedule(int doctorId)
         {

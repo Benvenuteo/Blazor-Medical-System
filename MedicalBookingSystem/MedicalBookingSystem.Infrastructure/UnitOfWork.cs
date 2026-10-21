@@ -12,6 +12,7 @@ namespace MedicalBookingSystem.Infrastructure
         {
             _context = context;
             Patients = new PatientRepository(context);
+            StaffAccounts = new StaffAccountRepository(context);
             Doctors = new DoctorRepository(context);
             Appointments = new AppointmentRepository(context, clock);
             Reviews = new ReviewRepository(context);
@@ -22,6 +23,7 @@ namespace MedicalBookingSystem.Infrastructure
         }
 
         public IPatientRepository Patients { get; }
+        public IRepository<MedicalBookingSystem.Domain.Models.StaffAccount> StaffAccounts { get; }
         public IDoctorRepository Doctors { get; }
         public IAppointmentRepository Appointments { get; }
         public IReviewRepository Reviews { get; }

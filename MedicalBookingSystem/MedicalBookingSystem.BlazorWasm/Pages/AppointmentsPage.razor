@@ -1,8 +1,9 @@
 @page "/appointments"
+@attribute [Authorize(Roles = Roles.Patient)]
 @using MudBlazor
 @inject HttpClient Http
 @inject NavigationManager Navigation
-@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
 @inject MudBlazor.ISnackbar Snackbar
 @inject IDialogService DialogService
 
@@ -94,8 +95,7 @@ else
     {
         try
         {
-            var patientId = await localStorage.GetRequiredPatientIdAsync();
-            var response = await Http.GetFromJsonAsync<List<AppointmentDto>>($"api/appointments/upcoming/{patientId}");
+            var response = await Http.GetFromJsonAsync<List<AppointmentDto>>("api/appointments/upcoming");
 
             appointments = response ?? new();
         }
@@ -122,8 +122,7 @@ else
     {
         try
         {
-            var patientId = await localStorage.GetRequiredPatientIdAsync();
-            var result = await Http.DeleteAsync($"api/appointments/{appointmentId}?patientId={patientId}");
+            var result = await Http.DeleteAsync($"api/appointments/{appointmentId}");
 
             if (result.IsSuccessStatusCode)
             {
@@ -145,8 +144,7 @@ else
     {
         try
         {
-            var patientId = await localStorage.GetRequiredPatientIdAsync();
-            var response = await Http.GetAsync($"api/appointments/{appointmentId}?patientId={patientId}");
+            var response = await Http.GetAsync($"api/appointments/{appointmentId}");
 
             if (response.IsSuccessStatusCode)
             {

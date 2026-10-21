@@ -9,6 +9,7 @@ namespace MedicalBookingSystem.Infrastructure
         : base(options) { }
 
         public DbSet<Patient> Patients { get; set; }
+        public DbSet<StaffAccount> StaffAccounts { get; set; }
         public DbSet<Doctor> Doctors { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
         public DbSet<Review> Reviews { get; set; }
@@ -20,6 +21,20 @@ namespace MedicalBookingSystem.Infrastructure
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<StaffAccount>(entity =>
+            {
+                entity.ToTable("StaffAccounts", table => table.HasCheckConstraint("CK_StaffAccount_Role",
+                    "(Role = 'Doctor' AND DoctorId IS NOT NULL) OR (Role = 'Admin' AND DoctorId IS NULL)"));
+                entity.HasKey(a => a.Id);
+                entity.Property(a => a.Email).IsRequired().HasMaxLength(255).UseCollation("NOCASE");
+                entity.HasIndex(a => a.Email).IsUnique();
+                entity.Property(a => a.DisplayName).IsRequired().HasMaxLength(200);
+                entity.Property(a => a.PasswordHash).IsRequired();
+                entity.Property(a => a.Role).HasConversion<string>().HasMaxLength(20);
+                entity.HasIndex(a => a.DoctorId).IsUnique();
+                entity.HasOne(a => a.Doctor).WithMany().HasForeignKey(a => a.DoctorId).OnDelete(DeleteBehavior.Restrict);
+            });
+
             // Konfiguracja encji Patient
             modelBuilder.Entity<Patient>(entity =>
             {

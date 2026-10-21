@@ -1,6 +1,7 @@
 @page "/doctors/search"
+@attribute [Authorize(Roles = Roles.Patient)]
 @inject HttpClient Http
-@inject Blazored.LocalStorage.ILocalStorageService localStorage
+
 <h3>Wyszukiwanie lekarzy</h3>
 
 <EditForm Model="@searchDto" OnValidSubmit="SearchDoctors">
@@ -189,8 +190,7 @@ else if (doctors != null)
     {
         try
         {
-            var patientId = await localStorage.GetRequiredPatientIdAsync();
-            var response = await Http.PostAsJsonAsync($"api/reviews?patientId={patientId}", newReview);
+            var response = await Http.PostAsJsonAsync("api/reviews", newReview);
 
             if (response.IsSuccessStatusCode)
             {

@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.RateLimiting;
+using MedicalBookingSystem.Application.Security;
+using Microsoft.AspNetCore.Authorization;
 using MedicalBookingSystem.Application.Mappings;
 using FluentValidation;
 using MedicalBookingSystem.Domain.Contracts;
@@ -9,6 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 
 [Route("api/auth")]
 [ApiController]
+[EnableRateLimiting("authentication")]
 public class AuthController : ControllerBase
 {
     private readonly IUnitOfWork _uow;
@@ -17,13 +21,14 @@ public class AuthController : ControllerBase
     private readonly IValidator<LoginDto> _loginValidator;
 
     private readonly JwtService _jwtService;
+    private readonly StaffAuthenticationService _staffAuthentication;
 
     public AuthController(
         IUnitOfWork uow,
         IPasswordHasher<Patient> passwordHasher,
         IValidator<RegisterPatientDto> registerValidator,
         IValidator<LoginDto> loginValidator,
-        JwtService jwtService)
+        JwtService jwtService, StaffAuthenticationService staffAuthentication)
     {
         _uow = uow;
         _passwordHasher = passwordHasher;
@@ -31,8 +36,10 @@ public class AuthController : ControllerBase
         _loginValidator = loginValidator;
 
         _jwtService = jwtService;
+        _staffAuthentication = staffAuthentication;
     }
 
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterPatientDto dto)
     {
@@ -56,6 +63,7 @@ public class AuthController : ControllerBase
         return Ok(new { token, patient = patientDto });
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
@@ -75,5 +83,14 @@ public class AuthController : ControllerBase
         var token = _jwtService.GenerateToken(patient);
 
         return Ok(new { token, patient = patientDto });
+    }
+    [AllowAnonymous]
+    [HttpPost("staff/login")]
+    public async Task<IActionResult> StaffLogin([FromBody] LoginDto dto)
+    {
+        var validation = await _loginValidator.ValidateAsync(dto);
+        if (!validation.IsValid) return BadRequest(validation.Errors.Select(e => e.ErrorMessage));
+        var principal = await _staffAuthentication.AuthenticateAsync(dto);
+        return principal is null ? Unauthorized("Nieprawidłowy email lub hasło") : Ok(new { token = _jwtService.GenerateToken(principal) });
     }
 }

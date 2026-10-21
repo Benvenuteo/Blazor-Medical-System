@@ -11,11 +11,12 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 namespace MedicalBookingSystem.IntegrationTests.Support;
 
 /// <summary>Runs the real HTTP pipeline against an isolated relational database for each test.</summary>
-internal sealed class MedicalApiFactory : WebApplicationFactory<Program>
+internal sealed class MedicalApiFactory : WebApplicationFactory<MedicalBookingSystem.WebAPI.ApiEntryPoint>
 {
     private readonly SqliteConnection _connection = new("Data Source=:memory:");
 
     public MedicalApiFactory() => _connection.Open();
+    internal SqliteConnection Connection => _connection;
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

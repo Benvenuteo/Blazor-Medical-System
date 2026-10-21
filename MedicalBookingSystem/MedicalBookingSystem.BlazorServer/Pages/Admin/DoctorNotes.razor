@@ -1,4 +1,6 @@
-@page "/admin/doctors/notes/{id:int}"
+@page "/doctor/notes"
+@attribute [Authorize(Roles = Roles.Doctor)]
+@inject UserAccess Access
 @using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
 @using MedicalBookingSystem.SharedKernel.Dto.NotesPrescriptionDto
 @inject IAppointmentService AppointmentService
@@ -43,7 +45,7 @@ else
 }
 
 @code {
-    [Parameter] public int Id { get; set; }
+    private int Id { get; set; }
 
     private List<AppointmentDto>? _appointments;
     private Dictionary<int, string> _noteContents = new();
@@ -52,7 +54,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        _appointments = AppointmentService.GetNextAppointmentsByDoctorId(Id);
+        Id = await Access.DoctorIdAsync();
+        _appointments = await AppointmentService.GetNextAppointmentsByDoctorIdAsync(Id);
 
         // Inicjalizacja treści notatek dla każdej wizyty
         foreach (var appointment in _appointments)

@@ -1,7 +1,8 @@
 @page "/"
 @inject HttpClient Http
 @inject NavigationManager Navigation
-@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject PatientAuthenticationStateProvider Authentication
+
 
 <h3>Logowanie</h3>
 
@@ -39,12 +40,12 @@
             if (response.IsSuccessStatusCode)
             {
                 var result = await response.Content.ReadFromJsonAsync<AuthResult>();
-                if (result?.Patient is null)
+                if (string.IsNullOrWhiteSpace(result?.Token))
                 {
                     error = "Serwer zwrócił nieprawidłową odpowiedź logowania.";
                     return;
                 }
-                await localStorage.SetItemAsync("patientId", result.Patient.Id.ToString());
+                await Authentication.SignInAsync(result.Token);
                 Navigation.NavigateTo("/dashboard");
             }
             else

@@ -1,4 +1,6 @@
 @page "/admin/doctors/{DoctorId:int}/schedule"
+@attribute [Authorize(Roles = Roles.Staff)]
+@inject UserAccess Access
 @using MedicalBookingSystem.SharedKernel.Dto
 @inject IDoctorService DoctorService
 @inject NavigationManager Navigation
@@ -55,6 +57,12 @@
 
     private DateTime endDate = DateTime.Today;
     private TimeOnly endTime = new(16, 0);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try { await Access.RequireScheduleManagementAsync(DoctorId); }
+        catch (AccessDeniedException) { Navigation.NavigateTo("/Account/Denied", forceLoad: true); }
+    }
 
     private async Task HandleValidSubmit()
     {

@@ -1,9 +1,12 @@
 @namespace MedicalBookingSystem.BlazorWasm
 @using Microsoft.AspNetCore.Components.Routing
 
+<CascadingAuthenticationState>
 <Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@GetLayout(routeData.PageType)" />
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@GetLayout(routeData.PageType)">
+            <NotAuthorized><RedirectToLogin /></NotAuthorized>
+        </AuthorizeRouteView>
     </Found>
     <NotFound>
         <LayoutView Layout="@typeof(MainLayout)">
@@ -11,6 +14,7 @@
         </LayoutView>
     </NotFound>
 </Router>
+</CascadingAuthenticationState>
 
 @code {
     private Type GetLayout(Type pageType)

@@ -11,7 +11,7 @@ namespace MedicalBookingSystem.Application.Services
         Task<Result<IEnumerable<AppointmentDto>>> GetUpcomingAppointmentsAsync(int patientId);
         Task<Result<IEnumerable<AppointmentDto>>> GetPastAppointmentsAsync(int patientId);
         Task<Result<AppointmentDetailsDto>> GetAppointmentDetailsAsync(int appointmentId, int patientId);
-        List<AppointmentDto> GetNextAppointmentsByDoctorId(int doctorId);
-        List<AppointmentDto> GetPreviousAppointmentsByDoctorId(int doctorId);
+        Task<List<AppointmentDto>> GetNextAppointmentsByDoctorIdAsync(int doctorId);
+        Task<List<AppointmentDto>> GetPreviousAppointmentsByDoctorIdAsync(int doctorId);
     }
 }

@@ -1,3 +1,4 @@
+using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.Application.Time;
 using MedicalBookingSystem.Application.Mappings;
 using MedicalBookingSystem.Application.Validators;
@@ -14,13 +15,15 @@ namespace MedicalBookingSystem.Application.Services
     public class DoctorService : IDoctorService
     {
         private readonly IUnitOfWork _uow;
+        private readonly UserAccess _access;
         private readonly ClinicClock _clock;
         private readonly IValidator<CreateScheduleDto> _scheduleValidator;
 
 
-        public DoctorService(IUnitOfWork uow, IValidator<CreateScheduleDto> scheduleValidator, ClinicClock clock)
+        public DoctorService(IUnitOfWork uow, IValidator<CreateScheduleDto> scheduleValidator, ClinicClock clock, UserAccess access)
         {
             _uow = uow;
+            _access = access;
             _clock = clock;
             _scheduleValidator = scheduleValidator;
 
@@ -122,6 +125,7 @@ namespace MedicalBookingSystem.Application.Services
 
         public async Task<bool> SetDoctorImageUrlAsync(int doctorId, string imageUrl)
         {
+            await _access.RequireAdminAsync();
             var doctor = await _uow.Doctors.GetByIdAsync(doctorId);
             if (doctor == null) return false;
 
@@ -132,6 +136,7 @@ namespace MedicalBookingSystem.Application.Services
 
         public async Task<Result> CreateScheduleAsync(CreateScheduleDto dto)
         {
+            await _access.RequireScheduleManagementAsync(dto.DoctorId);
             var validationResult = await _scheduleValidator.ValidateAsync(dto);
             if (!validationResult.IsValid)
                 return Result.Failure(string.Join("; ", validationResult.Errors.Select(error => error.ErrorMessage)));

@@ -1,3 +1,10 @@
+using Microsoft.OpenApi;
+using MedicalBookingSystem.WebAPI.OpenApi;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using MedicalBookingSystem.Application.Security;
+using MedicalBookingSystem.WebAPI.Security;
+using Microsoft.AspNetCore.Authorization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -27,7 +34,19 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 });
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT",
+        Description = "Token returned by /api/auth/login or /api/auth/staff/login."
+    });
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+    options.OperationFilter<AnonymousOperationFilter>();
+});
 builder.Services.AddProblemDetails();
 builder.Services.AddScoped<ExceptionMiddleware>();
 
@@ -43,8 +62,11 @@ builder.Services.AddOptions<JwtSettings>()
         "Configure JwtSettings__SecretKey with at least 32 bytes.")
     .ValidateOnStart();
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 builder.Services.AddAuthentication("Bearer").AddJwtBearer("Bearer", options =>
 {
+    options.MapInboundClaims = false;
     var settings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -55,13 +77,25 @@ builder.Services.AddAuthentication("Bearer").AddJwtBearer("Bearer", options =>
         ValidIssuer = settings.Issuer,
         ValidAudience = settings.Audience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.SecretKey)),
-        ClockSkew = TimeSpan.FromSeconds(30)
+        ClockSkew = TimeSpan.Zero,
+        ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
     };
 });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+    options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 builder.Services.AddCors(options => options.AddPolicy("MedicalBookingSystem", policy =>
     policy.WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
         .AllowAnyMethod().AllowAnyHeader()));
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("authentication", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
+        }));
+});
 
 var app = builder.Build();
 app.UseMiddleware<ExceptionMiddleware>();
@@ -72,11 +106,13 @@ if (app.Environment.IsDevelopment())
 }
 if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
     app.UseHttpsRedirection();
+app.UseRouting();
 app.UseCors("MedicalBookingSystem");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapGet("/health/live", () => Results.Ok(new { status = "healthy" }));
+app.MapGet("/health/live", () => Results.Ok(new { status = "healthy" })).AllowAnonymous();
 
 if (builder.Configuration.GetValue<bool>("Database:InitializeOnStartup"))
 {

@@ -1,3 +1,4 @@
+using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.Application.Time;
 using MedicalBookingSystem.Application.Mappings;
 using MedicalBookingSystem.Domain.Contracts;
@@ -10,17 +11,20 @@ namespace MedicalBookingSystem.Application.Services
     public class ReviewService : IReviewService
     {
         private readonly IUnitOfWork _uow;
+        private readonly UserAccess _access;
         private readonly ClinicClock _clock;
 
 
-        public ReviewService(IUnitOfWork uow, ClinicClock clock)
+        public ReviewService(IUnitOfWork uow, ClinicClock clock, UserAccess access)
         {
             _uow = uow;
+            _access = access;
             _clock = clock;
 
         }
         public async Task<Result<ReviewDto>> AddReviewAsync(CreateReviewDto dto, int patientId)
         {
+            await _access.RequirePatientAsync(patientId);
             try
             {
                 // 1. Walidacja lekarza
@@ -59,7 +63,7 @@ namespace MedicalBookingSystem.Application.Services
 
                 return Result<ReviewDto>.Success(review.ToDto());
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is not AccessDeniedException)
             {
                 return Result<ReviewDto>.Failure<ReviewDto>("Wystąpił błąd podczas dodawania opinii");
             }
@@ -69,6 +73,7 @@ namespace MedicalBookingSystem.Application.Services
 
         public async Task<Result> DeleteReviewAsync(int reviewId, int patientId)
         {
+            await _access.RequirePatientAsync(patientId);
             try
             {
                 var review = await _uow.Reviews.GetByIdAsync(reviewId);
@@ -76,14 +81,14 @@ namespace MedicalBookingSystem.Application.Services
                     return Result.Failure("Opinia nie istnieje");
 
                 if (review.PatientId != patientId)
-                    return Result.Failure("Nie możesz usunąć cudzej opinii");
+                    throw new AccessDeniedException(true);
 
                 _uow.Reviews.Remove(review);
                 await _uow.SaveChangesAsync();
 
                 return Result.Success();
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is not AccessDeniedException)
             {
                 return Result.Failure("Wystąpił błąd podczas usuwania opinii");
             }
@@ -99,7 +104,7 @@ namespace MedicalBookingSystem.Application.Services
                 IEnumerable<ReviewDto> reviewDtos = reviews.Select(item => item.ToDto()).ToList();
                 return Result<IEnumerable<ReviewDto>>.Success(reviewDtos);
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is not AccessDeniedException)
             {
                 return Result<IEnumerable<ReviewDto>>.Failure<IEnumerable<ReviewDto>>("Wystąpił błąd podczas pobierania opinii");
             }
