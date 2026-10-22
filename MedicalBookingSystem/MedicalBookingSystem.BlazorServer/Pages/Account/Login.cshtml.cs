@@ -31,6 +31,7 @@ public sealed class LoginModel(StaffAuthenticationService authentication) : Page
         }
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, user,
             new AuthenticationProperties { IsPersistent = false, AllowRefresh = false });
-        return LocalRedirect("/");
+        return LocalRedirect(user.HasClaim(MedicalBookingSystem.SharedKernel.Security.AccountClaims.PasswordChangeRequired, "true")
+            ? "/Account/ChangePassword" : "/");
     }
 }

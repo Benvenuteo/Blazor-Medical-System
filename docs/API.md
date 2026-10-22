@@ -48,4 +48,23 @@ Walidator grafiku również ma osobny kontekst odczytu; ograniczenia SQLite rozs
 
 ## Zakres
 
-Paginacja obejmuje katalog lekarzy. Listy wizyt, dokumentów i opinii zachowują dotychczasowe kontrakty list; ich stronicowanie oraz większe wolumeny wymagają osobnego etapu. Szczegóły lekarza i publiczny grafik ograniczają przedziały grafiku do bieżącego trzymiesięcznego horyzontu. Ta wersja nie wprowadza cache dostępności.
+Paginacja obejmuje katalog lekarzy, listę kont personelu i kandydatów do przypisania konta. Listy wizyt, dokumentów i opinii zachowują dotychczasowe kontrakty list; ich stronicowanie oraz większe wolumeny wymagają osobnego etapu. Szczegóły lekarza i publiczny grafik ograniczają przedziały grafiku do bieżącego trzymiesięcznego horyzontu. Ta wersja nie wprowadza cache dostępności.
+
+## Konta personelu i sesje
+
+Operacje `/api/staff/accounts` wymagają aktywnego administratora bez obowiązku zmiany hasła tymczasowego. Oprócz roli handler JWT i usługi sprawdzają bieżący znacznik konta w bazie.
+
+| Metoda i ścieżka | Wynik |
+| --- | --- |
+| `GET /api/staff/accounts?Search=admin&Page=1&PageSize=10` | 200, `PagedResult<StaffAccountDto>` |
+| `GET /api/staff/accounts/{id}` | 200, `StaffAccountDto` |
+| `GET /api/staff/accounts/unassigned-doctors` | 200, strona `StaffDoctorOptionDto` |
+| `POST /api/staff/accounts` | 201, DTO i Location; wymagane email, displayName, role, initialPassword, doctorId dla lekarza |
+| `PUT /api/staff/accounts/{id}` | 200, DTO; email, displayName, isActive, version |
+| `POST /api/staff/accounts/{id}/reset-password` | 204; newPassword i version |
+| `POST /api/auth/staff/change-password` | 204; currentPassword, newPassword, confirmNewPassword |
+| `POST /api/auth/logout-all` | 204; bez identyfikatora i treści |
+
+Wyszukiwanie kont dopasowuje fragment emaila lub nazwy, a kandydatów — imienia, nazwiska albo PWZ. Email jest normalizowany do małych liter; porównanie nazw przez `Contains` w SQLite rozróżnia wielkość liter. Paginacja: domyślnie 1/10, maksymalnie 50 pozycji, stabilne sortowanie email/Id lub nazwisko/Id. Odpowiedzi zawierają publiczny token `version`, ale nie `securityStamp` ani `passwordHash`.
+
+Brak bieżącego znacznika sesji, wyłączone konto lub zmieniona tożsamość oznaczają 401. Hasło tymczasowe pozwala wyłącznie na własną zmianę hasła i zakończenie sesji; pozostałe chronione operacje zwracają 403. Nieaktualne `version`, duplikat emaila/przypisania lub niedozwolona edycja własnego konta oznaczają 409. Wymaganie `version` dotyczy edycji i resetu administracyjnego; samodzielna zmiana hasła stosuje wewnętrzną kontrolę współbieżności i wymaga aktualnego hasła.

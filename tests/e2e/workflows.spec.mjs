@@ -7,12 +7,12 @@ async function patientLogin(page) {
   await page.getByRole('button', { name: 'Zaloguj się', exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 }
-async function staffLogin(page, email = 'doctor@example.test') {
+async function staffLogin(page, email = 'doctor@example.test', password = 'DemoStaff2026!', destination = 'http://localhost:5187/') {
   await page.goto('http://localhost:5187/Account/Login');
   await page.getByLabel('Email', { exact: true }).fill(email);
-  await page.getByLabel('Hasło', { exact: true }).fill('DemoStaff2026!');
+  await page.getByLabel('Hasło', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Zaloguj się', exact: true }).click();
-  await expect(page).toHaveURL('http://localhost:5187/');
+  await expect(page).toHaveURL(destination);
 }
 
 test('patient searches, books, reschedules, cancels and logs out', async ({ page }, info) => {
@@ -138,4 +138,99 @@ test('registration validates age and creates a patient account', async ({ page }
   await page.getByLabel('Hasło', { exact: true }).fill('BrowserPatient2026!');
   await page.getByRole('button', { name: 'Zaloguj się', exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
+});
+
+async function changeStaffPassword(page, current, next) {
+  await expect(page.getByRole('heading', { name: 'Zmiana hasła', exact: true })).toBeVisible();
+  await page.getByLabel('Aktualne hasło', { exact: true }).fill(current);
+  await page.getByLabel('Nowe hasło', { exact: true }).fill(next);
+  await page.getByLabel('Powtórz nowe hasło', { exact: true }).fill(next);
+  await page.getByRole('button', { name: 'Zmień hasło', exact: true }).click();
+  await expect(page).toHaveURL(/\/Account\/Login\?passwordChanged=true$/);
+}
+
+test('admin creates and resets staff credentials; disabling account blocks an already open circuit', async ({ page, browser }) => {
+  await staffLogin(page, 'admin@example.test');
+  await page.goto('http://localhost:5187/admin/accounts');
+  await expect(page.getByLabel('Nazwa nowego konta')).toBeEnabled();
+  await page.getByLabel('Nazwa nowego konta').fill('Administrator testowy');
+  await page.getByLabel('Email nowego konta').fill('browser-staff@example.test');
+  await page.getByLabel('Rola', { exact: true }).selectOption('Admin');
+  await page.getByLabel('Hasło tymczasowe', { exact: true }).fill('TemporaryBrowser2026!');
+  await page.getByRole('button', { name: 'Utwórz konto', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Konto utworzone');
+  const staffContext = await browser.newContext(); const staff = await staffContext.newPage();
+  await staffLogin(staff, 'browser-staff@example.test', 'TemporaryBrowser2026!', 'http://localhost:5187/Account/ChangePassword');
+  await staff.goto('http://localhost:5187/admin/accounts');
+  await expect(staff).toHaveURL('http://localhost:5187/Account/ChangePassword');
+  await changeStaffPassword(staff, 'TemporaryBrowser2026!', 'PermanentBrowser2026!');
+  await staffLogin(staff, 'browser-staff@example.test', 'PermanentBrowser2026!');
+
+  await page.getByRole('button', { name: 'Szukaj kont', exact: true }).click();
+  const account = page.getByRole('row').filter({ hasText: 'browser-staff@example.test' });
+  await account.getByRole('button', { name: 'Edytuj', exact: true }).click();
+  await page.getByLabel('Nowe hasło tymczasowe', { exact: true }).fill('ResetBrowserStaff2026!');
+  await page.getByRole('button', { name: 'Resetuj hasło', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Hasło zresetowane');
+  await staff.goto('http://localhost:5187/admin/accounts');
+  await expect(staff).toHaveURL(/\/Account\/Login/);
+  await staffLogin(staff, 'browser-staff@example.test', 'ResetBrowserStaff2026!', 'http://localhost:5187/Account/ChangePassword');
+  await changeStaffPassword(staff, 'ResetBrowserStaff2026!', 'PermanentReset2026!');
+  await staffLogin(staff, 'browser-staff@example.test', 'PermanentReset2026!');
+  await staff.goto('http://localhost:5187/admin/accounts');
+  await staff.getByRole('row').filter({ hasText: 'browser-staff@example.test' }).getByRole('button', { name: 'Edytuj', exact: true }).click();
+  await staff.getByLabel('Nazwa konta', { exact: true }).fill('Revoked change must not save');
+
+  await page.getByRole('button', { name: 'Szukaj kont', exact: true }).click();
+  await account.getByRole('button', { name: 'Edytuj', exact: true }).click();
+  await page.getByLabel('Konto aktywne', { exact: true }).uncheck();
+  await page.getByRole('button', { name: 'Zapisz konto', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Konto zapisane');
+  await staff.getByRole('button', { name: 'Zapisz konto', exact: true }).click();
+  await expect(staff.getByRole('alert')).toContainText('Sesja wygasła');
+  await page.getByRole('button', { name: 'Szukaj kont', exact: true }).click();
+  await expect(account).toContainText('Wyłączone');
+  await expect(account).not.toContainText('Revoked change');
+  await staffContext.close();
+});
+
+test('patient changes password and ends sessions in another browser', async ({ page, browser }) => {
+  await page.goto('/register');
+  await page.getByLabel('Email', { exact: true }).fill('browser-security@example.test');
+  await page.getByLabel('Hasło', { exact: true }).fill('BrowserPatient2026!');
+  await page.getByLabel('Imię', { exact: true }).fill('Jan');
+  await page.getByLabel('Nazwisko', { exact: true }).fill('Testowy');
+  await page.getByLabel('Numer telefonu', { exact: true }).fill('+48500000002');
+  await page.getByLabel('Data urodzenia', { exact: true }).fill('1990-01-01');
+  await page.getByRole('button', { name: 'Zarejestruj się', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Logowanie', exact: true })).toBeVisible();
+  async function loginSecurity(target, password) {
+    await target.goto('http://localhost:5016/');
+    await target.getByLabel('Email', { exact: true }).fill('browser-security@example.test');
+    await target.getByLabel('Hasło', { exact: true }).fill(password);
+    await target.getByRole('button', { name: 'Zaloguj się', exact: true }).click();
+    await expect(target).toHaveURL(/\/dashboard$/);
+  }
+  await loginSecurity(page, 'BrowserPatient2026!');
+  const otherContext = await browser.newContext(); const other = await otherContext.newPage();
+  await loginSecurity(other, 'BrowserPatient2026!');
+  await page.goto('/account/security');
+  await page.getByLabel('Aktualne hasło', { exact: true }).fill('BrowserPatient2026!');
+  await page.getByLabel('Nowe hasło', { exact: true }).fill('ChangedBrowserPatient2026!');
+  await page.getByLabel('Powtórz nowe hasło', { exact: true }).fill('ChangedBrowserPatient2026!');
+  await page.getByRole('button', { name: 'Zmień hasło', exact: true }).click();
+  await expect(page).toHaveURL(/\?sessionEnded=true$/);
+  await expect(page.getByText('Sesje zakończone. Zaloguj się ponownie.', { exact: true })).toBeVisible();
+  await other.goto('http://localhost:5016/appointments');
+  await expect(other.getByRole('heading', { name: 'Logowanie', exact: true })).toBeVisible();
+  await loginSecurity(page, 'ChangedBrowserPatient2026!');
+  await loginSecurity(other, 'ChangedBrowserPatient2026!');
+  await page.goto('/account/security');
+  await page.getByLabel('Potwierdzam wylogowanie wszystkich sesji').check();
+  await page.getByRole('button', { name: 'Wyloguj wszystkie sesje', exact: true }).click();
+  await expect(page).toHaveURL(/\?sessionEnded=true$/);
+  await expect(page.getByText('Sesje zakończone. Zaloguj się ponownie.', { exact: true })).toBeVisible();
+  await other.goto('http://localhost:5016/appointments');
+  await expect(other.getByRole('heading', { name: 'Logowanie', exact: true })).toBeVisible();
+  await otherContext.close();
 });

@@ -6,6 +6,7 @@
 <title>Logowanie personelu</title><link rel="stylesheet" href="/css/bootstrap/bootstrap.min.css" /></head>
 <body><main class="container py-5" style="max-width: 480px">
 <h1>Logowanie personelu</h1>
+@if (Request.Query["passwordChanged"] == "true") { <p role="status">Hasło zmienione. Zaloguj się ponownie.</p> }
 <form method="post">
 <div asp-validation-summary="All" class="text-danger"></div>
 <label asp-for="Email">Email</label><input asp-for="Email" type="email" autocomplete="username" class="form-control mb-3" />

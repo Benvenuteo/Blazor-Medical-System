@@ -22,10 +22,12 @@ namespace MedicalBookingSystem.Application.Validators
                 .When(x => !string.IsNullOrEmpty(x.PhoneNumber));
 
             RuleFor(x => x.CurrentPassword)
+                .MaximumLength(128).WithMessage("Hasło może mieć najwyżej 128 znaków")
                 .NotEmpty().WithMessage("Aktualne hasło jest wymagane do zmiany danych")
                 .When(x => !string.IsNullOrEmpty(x.NewPassword));
 
             RuleFor(x => x.NewPassword)
+                .MaximumLength(128).WithMessage("Hasło może mieć najwyżej 128 znaków")
                 .MinimumLength(8).WithMessage("Nowe hasło musi mieć minimum 8 znaków")
                 .Matches("[A-Z]").WithMessage("Nowe hasło musi zawierać przynajmniej 1 wielką literę")
                 .Matches("[0-9]").WithMessage("Nowe hasło musi zawierać przynajmniej 1 cyfrę")

@@ -45,6 +45,15 @@ Każdy etap powinien kończyć się działającym buildem, testami regresyjnymi 
 - [x] Testy E2E w Chromium, odtwarzalny pomiar wydajności i zrzuty ekranów do portfolio.
 - [x] Formularze personelu czekają na gotowość połączenia Blazor, aby nie gubić wczesnego wprowadzania danych.
 
+## 5. Konta personelu i unieważnianie sesji
+
+- [x] Kontrola aktualnego znacznika sesji przy żądaniach API, odczycie cookie i każdej chronionej operacji aplikacyjnej.
+- [x] Paginowane zarządzanie kontami personelu, aktywacja i dezaktywacja, unikalny email i przypisanie lekarza.
+- [x] Hasła tymczasowe i wymagana zmiana hasła po utworzeniu lub resecie konta.
+- [x] Zmiana własnego hasła i wylogowanie wszystkich sesji pacjenta oraz personelu.
+- [x] Optymistyczna współbieżność kont i blokada wyłączenia ostatniego administratora w SQLite.
+- [x] Testy przechwyconych cookies, starych tokenów, migracji istniejących kont i otwartego panelu po odebraniu dostępu.
+
 ## Kolejne prace
 
 - [ ] Stronicowanie historii wizyt, dokumentów i opinii oraz filtrów pracy lekarza.
@@ -52,7 +61,6 @@ Każdy etap powinien kończyć się działającym buildem, testami regresyjnymi 
 
 ## Dalsze zabezpieczenia przed publicznym wdrożeniem
 
-- [ ] Zarządzanie kontami personelu, reset hasła i wymuszone unieważnianie istniejących sesji po zmianie hasła lub dezaktywacji konta.
 - [ ] Audyt odczytów i zmian dokumentacji oraz testy odzyskiwania danych z kopii zapasowej.
 - [ ] Docelowy przepływ sesji przeglądarkowej, polityka CSP, trwałe klucze Data Protection i konfiguracja zaufanego reverse proxy.
 

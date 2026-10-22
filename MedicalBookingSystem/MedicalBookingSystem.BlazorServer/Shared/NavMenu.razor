@@ -20,12 +20,15 @@
                 <span class="oi oi-plus" aria-hidden="true"></span> Lekarze
             </NavLink>
         </div>
+            <NavLink class="nav-link px-3" href="/admin/accounts">Konta personelu</NavLink>
         </AuthorizeView>
         <AuthorizeView Roles="@Roles.Doctor">
             <NavLink class="nav-link px-3" href="/doctor/appointments">Moje wizyty</NavLink>
             <NavLink class="nav-link px-3" href="/doctor/notes">Moje notatki</NavLink>
             <NavLink class="nav-link px-3" href="/doctor/prescriptions">Moje recepty</NavLink>
         </AuthorizeView>
+        <a class="nav-link px-3" href="/Account/ChangePassword">Zmień hasło</a>
+        <a class="nav-link px-3" href="/Account/LogoutAll">Wyloguj wszystkie sesje</a>
         <a class="nav-link px-3" href="/Account/Logout">Wyloguj</a>
     </nav>
 </div>

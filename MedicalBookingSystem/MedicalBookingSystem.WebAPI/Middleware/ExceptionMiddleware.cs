@@ -12,7 +12,7 @@ public sealed class ExceptionMiddleware(ILogger<ExceptionMiddleware> logger) : I
         catch (AccessDeniedException exception)
         {
             await Results.Problem(statusCode: exception.Authenticated ? 403 : 401,
-                title: exception.Authenticated ? "Brak dostępu." : "Wymagane logowanie.").ExecuteAsync(context);
+                title: exception.Authenticated ? "Brak dostępu." : "Wymagane logowanie.", detail: exception.Message).ExecuteAsync(context);
         }
         catch (NotFoundException exception)
         { await Results.Problem(statusCode: 404, detail: exception.Message).ExecuteAsync(context); }

@@ -1,9 +1,11 @@
 <CascadingAuthenticationState>
 <Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
+        <SessionErrorBoundary>
         <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
             <NotAuthorized><p role="alert">Brak dostępu lub sesja wygasła. <a href="/Account/Login">Zaloguj się ponownie</a>.</p></NotAuthorized>
         </AuthorizeRouteView>
+        </SessionErrorBoundary>
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
     <NotFound>

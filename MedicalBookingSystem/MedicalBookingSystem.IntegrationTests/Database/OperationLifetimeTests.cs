@@ -21,7 +21,7 @@ public sealed class OperationLifetimeTests
     {
         using var scenario = await SecurityScenario.CreateAsync();
         using var circuit = scenario.Factory.Services.CreateScope();
-        var service = CreateService(circuit.ServiceProvider, scenario.PatientId);
+        var service = await CreateServiceAsync(circuit.ServiceProvider, scenario.PatientId);
         Assert.Equal("First", (await service.GetPatientProfileAsync(scenario.PatientId)).Value.FirstName);
         using (var otherRequest = scenario.Factory.Services.CreateScope())
         {
@@ -39,23 +39,18 @@ public sealed class OperationLifetimeTests
         var gate = new ReadGate();
         using var scenario = await SecurityScenario.CreateAsync(new MedicalApiFactory(database.ConnectionString, interceptor: gate));
         using var circuit = scenario.Factory.Services.CreateScope();
-        var service = CreateService(circuit.ServiceProvider, scenario.PatientId);
+        var service = await CreateServiceAsync(circuit.ServiceProvider, scenario.PatientId);
         gate.Active = true;
         var results = await Task.WhenAll(service.GetPatientProfileAsync(scenario.PatientId), service.GetPatientProfileAsync(scenario.PatientId));
         Assert.All(results, r => Assert.True(r.IsSuccess));
-        Assert.Equal(2, gate.Contexts.Distinct().Count());
+        // Each read validates the session and then opens its own operation context.
+        Assert.Equal(4, gate.Contexts.Distinct().Count());
     }
 
-    private static PatientService CreateService(IServiceProvider services, int patientId)
+    private static async Task<PatientService> CreateServiceAsync(IServiceProvider services, int patientId)
     {
-        var clock = services.GetRequiredService<ClinicClock>();
-        var principal = AccountClaims.Create(patientId, "Patient", "patient@example.test", Roles.Patient, new DateTimeOffset(clock.UtcNow).AddHours(1));
-        return ActivatorUtilities.CreateInstance<PatientService>(services, new UserAccess(new CurrentUser(principal), clock));
-    }
-
-    private sealed class CurrentUser(ClaimsPrincipal principal) : ICurrentUser
-    {
-        public Task<ClaimsPrincipal> GetPrincipalAsync() => Task.FromResult(principal);
+        var principal = await ScenarioPrincipal.PatientAsync(services, patientId);
+        return ActivatorUtilities.CreateInstance<PatientService>(services, ScenarioPrincipal.Access(services, principal));
     }
 
     private sealed class ReadGate : DbCommandInterceptor

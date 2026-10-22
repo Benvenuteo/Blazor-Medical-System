@@ -14,6 +14,11 @@ internal sealed class TestUsers(ClaimsPrincipal principal) : ICurrentUser
     {
         var clock = new TestTimeProvider().CreateClock();
         return new UserAccess(new TestUsers(AccountClaims.Create(id, "Test", "test@example.test", role,
-            new DateTimeOffset(clock.UtcNow).AddHours(1), doctorId)), clock);
+            new DateTimeOffset(clock.UtcNow).AddHours(1), doctorId, Guid.NewGuid())), new SessionGuard(clock, new ValidSessionValidator()));
     }
+}
+
+internal sealed class ValidSessionValidator : ISessionValidator
+{
+    public Task<SessionStatus> ValidateAsync(ClaimsPrincipal principal, CancellationToken cancellationToken = default) => Task.FromResult(SessionStatus.Valid);
 }

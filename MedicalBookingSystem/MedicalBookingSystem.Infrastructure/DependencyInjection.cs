@@ -44,6 +44,7 @@ public static class DependencyInjection
         services.AddDbContextFactory<ApplicationDbContext>(options => options.UseSqlite(connectionString), ServiceLifetime.Scoped);
         services.AddScoped<IUnitOfWorkFactory, UnitOfWorkFactory>();
         services.AddScoped<IDoctorDirectoryQueries, DoctorDirectoryQueries>();
+        services.AddScoped<IStaffAccountQueries, StaffAccountQueries>();
         services.AddScoped<DataSeeder>();
         return services;
     }

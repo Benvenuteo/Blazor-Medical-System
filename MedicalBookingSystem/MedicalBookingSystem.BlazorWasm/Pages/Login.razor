@@ -6,6 +6,10 @@
 
 
 <h3>Logowanie</h3>
+@if (SessionEnded)
+{
+    <p role="status">Sesje zakończone. Zaloguj się ponownie.</p>
+}
 
 <EditForm Model="loginDto" OnSubmit="HandleLogin">
 <div class="mb-3">
@@ -27,6 +31,7 @@
 }
 
 @code {
+    [SupplyParameterFromQuery(Name = "sessionEnded")] public bool SessionEnded { get; set; }
     private LoginDto loginDto = new();
     private string? error;
     private bool saving;

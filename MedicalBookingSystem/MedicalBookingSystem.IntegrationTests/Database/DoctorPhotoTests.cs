@@ -109,9 +109,8 @@ public sealed class DoctorPhotoTests
     public async Task DoctorRole_CannotUploadEvenOwnPhoto()
     {
         using var fixture = await Fixture.CreateAsync();
-        var clock = fixture.Scope.ServiceProvider.GetRequiredService<ClinicClock>();
-        var access = new UserAccess(new CurrentUser(AccountClaims.Create(1, "Doctor", "doctor@example.test", Roles.Doctor,
-            new DateTimeOffset(clock.UtcNow).AddHours(1), fixture.Scenario.DoctorId)), clock);
+        var principal = await ScenarioPrincipal.StaffAsync(fixture.Scope.ServiceProvider, "doctor@example.test");
+        var access = ScenarioPrincipal.Access(fixture.Scope.ServiceProvider, principal);
         var uploader = new DoctorImageUploader(fixture.Units, access, fixture.Files);
         using var stream = new MemoryStream(Picture(3, 2));
         await Assert.ThrowsAsync<AccessDeniedException>(() => uploader.ReplaceAsync(fixture.Scenario.DoctorId, stream, "image.png"));
@@ -150,8 +149,8 @@ public sealed class DoctorPhotoTests
             var path = Path.Combine(Path.GetTempPath(), "medical-photo-tests", Guid.NewGuid().ToString("N"));
             fixture.Files = new DoctorPhotoFiles(new MediaEnvironment { ContentRootPath = path }, Options.Create(new DoctorMediaOptions
                 { PublicBaseUrl = "https://media.example.test", StoragePath = path }), NullLogger<DoctorPhotoFiles>.Instance);
-            var clock = fixture.Scope.ServiceProvider.GetRequiredService<ClinicClock>();
-            var access = new UserAccess(new CurrentUser(AccountClaims.Create(1, "Admin", "admin@example.test", Roles.Admin, new DateTimeOffset(clock.UtcNow).AddHours(1))), clock);
+            var principal = await ScenarioPrincipal.StaffAsync(fixture.Scope.ServiceProvider, "admin@example.test");
+            var access = ScenarioPrincipal.Access(fixture.Scope.ServiceProvider, principal);
             fixture.Uploader = new DoctorImageUploader(fixture.Units, access, fixture.Files);
             return fixture;
         }

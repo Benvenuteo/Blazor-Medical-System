@@ -47,7 +47,8 @@ namespace MedicalBookingSystem.Infrastructure
             catch (DbUpdateException exception) when (exception.InnerException is SqliteException sqlite &&
                 sqlite.SqliteExtendedErrorCode is 2067 or 1811)
             {
-                var kind = exception.Entries.Any(e => e.Entity is Appointment) ? PersistenceConflictKind.AppointmentSlot
+                var kind = sqlite.SqliteExtendedErrorCode == 1811 && sqlite.Message.Contains("last_active_administrator", StringComparison.Ordinal) ? PersistenceConflictKind.LastAdministrator
+                    : exception.Entries.Any(e => e.Entity is Appointment) ? PersistenceConflictKind.AppointmentSlot
                     : exception.Entries.Any(e => e.Entity is DoctorSchedule) ? PersistenceConflictKind.ScheduleOverlap
                     : exception.Entries.Any(e => e.Entity is Review) ? PersistenceConflictKind.DuplicateReview
                     : exception.Entries.Any(e => e.Entity is Note or Prescription) ? PersistenceConflictKind.DuplicateDocument

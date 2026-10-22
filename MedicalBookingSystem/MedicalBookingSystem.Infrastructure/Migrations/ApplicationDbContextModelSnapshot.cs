@@ -203,6 +203,13 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid>("SecurityStamp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
@@ -328,6 +335,9 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -335,6 +345,13 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SecurityStamp")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("Version")
+                        .IsConcurrencyToken()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");

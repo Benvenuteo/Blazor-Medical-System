@@ -19,6 +19,14 @@ namespace MedicalBookingSystem.Infrastructure
         public DbSet<DoctorSchedule> DoctorSchedules { get; set; }
         public DbSet<DoctorSpecialization> DoctorSpecializations { get; set; }
 
+        private void StampAccountVersions()
+        {
+            foreach (var entry in ChangeTracker.Entries<Patient>().Where(e => e.State is EntityState.Added or EntityState.Modified))
+                entry.Property(a => a.Version).CurrentValue = Guid.NewGuid();
+            foreach (var entry in ChangeTracker.Entries<StaffAccount>().Where(e => e.State is EntityState.Added or EntityState.Modified))
+                entry.Property(a => a.Version).CurrentValue = Guid.NewGuid();
+        }
+
         // SQLite has no rowversion. Every appointment write gets an application-managed concurrency token.
         private void StampAppointmentVersions()
         {
@@ -30,12 +38,14 @@ namespace MedicalBookingSystem.Infrastructure
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
         {
             StampAppointmentVersions();
+            StampAccountVersions();
             return base.SaveChanges(acceptAllChangesOnSuccess);
         }
 
         public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
         {
             StampAppointmentVersions();
+            StampAccountVersions();
             return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         }
 
@@ -46,6 +56,7 @@ namespace MedicalBookingSystem.Infrastructure
                 entity.ToTable("StaffAccounts", table => table.HasCheckConstraint("CK_StaffAccount_Role",
                     "(Role = 'Doctor' AND DoctorId IS NOT NULL) OR (Role = 'Admin' AND DoctorId IS NULL)"));
                 entity.HasKey(a => a.Id);
+                entity.Property(a => a.Version).IsConcurrencyToken();
                 entity.Property(a => a.Email).IsRequired().HasMaxLength(255).UseCollation("NOCASE");
                 entity.HasIndex(a => a.Email).IsUnique();
                 entity.Property(a => a.DisplayName).IsRequired().HasMaxLength(200);
@@ -59,6 +70,7 @@ namespace MedicalBookingSystem.Infrastructure
             modelBuilder.Entity<Patient>(entity =>
             {
                 entity.HasKey(p => p.Id);
+                entity.Property(p => p.Version).IsConcurrencyToken();
                 entity.Property(p => p.Email).IsRequired().HasMaxLength(255).UseCollation("NOCASE");
                 entity.HasIndex(p => p.Email).IsUnique();
                 entity.Property(p => p.FirstName).IsRequired().HasMaxLength(100);
@@ -83,6 +95,7 @@ namespace MedicalBookingSystem.Infrastructure
             modelBuilder.Entity<Appointment>(entity =>
             {
                 entity.HasKey(a => a.Id);
+                entity.Property(a => a.Version).IsConcurrencyToken();
                 entity.Property(a => a.Date).IsRequired();
                 entity.Property(a => a.Version).IsConcurrencyToken();
                 entity.HasIndex(a => new { a.DoctorId, a.Date }).IsUnique().HasFilter("Status <> 'Cancelled'");

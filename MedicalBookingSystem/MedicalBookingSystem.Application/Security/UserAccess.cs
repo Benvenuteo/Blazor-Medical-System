@@ -6,16 +6,15 @@ using MedicalBookingSystem.SharedKernel.Security;
 namespace MedicalBookingSystem.Application.Security;
 
 /// <summary>Enforces permissions at the application boundary, including direct calls from a server circuit.</summary>
-public sealed class UserAccess(ICurrentUser currentUser, ClinicClock clock)
+public sealed class UserAccess(ICurrentUser currentUser, SessionGuard sessions)
 {
-    private async Task<ClaimsPrincipal> GetUserAsync()
+    private async Task<ClaimsPrincipal> GetUserAsync() => await sessions.RequireAsync(await currentUser.GetPrincipalAsync());
+
+    public async Task<int> StaffAccountIdAsync()
     {
-        var user = await currentUser.GetPrincipalAsync();
-        if (user.Identity?.IsAuthenticated != true ||
-            !long.TryParse(user.FindFirst(AccountClaims.ExpiresAt)?.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var expires) ||
-            expires <= new DateTimeOffset(clock.UtcNow).ToUnixTimeSeconds())
-            throw new AccessDeniedException(false);
-        return user;
+        var user = await GetUserAsync();
+        if (!AccountClaims.TryReadIdentity(user, out var identity) || !identity.IsStaff) throw new AccessDeniedException(true);
+        return identity.Id;
     }
 
     public async Task<int?> PatientIdOrNullAsync()

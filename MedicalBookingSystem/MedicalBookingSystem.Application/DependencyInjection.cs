@@ -20,6 +20,12 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher<Patient>, PasswordHasher<Patient>>();
         services.AddScoped<IPasswordHasher<StaffAccount>, PasswordHasher<StaffAccount>>();
         services.AddScoped<StaffAuthenticationService>();
+        services.AddScoped<PatientAuthenticationService>();
+        services.AddScoped<ISessionValidator, AccountSessionValidator>();
+        services.AddScoped<SessionGuard>();
+        services.AddScoped<StaffPasswordService>();
+        services.AddScoped<SessionManagementService>();
+        services.AddScoped<StaffAccountService>();
         services.AddScoped<UserAccess>();
         services.AddScoped<IAppointmentService, AppointmentService>();
         services.AddScoped<IDoctorService, DoctorService>();

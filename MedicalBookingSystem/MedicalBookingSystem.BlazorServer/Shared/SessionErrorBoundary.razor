@@ -1,0 +1,13 @@
+@inherits Microsoft.AspNetCore.Components.Web.ErrorBoundary
+@if (CurrentException is null)
+{
+    @ChildContent
+}
+else if (CurrentException is MedicalBookingSystem.Application.Security.AccessDeniedException)
+{
+    <p role="alert">Sesja wygasła lub uprawnienia zmieniły się. <a href="/Account/Login">Zaloguj się ponownie</a>.</p>
+}
+else
+{
+    <p role="alert">Nie udało się wykonać operacji. <a href="/">Odśwież panel</a>.</p>
+}

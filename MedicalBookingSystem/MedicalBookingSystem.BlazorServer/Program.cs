@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using MedicalBookingSystem.Application.Security;
@@ -17,6 +18,7 @@ builder.Logging.ClearProviders();
 builder.Host.UseNLog();
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
+builder.Services.AddScoped<Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider, StaffAuthenticationStateProvider>();
 builder.Services.AddScoped<ICurrentUser, CircuitCurrentUser>();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
 {
@@ -29,6 +31,15 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
     options.ExpireTimeSpan = TimeSpan.FromHours(1);
     options.SlidingExpiration = false;
+    options.Events.OnValidatePrincipal = async context =>
+    {
+        var sessions = context.HttpContext.RequestServices.GetRequiredService<ISessionValidator>();
+        if (context.Principal is null || await sessions.ValidateAsync(context.Principal, context.HttpContext.RequestAborted) == SessionStatus.Invalid)
+        {
+            context.RejectPrincipal();
+            await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        }
+    };
 });
 builder.Services.AddAuthorization(options => options.FallbackPolicy = new AuthorizationPolicyBuilder()
     .RequireAuthenticatedUser().RequireRole(Roles.Doctor, Roles.Admin).Build());
@@ -81,6 +92,18 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();
+app.Use(async (context, next) =>
+{
+    if (context.User.Identity?.IsAuthenticated == true && context.User.HasClaim(AccountClaims.PasswordChangeRequired, "true") &&
+        !context.Request.Path.Equals("/Account/ChangePassword", StringComparison.OrdinalIgnoreCase) &&
+        !context.Request.Path.Equals("/Account/Logout", StringComparison.OrdinalIgnoreCase) &&
+        !context.Request.Path.Equals("/Account/LogoutAll", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.Redirect("/Account/ChangePassword");
+        return;
+    }
+    await next(context);
+});
 app.UseAuthorization();
 app.MapRazorPages();
 app.MapBlazorHub(options => options.CloseOnAuthenticationExpiration = true).RequireAuthorization();

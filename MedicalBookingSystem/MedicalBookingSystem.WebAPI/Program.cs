@@ -71,6 +71,15 @@ builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 builder.Services.AddAuthentication("Bearer").AddJwtBearer("Bearer", options =>
 {
     options.MapInboundClaims = false;
+    options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+    {
+        OnTokenValidated = async context =>
+        {
+            var sessions = context.HttpContext.RequestServices.GetRequiredService<ISessionValidator>();
+            if (context.Principal is null || await sessions.ValidateAsync(context.Principal, context.HttpContext.RequestAborted) == SessionStatus.Invalid)
+                context.Fail("The account session is no longer valid.");
+        }
+    };
     var settings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
     options.TokenValidationParameters = new TokenValidationParameters
     {

@@ -2,7 +2,7 @@
 
 System rezerwacji wizyt medycznych z API ASP.NET Core, aplikacją pacjenta w Blazor WebAssembly i panelem obsługi w Blazor Server. Dane przechowywane są w SQLite przez Entity Framework Core.
 
-Projekt jest rozwijany etapami. Wdrożono .NET 10 LTS, migracje, testy, kontrolę dostępu oraz rezerwacje z ochroną przed równoczesnym zajęciem terminu. Pacjent wybiera rzeczywisty slot, lekarz oznacza wizytę jako odbytą, a następnie dodaje dokumentację. Katalog lekarzy jest stronicowany w SQLite, operacje panelu mają osobne konteksty EF, a zdjęcia są dekodowane i kodowane ponownie. Główne przepływy sprawdzają testy Chromium. Stan kolejnych prac opisuje [plan](docs/ROADMAP.md), [zasady rezerwacji](docs/BOOKING.md) i [kontrola dostępu](docs/SECURITY.md).
+Projekt jest rozwijany etapami. Wdrożono .NET 10 LTS, migracje, testy, kontrolę dostępu oraz rezerwacje z ochroną przed równoczesnym zajęciem terminu. Pacjent wybiera rzeczywisty slot, lekarz oznacza wizytę jako odbytą, a następnie dodaje dokumentację. Katalog lekarzy jest stronicowany w SQLite, operacje panelu mają osobne konteksty EF, a zdjęcia są dekodowane i kodowane ponownie. Administrator zarządza kontami personelu i hasłami tymczasowymi. Zmiana hasła, reset, dezaktywacja i wylogowanie wszystkich sesji unieważniają dotychczasowe logowania. Główne przepływy sprawdzają testy Chromium. Stan kolejnych prac opisuje [plan](docs/ROADMAP.md), [zasady rezerwacji](docs/BOOKING.md) i [kontrola dostępu](docs/SECURITY.md).
 
 ## Wymagania
 
@@ -53,7 +53,7 @@ dotnet run --project MedicalBookingSystem/MedicalBookingSystem.BlazorServer
 | Lekarz | `doctor@example.test` | `DemoStaff2026!` |
 | Administrator | `admin@example.test` | `DemoStaff2026!` |
 
-To publiczne dane demonstracyjne, dostępne po włączeniu seeda. Lekarz, pacjent i wizyty są fikcyjne. API uruchomione po aktualizacji dodaje konta personelu również do wcześniejszej bazy demo, bez resetowania istniejących haseł. Lekarz widzi swoje zaplanowane wizyty, notatki, recepty i grafik; administrator zarządza listą lekarzy, zdjęciami i grafikami.
+To publiczne dane demonstracyjne, dostępne po włączeniu seeda. Lekarz, pacjent i wizyty są fikcyjne. API uruchomione po aktualizacji dodaje konta personelu również do wcześniejszej bazy demo, bez resetowania istniejących haseł. Lekarz widzi swoje zaplanowane wizyty, notatki, recepty i grafik; administrator zarządza listą lekarzy, zdjęciami, grafikami i kontami personelu pod `/admin/accounts`. Nowe i resetowane konta wymagają zmiany hasła przed wejściem do panelu. Konta demo zachowują podane wyżej hasła.
 
 Świeża baza demo zawiera odbytą wizytę oraz zaplanowaną wizytę z poprzedniego dnia, gotową do oznaczenia jako odbyta w panelu lekarza. Przyszłe grafiki powstają względem daty pierwszego uruchomienia. Gdy baza demo przestanie zawierać przyszłe terminy, dodaj grafik przez panel lub utwórz nową, pustą bazę demo pod inną ścieżką.
 
@@ -85,6 +85,8 @@ dotnet ef database update --project MedicalBookingSystem/MedicalBookingSystem.In
 
 Fabryka czasu projektowania nie uruchamia hostów ani seeda. Domyślnie narzędzie aktualizuje ten sam plik `MedicalBookingSystem/data/medical.db`, którego używają aplikacje. Dla innej bazy ustaw `MEDICAL_MIGRATION_CONNECTION` na właściwy connection string przed wykonaniem polecenia. W Development szybki start nakłada migracje automatycznie.
 
+Migracja `AccountSessions` nadaje istniejącym kontom indywidualne znaczniki sesji i wersji bez zmiany hashy haseł. Po aktualizacji wcześniejsze tokeny i cookies wymagają ponownego logowania. API i panel muszą działać na tej samej, zaktualizowanej bazie.
+
 Początkowa migracja służy do tworzenia nowej bazy. Stara baza utworzona przez `EnsureCreated` nie ma historii migracji i nie powinna być aktualizowana tym poleceniem bez osobnego planu przeniesienia danych.
 
 ## Struktura i testy
@@ -99,7 +101,7 @@ Początkowa migracja służy do tworzenia nowej bazy. Stara baza utworzona przez
 | BlazorWasm | Interfejs pacjenta |
 | BlazorServer | Panel obsługi |
 
-Testy jednostkowe korzystają z xUnit i Moq, integracyjne z rzeczywistego API i SQLite, a komponentowe z bUnit. Workflow `Build and test` sprawdza 221 przypadków .NET na Linux i Windows, zapisuje raporty TRX/Cobertura i pomiar katalogu, a osobne zadanie uruchamia cztery scenariusze Playwright w Chromium.
+Testy jednostkowe korzystają z xUnit i Moq, integracyjne z rzeczywistego API i SQLite, a komponentowe z bUnit. Workflow `Build and test` sprawdza 276 przypadków .NET na Linux i Windows, zapisuje raporty TRX/Cobertura i pomiar katalogu, a osobne zadanie uruchamia sześć scenariuszy Playwright w Chromium.
 
 Zrzuty działającej aplikacji i scenariusz demonstracyjny: [DEMO.md](docs/DEMO.md).
 

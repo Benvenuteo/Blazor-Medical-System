@@ -8,6 +8,8 @@ namespace MedicalBookingSystem.Domain.Models
         public string Email { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public string PasswordHash { get; set; } = string.Empty;
+        public Guid SecurityStamp { get; set; } = Guid.NewGuid();
+        public Guid Version { get; set; } = Guid.NewGuid();
         public DateTime DateOfBirth { get; set; }
 
         // Relacje

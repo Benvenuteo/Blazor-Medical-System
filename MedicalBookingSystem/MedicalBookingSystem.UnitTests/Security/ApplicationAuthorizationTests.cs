@@ -51,7 +51,7 @@ public sealed class ApplicationAuthorizationTests
         var time = new TestTimeProvider();
         var clock = time.CreateClock();
         var principal = MedicalBookingSystem.SharedKernel.Security.AccountClaims.Create(1, "Test", "test@example.test", "Patient", new DateTimeOffset(clock.UtcNow).AddHours(-1));
-        var access = new UserAccess(new TestUsers(principal), clock);
+        var access = new UserAccess(new TestUsers(principal), new SessionGuard(clock, new ValidSessionValidator()));
         var error = await Assert.ThrowsAsync<AccessDeniedException>(() => access.RequirePatientAsync(1));
         Assert.False(error.Authenticated);
     }

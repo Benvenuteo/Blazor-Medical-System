@@ -44,7 +44,7 @@ Raporty są również publikowane jako artefakty workflow `Build and test`. Pokr
 
 ## Kolejne pakiety testów
 
-Plan dalszej pracy znajduje się w [ROADMAP.md](ROADMAP.md). Zestaw obejmuje 221 przypadków .NET: 96 jednostkowych, 116 integracyjnych i 9 komponentowych, oraz cztery scenariusze E2E. Dokładne wyniki każdego przebiegu zapisują raporty TRX i raport Playwright. Plan dalszej pracy obejmuje zarządzanie kontami, unieważnianie sesji, audyt dokumentacji i stronicowanie pozostałych list.
+Plan dalszej pracy znajduje się w [ROADMAP.md](ROADMAP.md). Zestaw obejmuje 276 przypadków .NET: 120 jednostkowych, 147 integracyjnych i 9 komponentowych, oraz sześć scenariuszy E2E. Dokładne wyniki każdego przebiegu zapisują raporty TRX i raport Playwright. Plan dalszej pracy obejmuje audyt dokumentacji, odtwarzanie kopii zapasowej i stronicowanie pozostałych list.
 
 ## Współbieżność i czas
 
@@ -69,7 +69,7 @@ npm test
 
 Przed testem aplikacje muszą być zbudowane w konfiguracji Release. Porty 5016, 5031 i 5187 powinny być wolne. Skrypt uruchamia trzy prawdziwe hosty, świeżą bazę i osobny katalog zdjęć w katalogu tymczasowym. Nie korzysta z roboczej bazy ani z już uruchomionych serwerów. Wybranie `CHROMIUM_EXECUTABLE_PATH` pozwala lokalnie wskazać własny zgodny plik przeglądarki; CI używa instalacji Playwright.
 
-Scenariusze: rejestracja z walidacją wieku; pacjent wyszukuje, rezerwuje, przenosi i anuluje wizytę oraz wylogowuje się; lekarz kończy wizytę i tworzy dokumentację, którą pacjent odczytuje, a następnie dodaje opinię; administrator odrzuca fałszywe zdjęcie, publikuje poprawne i zapisuje grafik. Testy korzystają z rzeczywistych formularzy, cookie, JWT, SignalR i HTTP, bez przechwytywania odpowiedzi API.
+Scenariusze: rejestracja z walidacją wieku; pacjent wyszukuje, rezerwuje, przenosi i anuluje wizytę oraz wylogowuje się; lekarz kończy wizytę i tworzy dokumentację, którą pacjent odczytuje, a następnie dodaje opinię; administrator odrzuca fałszywe zdjęcie, publikuje poprawne i zapisuje grafik. Dwa kolejne scenariusze sprawdzają tworzenie i reset konta personelu z wymuszoną zmianą hasła, odmowę zapisu w otwartym obwodzie po wyłączeniu konta oraz zmianę hasła pacjenta i wylogowanie drugiej przeglądarki. Testy korzystają z rzeczywistych formularzy, cookie, JWT, SignalR i HTTP, bez przechwytywania odpowiedzi API.
 
 Raport HTML, ślady błędów i zrzuty ekranów znajdują się w `TestResults/e2e/`. W CI publikuje je zadanie `Browser workflows / Ubuntu`. Zrzuty zawierają wyłącznie fikcyjne dane demonstracyjne. Testy czekają na obserwowalny stan interfejsu, zamiast używać `Sleep`.
 
@@ -80,3 +80,12 @@ dotnet test MedicalBookingSystem/MedicalBookingSystem.IntegrationTests --configu
 ```
 
 Czas nie ma sztywnego progu w CI. Porównanie używa lokalnej bazy plikowej i nie stanowi testu obciążeniowego publicznego wdrożenia. Metodyka i zapisany wynik: [PERFORMANCE.md](PERFORMANCE.md).
+
+## Regresje kont i sesji
+
+- Zmiana hasła i zakończenie wszystkich sesji unieważniają wcześniejsze tokeny; profil bez zmiany hasła zachowuje sesję, a inne konto nadal ma dostęp.
+- Reset, wyłączenie i reaktywacja konta nie przywracają starych logowań. Przechwycone cookies odtwarzane w drugim kliencie HTTP są odrzucane po zmianie hasła, resecie, dezaktywacji i wylogowaniu wszystkich sesji.
+- Konto z hasłem tymczasowym nie może czytać dokumentacji ani zarządzać kontami, dopóki nie zmieni hasła. Chronione akcje Razor wymagają CSRF.
+- Sprawdzane są: rola i uprawnienia w HTTP oraz bezpośrednim wywołaniu usług, niejednoznaczne claims, wersja spóźnionej edycji, unikalność emaila i lekarza oraz paginacja list kont i kandydatów.
+- Dwa konteksty na osobnych połączeniach plikowych próbują wyłączyć dwóch ostatnich administratorów; jeden zapis wygrywa, drugi zwraca konflikt, w bazie pozostaje administrator.
+- Test aktualizacji bazy z poprzedniej migracji zachowuje hashe, sprawdza odrębne znaczniki i zapis ze współbieżnością oraz obecność wcześniejszych triggerów rezerwacji.

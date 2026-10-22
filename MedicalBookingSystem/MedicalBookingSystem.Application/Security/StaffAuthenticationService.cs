@@ -20,6 +20,6 @@ public sealed class StaffAuthenticationService(IUnitOfWorkFactory units, IPasswo
             hasher.VerifyHashedPassword(account, account.PasswordHash, dto.Password) == PasswordVerificationResult.Failed)
             return null;
         return AccountClaims.Create(account.Id, account.DisplayName, account.Email,
-            account.Role == StaffRole.Admin ? Roles.Admin : Roles.Doctor, new DateTimeOffset(clock.UtcNow).AddHours(1), account.DoctorId);
+            account.Role == StaffRole.Admin ? Roles.Admin : Roles.Doctor, new DateTimeOffset(clock.UtcNow).AddHours(1), account.DoctorId, account.SecurityStamp, account.MustChangePassword);
     }
 }
