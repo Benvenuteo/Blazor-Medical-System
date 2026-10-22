@@ -47,7 +47,11 @@ builder.Services.AddSwaggerGen(options =>
     });
     options.OperationFilter<AnonymousOperationFilter>();
 });
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
+{
+    context.ProblemDetails.Instance = context.HttpContext.Request.Path;
+    context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+});
 builder.Services.AddScoped<ExceptionMiddleware>();
 
 // Local demo instances get a process-local key; deployed hosts must configure a real secret.
@@ -99,6 +103,7 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 app.UseMiddleware<ExceptionMiddleware>();
+app.UseStatusCodePages();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

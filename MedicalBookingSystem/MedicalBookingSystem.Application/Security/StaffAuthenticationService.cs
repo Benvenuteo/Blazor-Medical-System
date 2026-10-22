@@ -8,10 +8,11 @@ using Microsoft.AspNetCore.Identity;
 
 namespace MedicalBookingSystem.Application.Security;
 
-public sealed class StaffAuthenticationService(IUnitOfWork unitOfWork, IPasswordHasher<StaffAccount> hasher, ClinicClock clock)
+public sealed class StaffAuthenticationService(IUnitOfWorkFactory units, IPasswordHasher<StaffAccount> hasher, ClinicClock clock)
 {
     public async Task<ClaimsPrincipal?> AuthenticateAsync(LoginDto dto)
     {
+        using var unitOfWork = units.Create();
         var email = dto.Email.Trim().ToLowerInvariant();
         var account = (await unitOfWork.StaffAccounts.FindAsync(a => a.Email == email)).SingleOrDefault();
         if (account is null || !account.IsActive ||

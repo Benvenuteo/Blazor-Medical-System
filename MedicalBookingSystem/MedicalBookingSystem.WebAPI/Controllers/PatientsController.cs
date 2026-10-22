@@ -33,7 +33,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             if (result.IsSuccess)
                 return Ok(result.Value);
 
-            return NotFound(result.Error);
+            return this.FailureResponse(result);
         }
 
         [HttpPut("profile")]
@@ -42,13 +42,13 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             var patientId = await _access.PatientIdAsync();
             var validationResult = await _updateValidator.ValidateAsync(dto);
             if (!validationResult.IsValid)
-                return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+                return Problem(statusCode: 400, detail: string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage)));
 
             var result = await _patientService.UpdatePatientAsync(patientId, dto);
             if (result.IsSuccess)
-                return Ok(result);
+                return NoContent();
 
-            return NotFound(result.Error);
+            return this.FailureResponse(result);
         }
     }
 }

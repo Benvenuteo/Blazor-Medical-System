@@ -7,6 +7,10 @@ namespace MedicalBookingSystem.Application.Validators
     {
         public SearchDoctorsDtoValidator()
         {
+            RuleFor(s => s.Page).InclusiveBetween(1, 100000);
+            RuleFor(s => s.PageSize).InclusiveBetween(1, 50);
+            RuleFor(s => s.Date).Must(d => !d.HasValue || (d.Value.Kind == DateTimeKind.Unspecified && d.Value.TimeOfDay == TimeSpan.Zero && d.Value.Date < DateTime.MaxValue.Date))
+                .WithMessage("Filtr daty musi wskazywać dzień, bez godziny.");
             RuleFor(s => s.SpecializationId)
                 .GreaterThan(0).WithMessage("Nieprawidłowy identyfikator specjalizacji")
                 .When(s => s.SpecializationId.HasValue);

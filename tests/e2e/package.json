@@ -1,0 +1,6 @@
+{
+  "name": "medical-booking-e2e",
+  "private": true,
+  "scripts": { "test": "node run-e2e.mjs" },
+  "devDependencies": { "@playwright/test": "1.62.1" }
+}

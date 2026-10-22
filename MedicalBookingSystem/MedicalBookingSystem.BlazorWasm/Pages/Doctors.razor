@@ -1,13 +1,16 @@
+@using MedicalBookingSystem.SharedKernel.Dto
+@using MedicalBookingSystem.SharedKernel.Dto.DtoHelp
+@using MedicalBookingSystem.SharedKernel.Dto.ReviewsDto
 @page "/doctors/search"
 @attribute [Authorize(Roles = Roles.Patient)]
 @inject HttpClient Http
 
 <h3>Wyszukiwanie lekarzy</h3>
 
-<EditForm Model="@searchDto" OnValidSubmit="SearchDoctors">
+<EditForm Model="@searchDto" OnValidSubmit="NewSearch">
     <div class="mb-3">
-        <label>Specjalizacja</label>
-        <InputSelect class="form-control" @bind-Value="searchDto.SpecializationId">
+        <label for="specialization">Specjalizacja</label>
+        <InputSelect id="specialization" class="form-control" @bind-Value="searchDto.SpecializationId">
             <option value="">-- wybierz --</option>
             @foreach (var spec in specializations)
             {
@@ -17,18 +20,18 @@
     </div>
 
     <div class="mb-3">
-        <label>Region</label>
-        <InputText class="form-control" @bind-Value="searchDto.Region" />
+        <label for="region">Region</label>
+        <InputText id="region" class="form-control" @bind-Value="searchDto.Region" />
     </div>
 
     <div class="mb-3">
-        <label>Data dostępności</label>
-        <InputDate class="form-control" @bind-Value="searchDto.Date" />
+        <label for="date">Data dostępności</label>
+        <InputDate id="date" class="form-control" @bind-Value="searchDto.Date" />
     </div>
 
     <div class="mb-3">
-        <label>Sortuj według</label>
-        <InputSelect class="form-control" @bind-Value="searchDto.SortBy">
+        <label for="sort">Sortuj według</label>
+        <InputSelect id="sort" class="form-control" @bind-Value="searchDto.SortBy">
             <option value="">-- wybierz --</option>
             <option value="rating">Ocena</option>
             <option value="availability">Najbliższy termin</option>
@@ -88,6 +91,7 @@ else if (doctors != null && doctors.Any())
                     <td>@(doctor.NextAvailableSlot?.ToString("dd.MM.yyyy HH:mm") ?? "Brak wolnych terminów")</td>
                     <td>
                         <div class="btn-group">
+                            <a class="btn btn-sm btn-primary" href="@($"appointments/create?doctorId={doctor.Id}")">Zarezerwuj wizytę</a>
                             <button class="btn btn-sm btn-info" @onclick="() => ToggleReviews(doctor.Id)">
                                 @((expandedDoctorIds.Contains(doctor.Id)) ? "Ukryj opinie" : "Pokaż opinie")
                             </button>
@@ -99,7 +103,7 @@ else if (doctors != null && doctors.Any())
                 @if (expandedDoctorIds.Contains(doctor.Id))
                 {
                     <tr>
-                        <td colspan="5">
+                        <td colspan="8">
                             @if (loadingReviews.Contains(doctor.Id))
                             {
                                 <p>Ładowanie opinii...</p>
@@ -137,6 +141,11 @@ else if (doctors != null && doctors.Any())
             }
         </tbody>
     </table>
+    <nav aria-label="Strony lekarzy" class="d-flex align-items-center gap-3">
+        <button class="btn btn-outline-primary" disabled="@(isLoading || searchDto.Page <= 1)" @onclick="() => ChangePage(-1)">Poprzednia</button>
+        <span>Strona @searchDto.Page z @(page?.TotalPages ?? 0) · Wyniki: @(page?.TotalCount ?? 0)</span>
+        <button class="btn btn-outline-primary" disabled="@(isLoading || searchDto.Page >= (page?.TotalPages ?? 0))" @onclick="() => ChangePage(1)">Następna</button>
+    </nav>
     @if (showReviewForm)
     {
         <div class="card mt-4">
@@ -144,12 +153,12 @@ else if (doctors != null && doctors.Any())
                 <h5>Dodaj opinię o lekarzu</h5>
                 <EditForm Model="@newReview" OnValidSubmit="SubmitReview">
                     <div class="mb-3">
-                        <label>Ocena (1-5)</label>
-                        <InputNumber class="form-control" @bind-Value="newReview.Rating" Min="1" Max="5" />
+                        <label for="rating">Ocena (1-5)</label>
+                        <InputNumber id="rating" class="form-control" @bind-Value="newReview.Rating" Min="1" Max="5" />
                     </div>
                     <div class="mb-3">
-                        <label>Komentarz</label>
-                        <InputTextArea class="form-control" @bind-Value="newReview.Comment" />
+                        <label for="comment">Komentarz</label>
+                        <InputTextArea id="comment" class="form-control" @bind-Value="newReview.Comment" />
                     </div>
                     <button type="submit" class="btn btn-primary">Wyślij opinię</button>
                     <button type="button" class="btn btn-secondary ms-2" @onclick="CancelReview">Anuluj</button>
@@ -164,9 +173,10 @@ else if (doctors != null)
 }
 
 @code {
-    private List<DoctorSearchResultDto>? doctors;
+    private List<DoctorDto>? doctors;
     private List<SpecializationDto> specializations = new();
     private SearchDoctorsDto searchDto = new();
+    private PagedResult<DoctorDto>? page;
     private bool isLoading = false;
     private string? errorMessage;
 
@@ -197,11 +207,14 @@ else if (doctors != null)
             if (response.IsSuccessStatusCode)
             {
                 showReviewForm = false;
+                await SearchDoctors();
+                reviewsByDoctor.Remove(selectedDoctorId);
+                expandedDoctorIds.Remove(selectedDoctorId);
                 await ToggleReviews(selectedDoctorId);
             }
             else
             {
-                var serverError = await response.Content.ReadAsStringAsync();
+                var serverError = await ApiErrors.ReadAsync(response);
                 errorMessage = $"Błąd dodawania opinii: {serverError}";
             }
         }
@@ -222,6 +235,10 @@ else if (doctors != null)
         }
     }
 
+    private async Task NewSearch() { searchDto.Page = 1; await SearchDoctors(); }
+
+    private async Task ChangePage(int delta) { searchDto.Page += delta; await SearchDoctors(); }
+
     private async Task SearchDoctors()
     {
         isLoading = true;
@@ -230,7 +247,7 @@ else if (doctors != null)
 
         try
         {
-            var queryParams = new List<string>();
+            var queryParams = new List<string> { $"Page={searchDto.Page}", $"PageSize={searchDto.PageSize}" };
 
             if (searchDto.SpecializationId.HasValue)
                 queryParams.Add($"SpecializationId={searchDto.SpecializationId.Value}");
@@ -245,7 +262,8 @@ else if (doctors != null)
                 queryParams.Add($"SortBy={Uri.EscapeDataString(searchDto.SortBy)}");
 
             var queryString = string.Join("&", queryParams);
-            doctors = await Http.GetFromJsonAsync<List<DoctorSearchResultDto>>($"api/doctors?{queryString}");
+            page = await Http.GetFromJsonAsync<PagedResult<DoctorDto>>($"api/doctors?{queryString}");
+            doctors = page?.Items.ToList() ?? [];
         }
         catch (Exception ex)
         {
@@ -267,7 +285,7 @@ else if (doctors != null)
         {
             expandedDoctorIds.Add(doctorId);
 
-            if (!reviewsByDoctor.ContainsKey(doctorId))
+            if (!reviewsByDoctor.TryGetValue(doctorId, out var cached) || cached is null)
             {
                 loadingReviews.Add(doctorId);
                 try
@@ -287,46 +305,4 @@ else if (doctors != null)
         }
     }
 
-    public class DoctorSearchResultDto
-    {
-        public int Id { get; set; }
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-        public string LicenseNumber { get; set; } = string.Empty;
-        public string Region { get; set; } = string.Empty;
-        public string Bio { get; set; } = string.Empty;
-        public decimal AverageRating { get; set; }
-        public int ReviewCount { get; set; }
-        public DateTime? NextAvailableSlot { get; set; }
-        public string ImageUrl { get; set; } = string.Empty;
-    }
-
-    public class SpecializationDto
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-    }
-
-    public class SearchDoctorsDto
-    {
-        public int? SpecializationId { get; set; }
-        public string? Region { get; set; }
-        public DateTime? Date { get; set; }
-        public string? SortBy { get; set; }
-    }
-
-    public class ReviewDto
-    {
-        public int Rating { get; set; }
-        public string Comment { get; set; } = string.Empty;
-    }
-
-    public class CreateReviewDto
-    {
-        public int Rating { get; set; }
-
-        public string Comment { get; set; } = string.Empty;
-
-        public int DoctorId { get; set; }
-    }
 }

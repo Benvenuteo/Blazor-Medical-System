@@ -14,16 +14,16 @@ namespace MedicalBookingSystem.Application.Services
 {
     public class MedicalRecordService : IMedicalRecordService
     {
-        private readonly IUnitOfWork _uow;
+        private readonly IUnitOfWorkFactory _units;
         private readonly UserAccess _access;
         private readonly ClinicClock _clock;
         private readonly IValidator<CreateNoteDto> _noteValidator;
         private readonly IValidator<CreatePrescriptionDto> _prescriptionValidator;
 
 
-        public MedicalRecordService(IUnitOfWork unitOfWork, ClinicClock clock, UserAccess access, IValidator<CreateNoteDto> noteValidator, IValidator<CreatePrescriptionDto> prescriptionValidator)
+        public MedicalRecordService(IUnitOfWorkFactory units, ClinicClock clock, UserAccess access, IValidator<CreateNoteDto> noteValidator, IValidator<CreatePrescriptionDto> prescriptionValidator)
         {
-            _uow = unitOfWork;
+            _units = units;
             _access = access;
             _clock = clock;
             _noteValidator = noteValidator;
@@ -32,6 +32,7 @@ namespace MedicalBookingSystem.Application.Services
         }
         public async Task<Result<NoteDto>> AddNoteToAppointmentAsync(CreateNoteDto dto, int doctorId)
         {
+            using var _uow = _units.Create();
             await _access.RequireDoctorAsync(doctorId);
             var appointment = await _uow.Appointments.GetByIdAsync(dto.AppointmentId);
             if (appointment is null) return Result.Failure<NoteDto>("Wizyta nie istnieje.", ErrorType.NotFound);
@@ -55,6 +56,7 @@ namespace MedicalBookingSystem.Application.Services
 
         public async Task<Result<PrescriptionDto>> CreatePrescriptionAsync(CreatePrescriptionDto dto, int doctorId)
         {
+            using var _uow = _units.Create();
             await _access.RequireDoctorAsync(doctorId);
             var appointment = await _uow.Appointments.GetByIdAsync(dto.AppointmentId);
             if (appointment is null) return Result.Failure<PrescriptionDto>("Wizyta nie istnieje.", ErrorType.NotFound);
@@ -85,6 +87,7 @@ namespace MedicalBookingSystem.Application.Services
 
         public async Task<Result<IEnumerable<MedicalDocumentDto>>> GetPatientDocumentsAsync(int patientId)
         {
+            using var _uow = _units.Create();
             await _access.RequirePatientAsync(patientId);
             var prescriptions = await _uow.Prescriptions.GetByPatientIdAsync(patientId);
             var notes = await _uow.Notes.GetByPatientIdAsync(patientId);
@@ -106,6 +109,7 @@ namespace MedicalBookingSystem.Application.Services
 
         public async Task<Result<PrescriptionDto>> GetPrescriptionAsync(int id)
         {
+            using var _uow = _units.Create();
             var prescription = await _uow.Prescriptions.GetByIdAsync(id);
             if (prescription == null)
                 return Result<PrescriptionDto>.Failure<PrescriptionDto>("Nie znaleziono recepty.", ErrorType.NotFound);
@@ -119,6 +123,7 @@ namespace MedicalBookingSystem.Application.Services
 
         public async Task<Result<NoteDto>> GetNoteAsync(int id)
         {
+            using var _uow = _units.Create();
             var note = await _uow.Notes.GetByIdAsync(id);
             if (note == null)
                 return Result<NoteDto>.Failure<NoteDto>("Nie znaleziono notatki.", ErrorType.NotFound);

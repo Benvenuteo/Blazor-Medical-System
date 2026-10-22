@@ -6,6 +6,7 @@ namespace MedicalBookingSystem.Domain.Contracts
     {
         Task<DoctorSchedule?> GetByIdAsync(int id);
         Task<IEnumerable<DoctorSchedule>> GetByDoctorIdAsync(int doctorId);
+        Task<IEnumerable<DoctorSchedule>> GetInRangeAsync(int doctorId, DateTime from, DateTime to);
         Task<bool> IsDoctorAvailableAsync(int doctorId, DateTime date);
         Task AddAsync(DoctorSchedule schedule);
         Task AddRangeAsync(IEnumerable<DoctorSchedule> schedules);

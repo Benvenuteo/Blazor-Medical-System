@@ -1,51 +1,27 @@
 using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.Domain.Exceptions;
 
-namespace MedicalBookingSystem.WebAPI.Middleware
+namespace MedicalBookingSystem.WebAPI.Middleware;
+
+public sealed class ExceptionMiddleware(ILogger<ExceptionMiddleware> logger) : IMiddleware
 {
-    public class ExceptionMiddleware : IMiddleware
+    public async Task InvokeAsync(HttpContext context, RequestDelegate next)
     {
-        private readonly ILogger<ExceptionMiddleware> _logger;
-
-        public ExceptionMiddleware(ILogger<ExceptionMiddleware> logger)
+        try { await next(context); }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested) { }
+        catch (AccessDeniedException exception)
         {
-            this._logger = logger;
+            await Results.Problem(statusCode: exception.Authenticated ? 403 : 401,
+                title: exception.Authenticated ? "Brak dostępu." : "Wymagane logowanie.").ExecuteAsync(context);
         }
-
-        public async Task InvokeAsync(HttpContext context, RequestDelegate next)
+        catch (NotFoundException exception)
+        { await Results.Problem(statusCode: 404, detail: exception.Message).ExecuteAsync(context); }
+        catch (BadRequestException exception)
+        { await Results.Problem(statusCode: 400, detail: exception.Message).ExecuteAsync(context); }
+        catch (Exception exception)
         {
-            try
-            {
-                await next.Invoke(context);
-            }
-            catch (AccessDeniedException ex)
-            {
-                context.Response.StatusCode = ex.Authenticated ? StatusCodes.Status403Forbidden : StatusCodes.Status401Unauthorized;
-                await context.Response.WriteAsJsonAsync(new Microsoft.AspNetCore.Mvc.ProblemDetails
-                {
-                    Status = context.Response.StatusCode, Title = ex.Authenticated ? "Brak dostępu." : "Wymagane logowanie."
-                });
-            }
-            catch (NotFoundException ex)
-            {
-                _logger.LogError(ex, ex.Message);
-                context.Response.StatusCode = StatusCodes.Status404NotFound;
-                await context.Response.WriteAsync(ex.Message);
-            }
-            catch (BadRequestException ex)
-            {
-                _logger.LogError(ex, ex.Message);
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await context.Response.WriteAsync(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ex.Message);
-                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                await context.Response.WriteAsync("Something went wrong");
-            }
-
-
+            logger.LogError(exception, "Unhandled request error {TraceId}", context.TraceIdentifier);
+            await Results.Problem(statusCode: 500, title: "Wystąpił błąd serwera.").ExecuteAsync(context);
         }
     }
 }

@@ -2,7 +2,7 @@
 
 System rezerwacji wizyt medycznych z API ASP.NET Core, aplikacją pacjenta w Blazor WebAssembly i panelem obsługi w Blazor Server. Dane przechowywane są w SQLite przez Entity Framework Core.
 
-Projekt jest rozwijany etapami. Wdrożono .NET 10 LTS, migracje, testy, kontrolę dostępu oraz rezerwacje z ochroną przed równoczesnym zajęciem terminu. Pacjent wybiera rzeczywisty slot, lekarz oznacza wizytę jako odbytą, a następnie dodaje dokumentację. Stan kolejnych prac opisuje [plan](docs/ROADMAP.md), [zasady rezerwacji](docs/BOOKING.md) i [kontrola dostępu](docs/SECURITY.md).
+Projekt jest rozwijany etapami. Wdrożono .NET 10 LTS, migracje, testy, kontrolę dostępu oraz rezerwacje z ochroną przed równoczesnym zajęciem terminu. Pacjent wybiera rzeczywisty slot, lekarz oznacza wizytę jako odbytą, a następnie dodaje dokumentację. Katalog lekarzy jest stronicowany w SQLite, operacje panelu mają osobne konteksty EF, a zdjęcia są dekodowane i kodowane ponownie. Główne przepływy sprawdzają testy Chromium. Stan kolejnych prac opisuje [plan](docs/ROADMAP.md), [zasady rezerwacji](docs/BOOKING.md) i [kontrola dostępu](docs/SECURITY.md).
 
 ## Wymagania
 
@@ -70,6 +70,7 @@ Ustawienia można nadpisać przez zmienne środowiskowe .NET, np.:
 - `JwtSettings__SecretKey` — co najmniej 32 bajty; wymagany poza Development.
 - `Cors__AllowedOrigins__0` — dozwolony adres aplikacji pacjenta.
 - `AllowedHosts` — nazwy hostów obsługiwane przez wdrożenie.
+- `Media__PublicBaseUrl` i `Media__StoragePath` — publiczny adres panelu i trwały katalog zdjęć; [konfiguracja mediów](docs/MEDIA.md).
 
 Development generuje tymczasowy klucz JWT na czas życia procesu. Restart API unieważnia takie tokeny. Klucz używany poza środowiskiem lokalnym przechowuj w konfiguracji środowiska, bez wpisywania go do repozytorium.
 
@@ -98,6 +99,8 @@ Początkowa migracja służy do tworzenia nowej bazy. Stara baza utworzona przez
 | BlazorWasm | Interfejs pacjenta |
 | BlazorServer | Panel obsługi |
 
-Testy jednostkowe korzystają z xUnit i Moq, integracyjne z rzeczywistego API i SQLite, a komponentowe z bUnit. Workflow `Build and test` sprawdza rozwiązanie na Linux i Windows oraz zapisuje raporty TRX i Cobertura.
+Testy jednostkowe korzystają z xUnit i Moq, integracyjne z rzeczywistego API i SQLite, a komponentowe z bUnit. Workflow `Build and test` sprawdza 221 przypadków .NET na Linux i Windows, zapisuje raporty TRX/Cobertura i pomiar katalogu, a osobne zadanie uruchamia cztery scenariusze Playwright w Chromium.
 
-Szczegóły: [zasady rezerwacji](docs/BOOKING.md), [strategia testowania](docs/TESTING.md), [kontrola dostępu](docs/SECURITY.md) i [plan dalszych etapów](docs/ROADMAP.md).
+Zrzuty działającej aplikacji i scenariusz demonstracyjny: [DEMO.md](docs/DEMO.md).
+
+Szczegóły: [kontrakty API](docs/API.md), [zdjęcia](docs/MEDIA.md), [wydajność](docs/PERFORMANCE.md), [zasady rezerwacji](docs/BOOKING.md), [strategia testowania](docs/TESTING.md), [kontrola dostępu](docs/SECURITY.md) i [plan dalszych etapów](docs/ROADMAP.md).

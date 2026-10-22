@@ -17,7 +17,7 @@ public sealed class ScheduleValidationTests
         repositories.Schedules.Setup(r => r.GetByDoctorIdAsync(1)).ReturnsAsync(Array.Empty<DoctorSchedule>());
         var clock = new TestTimeProvider().CreateClock();
         var start = clock.Today.AddDays(2).AddHours(9).AddMinutes(15);
-        var validator = new CreateScheduleDtoValidator(repositories.UnitOfWork.Object, clock);
+        var validator = new CreateScheduleDtoValidator(new TestUnitOfWorkFactory(repositories.UnitOfWork.Object), clock);
         var result = await validator.ValidateAsync(new CreateScheduleDto { DoctorId = 1, StartTime = start, EndTime = start.AddMinutes(durationMinutes) });
         Assert.Equal(expected, result.IsValid);
     }
@@ -38,7 +38,7 @@ public sealed class ScheduleValidationTests
         repositories.Schedules.Setup(repository => repository.GetByDoctorIdAsync(1)).ReturnsAsync([
             new DoctorSchedule { DoctorId = 1, StartTime = tomorrow.AddHours(8), EndTime = tomorrow.AddHours(10) }
         ]);
-        var validator = new CreateScheduleDtoValidator(repositories.UnitOfWork.Object, clock);
+        var validator = new CreateScheduleDtoValidator(new TestUnitOfWorkFactory(repositories.UnitOfWork.Object), clock);
 
         var result = await validator.ValidateAsync(new CreateScheduleDto
         {

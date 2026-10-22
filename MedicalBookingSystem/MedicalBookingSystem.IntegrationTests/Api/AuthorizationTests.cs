@@ -63,7 +63,7 @@ public sealed class AuthorizationTests
         using var body = JsonDocument.Parse(await profile.Content.ReadAsStringAsync());
         Assert.Equal(scenario.PatientId, body.RootElement.GetProperty("id").GetInt32());
         using var update = await client.PutAsJsonAsync($"/api/patients/profile?patientId={scenario.OtherPatientId}", new { firstName = "Updated", lastName = "Patient" });
-        Assert.Equal(HttpStatusCode.OK, update.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, update.StatusCode);
         await using var scope = scenario.Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         Assert.Equal("Updated", (await db.Patients.SingleAsync(p => p.Id == scenario.PatientId)).FirstName);

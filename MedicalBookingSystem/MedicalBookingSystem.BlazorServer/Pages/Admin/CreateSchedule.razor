@@ -1,11 +1,14 @@
+@inherits MedicalBookingSystem.BlazorServer.Shared.InteractivePageBase
 @page "/admin/doctors/{DoctorId:int}/schedule"
 @attribute [Authorize(Roles = Roles.Staff)]
 @inject UserAccess Access
 @using MedicalBookingSystem.SharedKernel.Dto
 @inject IDoctorService DoctorService
 @inject NavigationManager Navigation
+@inject MedicalBookingSystem.Application.Time.ClinicClock Clock
 
 <h3>Dodaj grafik lekarza</h3>
+<fieldset disabled="@(!IsInteractive || _saving)">
 
 <EditForm Model="_dto" OnValidSubmit="HandleValidSubmit">
     <DataAnnotationsValidator />
@@ -45,11 +48,14 @@
     }
 </EditForm>
 
+</fieldset>
+
 @code {
     [Parameter] public int DoctorId { get; set; }
 
     private CreateScheduleDto _dto = new();
     private string? _error;
+    private bool _saving;
     private string? _success;
 
     private DateTime startDate = DateTime.Today;
@@ -57,6 +63,8 @@
 
     private DateTime endDate = DateTime.Today;
     private TimeOnly endTime = new(16, 0);
+
+    protected override void OnInitialized() => startDate = endDate = Clock.Today;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -66,27 +74,33 @@
 
     private async Task HandleValidSubmit()
     {
-        _error = _success = null;
-
-        _dto.DoctorId = DoctorId;
-        _dto.StartTime = DateTime.SpecifyKind(startDate.Date + startTime.ToTimeSpan(), DateTimeKind.Unspecified);
-        _dto.EndTime = DateTime.SpecifyKind(endDate.Date + endTime.ToTimeSpan(), DateTimeKind.Unspecified);
-
-        if (_dto.StartTime >= _dto.EndTime)
+        if (_saving) return;
+        _saving = true;
+        try
         {
-            _error = "Data zakończenia musi być późniejsza niż rozpoczęcia.";
-            return;
-        }
+            _error = _success = null;
 
-        var result = await DoctorService.CreateScheduleAsync(_dto);
-        if (result.IsSuccess)
-        {
-            _success = "Grafik został zapisany.";
+            _dto.DoctorId = DoctorId;
+            _dto.StartTime = DateTime.SpecifyKind(startDate.Date + startTime.ToTimeSpan(), DateTimeKind.Unspecified);
+            _dto.EndTime = DateTime.SpecifyKind(endDate.Date + endTime.ToTimeSpan(), DateTimeKind.Unspecified);
+
+            if (_dto.StartTime >= _dto.EndTime)
+            {
+                _error = "Data zakończenia musi być późniejsza niż rozpoczęcia.";
+                return;
+            }
+
+            var result = await DoctorService.CreateScheduleAsync(_dto);
+            if (result.IsSuccess)
+            {
+                _success = "Grafik został zapisany.";
+            }
+            else
+            {
+                _error = result.Error;
+            }
         }
-        else
-        {
-            _error = result.Error;
-        }
+        finally { _saving = false; }
     }
 
     private void NavigateBack()

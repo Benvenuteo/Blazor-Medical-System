@@ -44,7 +44,7 @@ Raporty są również publikowane jako artefakty workflow `Build and test`. Pokr
 
 ## Kolejne pakiety testów
 
-Plan dalszej pracy znajduje się w [ROADMAP.md](ROADMAP.md). Obecny zestaw zawiera 185 przypadków: 95 jednostkowych, 81 integracyjnych i 9 komponentowych. Kolejny etap obejmuje wydajność API, czas życia kontekstu EF w panelu Server i testy E2E w przeglądarce.
+Plan dalszej pracy znajduje się w [ROADMAP.md](ROADMAP.md). Zestaw obejmuje 221 przypadków .NET: 96 jednostkowych, 116 integracyjnych i 9 komponentowych, oraz cztery scenariusze E2E. Dokładne wyniki każdego przebiegu zapisują raporty TRX i raport Playwright. Plan dalszej pracy obejmuje zarządzanie kontami, unieważnianie sesji, audyt dokumentacji i stronicowanie pozostałych list.
 
 ## Współbieżność i czas
 
@@ -55,3 +55,28 @@ Plan dalszej pracy znajduje się w [ROADMAP.md](ROADMAP.md). Obecny zestaw zawie
 - Test pełnego przebiegu używa rzeczywistego HTTP: rejestracja, rezerwacja, odmowa przedwczesnego zakończenia/dokumentacji/opinii, zakończenie przez lekarza, dokumentacja, opinia i historia pacjenta. Przesuwany jest wyłącznie kontrolowany zegar. Daty i statusy zapisanej wizyty nie są ręcznie zmieniane w bazie.
 - W tym jednym scenariuszu walidator czasu JWT otrzymuje ten sam zegar testowy. Podpis, algorytm, wystawca, odbiorca i uprawnienia pozostają sprawdzane przez rzeczywisty handler. Pozostałe testy bezpieczeństwa korzystają z domyślnej walidacji czasu tokenów.
 - Osobne przypadki pokrywają obie zmiany czasu w `Europe/Warsaw`, pełne 24 godziny czasu rzeczywistego oraz granice grafiku i 3-miesięcznego horyzontu.
+
+## Przeglądarka i wydajność
+
+Do testów E2E potrzebny jest Node.js 24 oraz Chromium instalowany przez przypiętą wersję Playwright:
+
+```bash
+npm ci --prefix tests/e2e
+cd tests/e2e
+npx playwright install chromium
+npm test
+```
+
+Przed testem aplikacje muszą być zbudowane w konfiguracji Release. Porty 5016, 5031 i 5187 powinny być wolne. Skrypt uruchamia trzy prawdziwe hosty, świeżą bazę i osobny katalog zdjęć w katalogu tymczasowym. Nie korzysta z roboczej bazy ani z już uruchomionych serwerów. Wybranie `CHROMIUM_EXECUTABLE_PATH` pozwala lokalnie wskazać własny zgodny plik przeglądarki; CI używa instalacji Playwright.
+
+Scenariusze: rejestracja z walidacją wieku; pacjent wyszukuje, rezerwuje, przenosi i anuluje wizytę oraz wylogowuje się; lekarz kończy wizytę i tworzy dokumentację, którą pacjent odczytuje, a następnie dodaje opinię; administrator odrzuca fałszywe zdjęcie, publikuje poprawne i zapisuje grafik. Testy korzystają z rzeczywistych formularzy, cookie, JWT, SignalR i HTTP, bez przechwytywania odpowiedzi API.
+
+Raport HTML, ślady błędów i zrzuty ekranów znajdują się w `TestResults/e2e/`. W CI publikuje je zadanie `Browser workflows / Ubuntu`. Zrzuty zawierają wyłącznie fikcyjne dane demonstracyjne. Testy czekają na obserwowalny stan interfejsu, zamiast używać `Sleep`.
+
+`DirectoryScaleTests` przygotowuje 100 lekarzy, 1400 grafików, 1000 historycznych wizyt i 1000 opinii. Sprawdza stronicowanie w SQL, dwie komendy SELECT i brak śledzenia grafów. Zapisuje diagnostyczne próbki czasów nowego odczytu i odtworzonego poprzedniego zapytania. Do wyeksportowania JSON ustaw `MEDICAL_BENCHMARK_OUTPUT` na ścieżkę pliku i uruchom:
+
+```bash
+dotnet test MedicalBookingSystem/MedicalBookingSystem.IntegrationTests --configuration Release --no-build --filter Category=Performance --logger trx --results-directory TestResults/benchmark
+```
+
+Czas nie ma sztywnego progu w CI. Porównanie używa lokalnej bazy plikowej i nie stanowi testu obciążeniowego publicznego wdrożenia. Metodyka i zapisany wynik: [PERFORMANCE.md](PERFORMANCE.md).

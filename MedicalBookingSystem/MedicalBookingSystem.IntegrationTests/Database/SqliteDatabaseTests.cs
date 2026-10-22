@@ -51,7 +51,7 @@ public sealed class SqliteDatabaseTests
     }
 
     [Fact]
-    public async Task DoctorRepository_ThroughUnitOfWork_LoadsRelationsNeededByPublicMapping()
+    public async Task DoctorDetails_ProjectsRatingsAndUpcomingSchedulesWithoutTrackingGraph()
     {
         using var factory = new MedicalApiFactory();
         await factory.InitializeDatabaseAsync();
@@ -67,12 +67,13 @@ public sealed class SqliteDatabaseTests
         await database.SaveChangesAsync();
         database.ChangeTracker.Clear();
 
-        var doctors = await scope.ServiceProvider.GetRequiredService<IUnitOfWork>().Doctors.GetAllAsync();
-
-        var loaded = Assert.Single(doctors);
-        Assert.Single(loaded.Reviews);
+        var queries = scope.ServiceProvider.GetRequiredService<MedicalBookingSystem.Application.Queries.IDoctorDirectoryQueries>();
+        var loaded = await queries.GetDetailsAsync(doctor.Id, new DateTime(2026, 10, 1), new DateTime(2026, 12, 1));
+        Assert.NotNull(loaded);
         Assert.Single(loaded.Schedules);
+        Assert.Equal(1, loaded.ReviewCount);
         Assert.Equal(5, loaded.AverageRating);
+        Assert.Empty(database.ChangeTracker.Entries());
     }
 
     private static Patient PatientWithEmail(string email) => new()

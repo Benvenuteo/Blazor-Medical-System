@@ -13,15 +13,15 @@ namespace MedicalBookingSystem.Application.Services
 {
     public class ReviewService : IReviewService
     {
-        private readonly IUnitOfWork _uow;
+        private readonly IUnitOfWorkFactory _units;
         private readonly UserAccess _access;
         private readonly ClinicClock _clock;
         private readonly IValidator<CreateReviewDto> _validator;
 
 
-        public ReviewService(IUnitOfWork uow, ClinicClock clock, UserAccess access, IValidator<CreateReviewDto> validator)
+        public ReviewService(IUnitOfWorkFactory units, ClinicClock clock, UserAccess access, IValidator<CreateReviewDto> validator)
         {
-            _uow = uow;
+            _units = units;
             _access = access;
             _clock = clock;
             _validator = validator;
@@ -29,6 +29,7 @@ namespace MedicalBookingSystem.Application.Services
         }
         public async Task<Result<ReviewDto>> AddReviewAsync(CreateReviewDto dto, int patientId)
         {
+            using var _uow = _units.Create();
             await _access.RequirePatientAsync(patientId);
             var validation = await _validator.ValidateAsync(dto);
             if (!validation.IsValid) return Result.Failure<ReviewDto>(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
@@ -53,45 +54,34 @@ namespace MedicalBookingSystem.Application.Services
 
         public async Task<Result> DeleteReviewAsync(int reviewId, int patientId)
         {
+            using var _uow = _units.Create();
             await _access.RequirePatientAsync(patientId);
-            try
-            {
-                var review = await _uow.Reviews.GetByIdAsync(reviewId);
-                if (review == null)
-                    return Result.Failure("Opinia nie istnieje", ErrorType.NotFound);
+            var review = await _uow.Reviews.GetByIdAsync(reviewId);
+            if (review == null)
+                return Result.Failure("Opinia nie istnieje", ErrorType.NotFound);
 
-                if (review.PatientId != patientId)
-                    throw new AccessDeniedException(true);
+            if (review.PatientId != patientId)
+                throw new AccessDeniedException(true);
 
-                _uow.Reviews.Remove(review);
-                await _uow.SaveChangesAsync();
+            _uow.Reviews.Remove(review);
+            await _uow.SaveChangesAsync();
 
-                return Result.Success();
-            }
-            catch (Exception ex) when (ex is not AccessDeniedException)
-            {
-                return Result.Failure("Wystąpił błąd podczas usuwania opinii");
-            }
+            return Result.Success();
         }
 
         public async Task<Result<IEnumerable<ReviewDto>>> GetDoctorReviewsAsync(int doctorId)
         {
-            try
-            {
-                var reviews = await _uow.Reviews
-                    .GetByDoctorIdAsync(doctorId);
+            using var _uow = _units.Create();
+            var reviews = await _uow.Reviews
+                .GetByDoctorIdAsync(doctorId);
 
-                IEnumerable<ReviewDto> reviewDtos = reviews.Select(item => item.ToDto()).ToList();
-                return Result<IEnumerable<ReviewDto>>.Success(reviewDtos);
-            }
-            catch (Exception ex) when (ex is not AccessDeniedException)
-            {
-                return Result<IEnumerable<ReviewDto>>.Failure<IEnumerable<ReviewDto>>("Wystąpił błąd podczas pobierania opinii");
-            }
+            IEnumerable<ReviewDto> reviewDtos = reviews.Select(item => item.ToDto()).ToList();
+            return Result<IEnumerable<ReviewDto>>.Success(reviewDtos);
         }
 
         public async Task<Result<ReviewDto>> GetReviewAsync(int reviewId)
         {
+            using var _uow = _units.Create();
             var review = await _uow.Reviews.GetByIdAsync(reviewId);
             if (review == null)
                 return Result<ReviewDto>.Failure<ReviewDto>("Nie znaleziono opinii.", ErrorType.NotFound);

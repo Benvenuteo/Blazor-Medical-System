@@ -16,8 +16,8 @@ public sealed class AppointmentIntegrityTests
         using var scenario = await SecurityScenario.CreateAsync();
         await using var firstScope = scenario.Factory.Services.CreateAsyncScope();
         await using var secondScope = scenario.Factory.Services.CreateAsyncScope();
-        var first = firstScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var second = secondScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        using var first = firstScope.ServiceProvider.GetRequiredService<IUnitOfWorkFactory>().Create();
+        using var second = secondScope.ServiceProvider.GetRequiredService<IUnitOfWorkFactory>().Create();
         var a = (await first.Appointments.GetByIdAsync(scenario.AppointmentId))!;
         var stale = (await second.Appointments.GetByIdAsync(scenario.AppointmentId))!;
         a.Status = AppointmentStatus.Cancelled;
@@ -25,8 +25,8 @@ public sealed class AppointmentIntegrityTests
         stale.Date = scenario.BookingDate;
         var conflict = await Assert.ThrowsAsync<PersistenceConflictException>(() => second.SaveChangesAsync());
         Assert.Equal(PersistenceConflictKind.ConcurrentChange, conflict.Kind);
-        Assert.Empty(secondScope.ServiceProvider.GetRequiredService<ApplicationDbContext>().ChangeTracker.Entries());
         var persisted = (await second.Appointments.GetByIdAsync(scenario.AppointmentId))!;
+        Assert.NotSame(stale, persisted);
         Assert.Equal(AppointmentStatus.Cancelled, persisted.Status);
         Assert.Equal(scenario.BookingDate.AddDays(1), persisted.Date);
     }
@@ -60,7 +60,7 @@ public sealed class AppointmentIntegrityTests
     {
         using var scenario = await SecurityScenario.CreateAsync();
         await using var scope = scenario.Factory.Services.CreateAsyncScope();
-        var unit = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        using var unit = scope.ServiceProvider.GetRequiredService<IUnitOfWorkFactory>().Create();
         await unit.DoctorSchedules.AddAsync(new DoctorSchedule { DoctorId = scenario.DoctorId, StartTime = scenario.BookingDate.AddHours(3), EndTime = scenario.BookingDate.AddHours(5) });
         var error = await Assert.ThrowsAsync<PersistenceConflictException>(() => unit.SaveChangesAsync());
         Assert.Equal(PersistenceConflictKind.ScheduleOverlap, error.Kind);
@@ -73,7 +73,7 @@ public sealed class AppointmentIntegrityTests
     {
         using var scenario = await SecurityScenario.CreateAsync();
         await using var scope = scenario.Factory.Services.CreateAsyncScope();
-        var unit = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        using var unit = scope.ServiceProvider.GetRequiredService<IUnitOfWorkFactory>().Create();
         await unit.Reviews.AddAsync(new Review { PatientId = scenario.OtherPatientId, DoctorId = scenario.OtherDoctorId, Rating = 4 });
         var error = await Assert.ThrowsAsync<PersistenceConflictException>(() => unit.SaveChangesAsync());
         Assert.Equal(PersistenceConflictKind.DuplicateReview, error.Kind);

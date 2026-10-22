@@ -19,7 +19,7 @@ public sealed class DoctorServiceTests
         var validator = new Mock<IValidator<CreateScheduleDto>>();
         validator.Setup(item => item.ValidateAsync(It.IsAny<CreateScheduleDto>(), It.IsAny<CancellationToken>()))
             .Returns(completion.Task);
-        var service = new DoctorService(repositories.UnitOfWork.Object, validator.Object, new TestTimeProvider().CreateClock(), TestUsers.Admin());
+        var service = new DoctorService(new TestUnitOfWorkFactory(repositories.UnitOfWork.Object), validator.Object, new TestTimeProvider().CreateClock(), TestUsers.Admin(), new Moq.Mock<MedicalBookingSystem.Application.Queries.IDoctorDirectoryQueries>().Object);
 
         var operation = service.CreateScheduleAsync(new CreateScheduleDto());
         Assert.False(operation.IsCompleted);
@@ -60,20 +60,17 @@ public sealed class DoctorServiceTests
         repositories.UnitOfWork.Verify(unit => unit.SaveChangesAsync(), Times.Never);
     }
 
-    [Fact]
-    public async Task SearchDoctors_SortsByRatingWithoutRequiringRegion()
+    [Theory]
+    [InlineData(0, 10)]
+    [InlineData(1, 0)]
+    [InlineData(1, 51)]
+    [InlineData(100001, 10)]
+    public async Task SearchDoctors_InvalidPageIsRejectedBeforeCallingDatabase(int page, int pageSize)
     {
         var repositories = new RepositoryMocks();
-        var lowRated = new Doctor { Id = 1, Reviews = [new Review { Rating = 2 }] };
-        var highRated = new Doctor { Id = 2, Reviews = [new Review { Rating = 5 }] };
-        lowRated.UpdateAverageRating();
-        highRated.UpdateAverageRating();
-        repositories.Doctors.Setup(repository => repository.GetAllAsync()).ReturnsAsync([lowRated, highRated]);
-
-        var result = await CreateService(repositories).SearchDoctorsAsync(new SearchDoctorsDto { SortBy = "rating" });
-
-        Assert.True(result.IsSuccess);
-        Assert.Equal([2, 1], result.Value.Select(doctor => doctor.Id));
+        var result = await CreateService(repositories).SearchDoctorsAsync(new SearchDoctorsDto { Page = page, PageSize = pageSize });
+        Assert.True(result.IsFailure);
+        repositories.UnitOfWork.Verify(unit => unit.SaveChangesAsync(), Times.Never);
     }
 
     private static DoctorService CreateService(RepositoryMocks repositories)
@@ -81,6 +78,6 @@ public sealed class DoctorServiceTests
         var validator = new Mock<IValidator<CreateScheduleDto>>();
         validator.Setup(item => item.ValidateAsync(It.IsAny<CreateScheduleDto>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new ValidationResult());
-        return new DoctorService(repositories.UnitOfWork.Object, validator.Object, new TestTimeProvider().CreateClock(), TestUsers.Admin());
+        return new DoctorService(new TestUnitOfWorkFactory(repositories.UnitOfWork.Object), validator.Object, new TestTimeProvider().CreateClock(), TestUsers.Admin(), new Moq.Mock<MedicalBookingSystem.Application.Queries.IDoctorDirectoryQueries>().Object);
     }
 }

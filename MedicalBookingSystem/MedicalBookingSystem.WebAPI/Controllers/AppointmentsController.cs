@@ -39,7 +39,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             var result = await _appointmentService.UpdateAppointmentAsync(id, dto);
 
             if (result.IsSuccess)
-                return Ok(result);
+                return NoContent();
 
             return this.FailureResponse(result);
         }

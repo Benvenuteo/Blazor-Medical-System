@@ -11,11 +11,11 @@
         <MudText Typo="Typo.h6">Medical Booking System</MudText>
     </MudAppBar>
 
-    <MudDrawer Anchor="Anchor.Left" Open="true" ClipMode="DrawerClipMode.Always">
+    <MudDrawer Style="background: linear-gradient(180deg, #092447, #183f69); color: white;" Anchor="Anchor.Left" Open="true" ClipMode="DrawerClipMode.Always">
         <NavMenu />
     </MudDrawer>
 
     <MudMainContent>
-        @Body
+        <div class="p-4">@Body</div>
     </MudMainContent>
 </MudLayout>

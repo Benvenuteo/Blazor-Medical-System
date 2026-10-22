@@ -13,6 +13,13 @@
     <option value="0">Wybierz lekarza</option>
     @foreach (var doctor in doctors) { <option value="@doctor.Id">@doctor.FirstName @doctor.LastName</option> }
 </select>
+@if (page is not null)
+{
+    <nav aria-label="Wybór lekarza" class="d-flex gap-2 mb-3">
+        <button class="btn btn-outline-primary" disabled="@(saving || doctorPage <= 1)" @onclick="() => LoadDoctorsAsync(-1)">Poprzedni lekarze</button>
+        <button class="btn btn-outline-primary" disabled="@(saving || doctorPage >= page.TotalPages)" @onclick="() => LoadDoctorsAsync(1)">Następni lekarze</button>
+    </nav>
+}
 @if (loading) { <p>Ładowanie terminów...</p> }
 else if (selectedDoctorId > 0)
 {
@@ -32,6 +39,9 @@ else if (selectedDoctorId > 0)
 }
 
 @code {
+    [SupplyParameterFromQuery(Name = "doctorId")] public int? DoctorId { get; set; }
+    private PagedResult<DoctorDto>? page;
+    private int doctorPage = 1;
     private List<DoctorDto> doctors = [];
     private List<AvailableSlotDto> slots = [];
     private int selectedDoctorId;
@@ -42,7 +52,27 @@ else if (selectedDoctorId > 0)
 
     protected override async Task OnInitializedAsync()
     {
-        try { doctors = await Http.GetFromJsonAsync<List<DoctorDto>>("api/doctors/all") ?? []; }
+        if (DoctorId is > 0)
+        {
+            try
+            {
+                var doctor = await Http.GetFromJsonAsync<DoctorDetailsDto>($"api/doctors/{DoctorId}");
+                if (doctor is not null) { doctors = [doctor]; selectedDoctorId = doctor.Id; await LoadSlotsAsync(); }
+            }
+            catch (HttpRequestException) { error = "Nie udało się pobrać lekarza."; }
+        }
+        else await LoadDoctorsAsync(0);
+    }
+
+    private async Task LoadDoctorsAsync(int delta)
+    {
+        doctorPage += delta;
+        try
+        {
+            page = await Http.GetFromJsonAsync<PagedResult<DoctorDto>>($"api/doctors?Page={doctorPage}&PageSize=10");
+            doctors = page?.Items.ToList() ?? [];
+            selectedDoctorId = 0; selectedStart = string.Empty; slots = [];
+        }
         catch (HttpRequestException) { error = "Nie udało się pobrać lekarzy."; }
     }
 

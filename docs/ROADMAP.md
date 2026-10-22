@@ -36,13 +36,19 @@ Każdy etap powinien kończyć się działającym buildem, testami regresyjnymi 
 
 ## 4. API, wydajność i prezentacja
 
-- [ ] Spójne DTO odpowiedzi i ProblemDetails dla błędów.
-- [ ] Paginacja, filtrowanie i agregacje wykonywane w bazie.
-- [ ] Kontekst EF o czasie życia dostosowanym do operacji w Blazor Server.
-- [ ] Usunięcie kopii DTO z komponentów WASM.
+- [x] Spójne DTO odpowiedzi i ProblemDetails dla błędów.
+- [x] Paginacja, filtrowanie, oceny i najbliższa dostępność katalogu lekarzy wykonywane w bazie.
+- [x] Kontekst EF tworzony i zwalniany dla każdej operacji w Blazor Server.
+- [x] Usunięcie kopii DTO z komponentów WASM.
 - [x] Edytor wczytuje bieżącą wizytę i dostępne sloty; konflikt odświeża terminy i dane wizyty.
-- [ ] Walidacja zawartości zdjęć, sprzątanie plików i publiczny adres mediów w konfiguracji.
-- [ ] Testy E2E w przeglądarce, pomiary wydajności i zrzuty ekranów do portfolio.
+- [x] Walidacja i ponowne kodowanie zdjęć, sprzątanie plików i publiczny adres mediów w konfiguracji.
+- [x] Testy E2E w Chromium, odtwarzalny pomiar wydajności i zrzuty ekranów do portfolio.
+- [x] Formularze personelu czekają na gotowość połączenia Blazor, aby nie gubić wczesnego wprowadzania danych.
+
+## Kolejne prace
+
+- [ ] Stronicowanie historii wizyt, dokumentów i opinii oraz filtrów pracy lekarza.
+- [ ] Testy innych przeglądarek, widoków mobilnych i dostępności interfejsu.
 
 ## Dalsze zabezpieczenia przed publicznym wdrożeniem
 

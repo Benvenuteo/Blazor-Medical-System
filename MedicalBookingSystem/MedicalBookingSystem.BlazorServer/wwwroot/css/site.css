@@ -74,3 +74,22 @@ a, .btn-link {
 .radzen-data-grid {
     min-width: 1200px;
 }
+
+.doctor-photo-upload {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    overflow: hidden;
+}
+.doctor-photo-upload input[type="file"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+.doctor-photo-upload:focus-within {
+    outline: 2px solid #005fcc;
+    outline-offset: 2px;
+}

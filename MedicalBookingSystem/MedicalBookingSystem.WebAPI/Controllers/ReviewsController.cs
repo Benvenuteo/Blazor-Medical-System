@@ -52,7 +52,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             var result = await _reviewService.GetReviewAsync(id);
 
             if (result.IsSuccess)
-                return Ok(result);
+                return Ok(result.Value);
 
             return this.FailureResponse(result);
         }

@@ -9,11 +9,13 @@ namespace MedicalBookingSystem.Application.Validators
         {
             RuleFor(x => x.FirstName)
                 .NotEmpty().WithMessage("Imię jest wymagane")
-                .MaximumLength(50).WithMessage("Imię nie może przekraczać 50 znaków");
+                .MaximumLength(50).WithMessage("Imię nie może przekraczać 50 znaków")
+                .When(x => x.FirstName is not null);
 
             RuleFor(x => x.LastName)
                 .NotEmpty().WithMessage("Nazwisko jest wymagane")
-                .MaximumLength(50).WithMessage("Nazwisko nie może przekraczać 50 znaków");
+                .MaximumLength(50).WithMessage("Nazwisko nie może przekraczać 50 znaków")
+                .When(x => x.LastName is not null);
 
             RuleFor(x => x.PhoneNumber)
                 .Matches(@"^\+?[0-9\s-]{9,}$").WithMessage("Nieprawidłowy format numeru telefonu")

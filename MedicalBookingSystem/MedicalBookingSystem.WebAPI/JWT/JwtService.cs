@@ -12,7 +12,7 @@ namespace MedicalBookingSystem.WebAPI.JWT;
 
 public sealed class JwtService(IOptions<JwtSettings> settings, ClinicClock clock)
 {
-    public string GenerateToken(Patient patient) => GenerateToken(AccountClaims.Create(patient.Id,
+    public string GenerateToken(MedicalBookingSystem.SharedKernel.Dto.PatientDto patient) => GenerateToken(AccountClaims.Create(patient.Id,
         $"{patient.FirstName} {patient.LastName}", patient.Email, Roles.Patient, new DateTimeOffset(clock.UtcNow).AddHours(1)));
 
     public string GenerateToken(ClaimsPrincipal principal)

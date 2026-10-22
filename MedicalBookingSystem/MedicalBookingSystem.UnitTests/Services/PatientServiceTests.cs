@@ -20,11 +20,11 @@ public sealed class PatientServiceTests
         var patient = CreatePatient(hasher);
         var originalHash = patient.PasswordHash;
         repositories.Patients.Setup(repository => repository.GetByIdAsync(patient.Id)).ReturnsAsync(patient);
-        var service = new PatientService(repositories.UnitOfWork.Object, hasher, TestUsers.Patient(7));
+        var service = TestServices.Patients(repositories.UnitOfWork.Object, hasher, TestUsers.Patient(7));
 
         var result = await service.UpdatePatientAsync(patient.Id, new UpdatePatientDto
         {
-            FirstName = "Changed", CurrentPassword = currentPassword!, NewPassword = "Replacement2026!"
+            FirstName = "Changed", CurrentPassword = currentPassword!, NewPassword = "Replacement2026!", ConfirmNewPassword = "Replacement2026!"
         });
 
         Assert.True(result.IsFailure);
@@ -42,11 +42,11 @@ public sealed class PatientServiceTests
         var patient = CreatePatient(hasher);
         var originalHash = patient.PasswordHash;
         repositories.Patients.Setup(repository => repository.GetByIdAsync(patient.Id)).ReturnsAsync(patient);
-        var service = new PatientService(repositories.UnitOfWork.Object, hasher, TestUsers.Patient(7));
+        var service = TestServices.Patients(repositories.UnitOfWork.Object, hasher, TestUsers.Patient(7));
 
         var result = await service.UpdatePatientAsync(patient.Id, new UpdatePatientDto
         {
-            CurrentPassword = "Original2026!", NewPassword = "Replacement2026!"
+            CurrentPassword = "Original2026!", NewPassword = "Replacement2026!", ConfirmNewPassword = "Replacement2026!"
         });
 
         Assert.True(result.IsSuccess);
@@ -64,7 +64,7 @@ public sealed class PatientServiceTests
         var patient = CreatePatient(hasher);
         var originalHash = patient.PasswordHash;
         repositories.Patients.Setup(repository => repository.GetByIdAsync(patient.Id)).ReturnsAsync(patient);
-        var service = new PatientService(repositories.UnitOfWork.Object, hasher, TestUsers.Patient(7));
+        var service = TestServices.Patients(repositories.UnitOfWork.Object, hasher, TestUsers.Patient(7));
 
         var result = await service.UpdatePatientAsync(patient.Id, new UpdatePatientDto { FirstName = "Adam" });
 
@@ -77,7 +77,7 @@ public sealed class PatientServiceTests
     public async Task UpdateProfile_WhenPatientDoesNotExist_DoesNotSave()
     {
         var repositories = new RepositoryMocks();
-        var service = new PatientService(repositories.UnitOfWork.Object, new PasswordHasher<Patient>(), TestUsers.Patient(404));
+        var service = TestServices.Patients(repositories.UnitOfWork.Object, new PasswordHasher<Patient>(), TestUsers.Patient(404));
 
         var result = await service.UpdatePatientAsync(404, new UpdatePatientDto());
 

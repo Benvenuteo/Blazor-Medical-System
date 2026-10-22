@@ -1,3 +1,5 @@
+using MedicalBookingSystem.Application.Queries;
+using MedicalBookingSystem.Infrastructure.Queries;
 using MedicalBookingSystem.Domain.Contracts;
 using MedicalBookingSystem.Infrastructure.Repositories;
 using Microsoft.Data.Sqlite;
@@ -39,16 +41,9 @@ public static class DependencyInjection
 
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, string connectionString)
     {
-        services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite(connectionString));
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddScoped<IAppointmentRepository, AppointmentRepository>();
-        services.AddScoped<IDoctorRepository, DoctorRepository>();
-        services.AddScoped<IDoctorScheduleRepository, DoctorScheduleRepository>();
-        services.AddScoped<INoteRepository, NoteRepository>();
-        services.AddScoped<IPatientRepository, PatientRepository>();
-        services.AddScoped<IPrescriptionRepository, PrescriptionRepository>();
-        services.AddScoped<IReviewRepository, ReviewRepository>();
-        services.AddScoped<ISpecializationRepository, SpecializationRepository>();
+        services.AddDbContextFactory<ApplicationDbContext>(options => options.UseSqlite(connectionString), ServiceLifetime.Scoped);
+        services.AddScoped<IUnitOfWorkFactory, UnitOfWorkFactory>();
+        services.AddScoped<IDoctorDirectoryQueries, DoctorDirectoryQueries>();
         services.AddScoped<DataSeeder>();
         return services;
     }

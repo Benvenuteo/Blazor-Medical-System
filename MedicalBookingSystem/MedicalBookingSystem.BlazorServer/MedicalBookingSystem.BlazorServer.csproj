@@ -10,6 +10,8 @@
   <ItemGroup>
     <PackageReference Include="MudBlazor" />
     <PackageReference Include="Radzen.Blazor" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" />
     <PackageReference Include="NLog.Web.AspNetCore" />
   </ItemGroup>
 </Project>

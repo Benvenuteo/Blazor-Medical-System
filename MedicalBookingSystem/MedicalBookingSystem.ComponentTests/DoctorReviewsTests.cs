@@ -37,7 +37,7 @@ public sealed class DoctorReviewsTests : BunitContext
                 "/api/doctors/specializations" => new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(Array.Empty<object>()) },
                 "/api/doctors" => new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = JsonContent.Create(new[] { new { id = 1, firstName = "Anna", lastName = "Testowa", averageRating = 0, reviewCount = 0 } })
+                    Content = JsonContent.Create(new { items = new[] { new { id = 1, firstName = "Anna", lastName = "Testowa", averageRating = 0, reviewCount = 0 } }, totalCount = 1, page = 1, pageSize = 10 })
                 },
                 "/api/reviews/doctor/1" when failReviews => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable),
                 "/api/reviews/doctor/1" => new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(Array.Empty<object>()) },

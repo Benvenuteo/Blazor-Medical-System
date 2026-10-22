@@ -1,3 +1,4 @@
+@inherits MedicalBookingSystem.BlazorServer.Shared.InteractivePageBase
 @page "/doctor/appointments"
 @attribute [Authorize(Roles = Roles.Doctor)]
 @using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
@@ -8,6 +9,7 @@
 @inject ClinicClock Clock
 
 <h3>Moje zaplanowane wizyty</h3>
+<fieldset disabled="@(!IsInteractive || saving)">
 @if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
 @if (appointments is null) { <p>Ładowanie...</p> }
 else if (appointments.Count == 0) { <p>Brak zaplanowanych wizyt.</p> }
@@ -24,6 +26,8 @@ else
     </tbody></table>
 }
 <p><a href="/doctor/notes">Notatki do odbytych wizyt</a> · <a href="/doctor/prescriptions">Recepty do odbytych wizyt</a></p>
+
+</fieldset>
 
 @code {
     private List<AppointmentDto>? appointments;

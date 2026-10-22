@@ -42,12 +42,12 @@ internal sealed class MedicalApiFactory : WebApplicationFactory<MedicalBookingSy
         {
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
-            services.AddDbContext<ApplicationDbContext>(options =>
+            services.AddDbContextFactory<ApplicationDbContext>(options =>
             {
                 if (_connectionString is null) options.UseSqlite(_connection!);
                 else options.UseSqlite(_connectionString);
                 if (_interceptor is not null) options.AddInterceptors(_interceptor);
-            });
+            }, ServiceLifetime.Scoped);
             if (_testClock is not null)
             {
                 services.RemoveAll<TimeProvider>();

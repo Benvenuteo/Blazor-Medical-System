@@ -66,7 +66,7 @@ public sealed class AppointmentConcurrencyTests
         await Task.WhenAll(moveTask, bookTask);
         using var move = await moveTask;
         using var booking = await bookTask;
-        Assert.True((move.StatusCode == HttpStatusCode.OK && booking.StatusCode == HttpStatusCode.Conflict) ||
+        Assert.True((move.StatusCode == HttpStatusCode.NoContent && booking.StatusCode == HttpStatusCode.Conflict) ||
             (move.StatusCode == HttpStatusCode.Conflict && booking.StatusCode == HttpStatusCode.Created));
         await using var scope = scenario.Factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();

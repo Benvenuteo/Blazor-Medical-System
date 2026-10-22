@@ -27,6 +27,10 @@ namespace MedicalBookingSystem.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<DoctorSchedule>> GetInRangeAsync(int doctorId, DateTime from, DateTime to) =>
+            await _context.DoctorSchedules.AsNoTracking().Where(s => s.DoctorId == doctorId && s.EndTime > from && s.StartTime <= to)
+                .OrderBy(s => s.StartTime).ToListAsync();
+
         public async Task<bool> IsDoctorAvailableAsync(int doctorId, DateTime date)
         {
             return await _context.DoctorSchedules

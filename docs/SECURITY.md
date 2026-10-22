@@ -46,3 +46,7 @@ Logowanie i rejestracja API mają wspólny limit 20 żądań na minutę z jedneg
 To lokalny projekt demonstracyjny. Token usunięty z przeglądarki pozostaje kryptograficznie ważny do wygaśnięcia. Zmiana hasła i dezaktywacja konta blokują kolejne logowania, lecz nie unieważniają już wydanych tokenów lub cookie. Wymuszone unieważnianie sesji, zarządzanie kontami, reset hasła i audyt dokumentacji są osobnymi zadaniami w `ROADMAP.md`.
 
 Token w localStorage jest dostępny dla kodu JavaScript działającego w originie aplikacji. Docelowe publiczne wdrożenie wymaga dopracowania ochrony XSS/CSP i przepływu sesji, trwałego magazynu kluczy Data Protection oraz konfiguracji zaufanego proxy dla HTTPS i limitów IP. Reguły cyklu życia wizyty i ochronę rezerwacji opisuje [BOOKING.md](BOOKING.md).
+
+## Odczyty i pliki
+
+Kontekst EF nie jest współdzielony między operacjami obwodu Blazor. Odczyty katalogu są stronicowane i projektują publiczne dane bez historii klinicznej. Formularze personelu pozostają nieaktywne do pierwszego interaktywnego renderowania. Przesyłane zdjęcia są dekodowane i kodowane ponownie, a nazwy plików oraz adres publiczny kontroluje serwer; szczegóły: [MEDIA.md](MEDIA.md).

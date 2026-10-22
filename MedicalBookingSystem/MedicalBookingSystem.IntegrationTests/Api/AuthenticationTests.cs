@@ -44,7 +44,7 @@ public sealed class AuthenticationTests
 
         using var response = await client.PostAsJsonAsync("/api/auth/register", duplicate);
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
     [Fact]

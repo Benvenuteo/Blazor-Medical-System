@@ -1,6 +1,6 @@
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">Doctor Panel</a>
+        <a class="navbar-brand" href="">Panel personelu</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -11,13 +11,13 @@
     <nav class="flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
+                <span class="oi oi-home" aria-hidden="true"></span> Start
             </NavLink>
         </div>
         <AuthorizeView Roles="@Roles.Admin">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/admin/doctors">
-                <span class="oi oi-plus" aria-hidden="true"></span> Doktorzy
+                <span class="oi oi-plus" aria-hidden="true"></span> Lekarze
             </NavLink>
         </div>
         </AuthorizeView>

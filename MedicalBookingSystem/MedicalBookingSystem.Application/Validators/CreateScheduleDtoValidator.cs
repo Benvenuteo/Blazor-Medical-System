@@ -7,11 +7,11 @@ namespace MedicalBookingSystem.Application.Validators
 {
     public class CreateScheduleDtoValidator : AbstractValidator<CreateScheduleDto>
     {
-        private readonly IUnitOfWork _uow;
+        private readonly IUnitOfWorkFactory _units;
 
-        public CreateScheduleDtoValidator(IUnitOfWork uow, ClinicClock clock)
+        public CreateScheduleDtoValidator(IUnitOfWorkFactory units, ClinicClock clock)
         {
-            _uow = uow;
+            _units = units;
 
             RuleFor(x => x.DoctorId)
                 .GreaterThan(0).WithMessage("Wybierz lekarza.");
@@ -42,6 +42,7 @@ namespace MedicalBookingSystem.Application.Validators
 
         private async Task<bool> NotOverlapWithExistingSchedules(CreateScheduleDto dto, CancellationToken _)
         {
+            using var _uow = _units.Create();
             var schedules = await _uow.DoctorSchedules.GetByDoctorIdAsync(dto.DoctorId);
 
             return schedules.All(s =>

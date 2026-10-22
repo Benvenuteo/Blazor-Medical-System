@@ -15,7 +15,7 @@ public sealed class ApplicationAuthorizationTests
     public async Task PatientService_RejectsSpoofedIdentity_BeforeReadingOrWritingDatabase()
     {
         var repositories = new RepositoryMocks();
-        var service = new PatientService(repositories.UnitOfWork.Object, new PasswordHasher<Patient>(), TestUsers.Patient(1));
+        var service = TestServices.Patients(repositories.UnitOfWork.Object, new PasswordHasher<Patient>(), TestUsers.Patient(1));
         await Assert.ThrowsAsync<AccessDeniedException>(() => service.UpdatePatientAsync(2, new UpdatePatientDto { FirstName = "Changed" }));
         await Assert.ThrowsAsync<AccessDeniedException>(() => service.GetPatientProfileAsync(2));
         repositories.Patients.Verify(r => r.GetByIdAsync(It.IsAny<int>()), Times.Never);
@@ -27,7 +27,7 @@ public sealed class ApplicationAuthorizationTests
     {
         var repositories = new RepositoryMocks();
         var validator = new Mock<FluentValidation.IValidator<CreateScheduleDto>>(MockBehavior.Strict);
-        var service = new DoctorService(repositories.UnitOfWork.Object, validator.Object, new TestTimeProvider().CreateClock(), TestUsers.Doctor(1));
+        var service = new DoctorService(new TestUnitOfWorkFactory(repositories.UnitOfWork.Object), validator.Object, new TestTimeProvider().CreateClock(), TestUsers.Doctor(1), new Moq.Mock<MedicalBookingSystem.Application.Queries.IDoctorDirectoryQueries>().Object);
         await Assert.ThrowsAsync<AccessDeniedException>(() => service.CreateScheduleAsync(new CreateScheduleDto { DoctorId = 2 }));
         repositories.Schedules.Verify(r => r.AddAsync(It.IsAny<DoctorSchedule>()), Times.Never);
         repositories.UnitOfWork.Verify(r => r.SaveChangesAsync(), Times.Never);

@@ -1,113 +1,76 @@
+using FluentValidation;
 using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.Application.Mappings;
 using MedicalBookingSystem.Domain.Contracts;
+using MedicalBookingSystem.Domain.Exceptions;
 using MedicalBookingSystem.Domain.Models;
 using MedicalBookingSystem.SharedKernel;
 using MedicalBookingSystem.SharedKernel.Dto;
 using Microsoft.AspNetCore.Identity;
-using PasswordVerificationResult = Microsoft.AspNetCore.Identity.PasswordVerificationResult;
 
-namespace MedicalBookingSystem.Application.Services
+namespace MedicalBookingSystem.Application.Services;
+
+public sealed class PatientService(IUnitOfWorkFactory units, IPasswordHasher<Patient> hasher, UserAccess access,
+    IValidator<RegisterPatientDto> registerValidator, IValidator<LoginDto> loginValidator,
+    IValidator<UpdatePatientDto> updateValidator) : IPatientService
 {
-    public class PatientService : IPatientService
+    public async Task<Result<PatientDto>> GetPatientProfileAsync(int id)
     {
-        private readonly IUnitOfWork _uow;
-        private readonly UserAccess _access;
+        await access.RequirePatientAsync(id);
+        using var unit = units.Create();
+        var patient = await unit.Patients.GetByIdAsync(id);
+        return patient is null ? Result.Failure<PatientDto>("Pacjent nie został znaleziony.", ErrorType.NotFound) : Result.Success(patient.ToDto());
+    }
 
-        private readonly IPasswordHasher<Patient> _passwordHasher;
-        public PatientService(IUnitOfWork unitOfWork, IPasswordHasher<Patient> passwordHasher, UserAccess access)
+    public async Task<Result<PatientDto>> LoginAsync(LoginDto dto)
+    {
+        var validation = await loginValidator.ValidateAsync(dto);
+        if (!validation.IsValid) return Result.Failure<PatientDto>(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
+        using var unit = units.Create();
+        var patient = await unit.Patients.GetByEmailAsync(dto.Email.Trim().ToLowerInvariant());
+        if (patient is null || hasher.VerifyHashedPassword(patient, patient.PasswordHash, dto.Password) == PasswordVerificationResult.Failed)
+            return Result.Failure<PatientDto>("Nieprawidłowy email lub hasło.", ErrorType.Unauthorized);
+        return Result.Success(patient.ToDto());
+    }
+
+    public async Task<Result<PatientDto>> RegisterAsync(RegisterPatientDto dto)
+    {
+        var validation = await registerValidator.ValidateAsync(dto);
+        if (!validation.IsValid) return Result.Failure<PatientDto>(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
+        using var unit = units.Create();
+        var email = dto.Email.Trim().ToLowerInvariant();
+        if (await unit.Patients.GetByEmailAsync(email) is not null)
+            return Result.Failure<PatientDto>("Email jest już zajęty.", ErrorType.Conflict);
+        var patient = new Patient { FirstName = dto.FirstName.Trim(), LastName = dto.LastName.Trim(), Email = email,
+            PhoneNumber = dto.PhoneNumber, DateOfBirth = dto.DateOfBirth };
+        patient.PasswordHash = hasher.HashPassword(patient, dto.Password);
+        await unit.Patients.AddAsync(patient);
+        try { await unit.SaveChangesAsync(); }
+        catch (PersistenceConflictException ex) when (ex.Kind == PersistenceConflictKind.DuplicateAccount)
+        { return Result.Failure<PatientDto>("Email jest już zajęty.", ErrorType.Conflict); }
+        return Result.Success(patient.ToDto());
+    }
+
+    public async Task<Result> UpdatePatientAsync(int id, UpdatePatientDto dto)
+    {
+        await access.RequirePatientAsync(id);
+        var validation = await updateValidator.ValidateAsync(dto);
+        if (!validation.IsValid) return Result.Failure(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
+        using var unit = units.Create();
+        var patient = await unit.Patients.GetByIdAsync(id);
+        if (patient is null) return Result.Failure("Pacjent nie został znaleziony.", ErrorType.NotFound);
+        // Verify credentials before changing any tracked state.
+        if (!string.IsNullOrEmpty(dto.NewPassword))
         {
-            _uow = unitOfWork;
-            _access = access;
-
-            _passwordHasher = passwordHasher;
+            if (string.IsNullOrEmpty(dto.CurrentPassword) ||
+                hasher.VerifyHashedPassword(patient, patient.PasswordHash, dto.CurrentPassword) == PasswordVerificationResult.Failed)
+                return Result.Failure("Aktualne hasło jest nieprawidłowe.");
+            patient.PasswordHash = hasher.HashPassword(patient, dto.NewPassword);
         }
-
-        public async Task<Result<PatientDto>> GetPatientProfileAsync(int id)
-        {
-            await _access.RequirePatientAsync(id);
-            try
-            {
-                var patient = await _uow.Patients.GetByIdAsync(id);
-                if (patient == null)
-                    return Result<PatientDto>.Failure<PatientDto>("Pacjent nie został znaleziony");
-
-                var patientDto = patient.ToDto();
-                return Result<PatientDto>.Success(patientDto);
-            }
-            catch (Exception ex) when (ex is not AccessDeniedException)
-            {
-                return Result<PatientDto>.Failure<PatientDto>("Wystąpił błąd podczas pobierania danych pacjenta");
-            }
-        }
-
-        public async Task<Result<PatientDto>> LoginAsync(LoginDto dto)
-        {
-            try
-            {
-                var patient = await _uow.Patients.GetByEmailAsync(dto.Email);
-                if (patient == null)
-                    return Result<PatientDto>.Failure<PatientDto>("Nieprawidłowy email lub hasło");
-
-                if (_passwordHasher.VerifyHashedPassword(patient, patient.PasswordHash, dto.Password) == PasswordVerificationResult.Failed)
-                    return Result<PatientDto>.Failure<PatientDto>("Nieprawidłowy email lub hasło");
-
-                var patientDto = patient.ToDto();
-                return Result<PatientDto>.Success(patientDto);
-            }
-            catch (Exception ex) when (ex is not AccessDeniedException)
-            {
-                return Result<PatientDto>.Failure<PatientDto>("Wystąpił błąd podczas logowania");
-            }
-        }
-
-        public async Task<Result<PatientDto>> RegisterAsync(RegisterPatientDto dto)
-        {
-            if (await _uow.Patients.GetByEmailAsync(dto.Email) != null)
-                return Result<PatientDto>.Failure<PatientDto>("Email jest już zajęty");
-
-            var patient = new Patient { FirstName = dto.FirstName.Trim(), LastName = dto.LastName.Trim(), Email = dto.Email.Trim().ToLowerInvariant(), PhoneNumber = dto.PhoneNumber, DateOfBirth = dto.DateOfBirth };
-            patient.PasswordHash = _passwordHasher.HashPassword(patient, dto.Password);
-
-            await _uow.Patients.AddAsync(patient);
-            await _uow.SaveChangesAsync();
-
-            return Result<PatientDto>.Success(patient.ToDto());
-        }
-
-        public async Task<Result> UpdatePatientAsync(int id, UpdatePatientDto dto)
-        {
-            await _access.RequirePatientAsync(id);
-            try
-            {
-                var patient = await _uow.Patients.GetByIdAsync(id);
-                if (patient == null)
-                    return Result.Failure("Pacjent nie został znaleziony");
-
-                // Verify credentials before changing any tracked state.
-                if (!string.IsNullOrEmpty(dto.NewPassword))
-                {
-                    if (string.IsNullOrEmpty(dto.CurrentPassword) ||
-                        _passwordHasher.VerifyHashedPassword(patient, patient.PasswordHash, dto.CurrentPassword) == PasswordVerificationResult.Failed)
-                        return Result.Failure("Aktualne hasło jest nieprawidłowe.");
-
-                    patient.PasswordHash = _passwordHasher.HashPassword(patient, dto.NewPassword);
-                }
-
-                patient.FirstName = dto.FirstName ?? patient.FirstName;
-                patient.LastName = dto.LastName ?? patient.LastName;
-                patient.PhoneNumber = dto.PhoneNumber ?? patient.PhoneNumber;
-
-                _uow.Patients.Update(patient);
-                await _uow.SaveChangesAsync();
-
-                return Result.Success();
-            }
-            catch (Exception ex) when (ex is not AccessDeniedException)
-            {
-                return Result.Failure("Wystąpił błąd podczas aktualizacji danych");
-            }
-        }
-
+        patient.FirstName = dto.FirstName?.Trim() ?? patient.FirstName;
+        patient.LastName = dto.LastName?.Trim() ?? patient.LastName;
+        patient.PhoneNumber = dto.PhoneNumber ?? patient.PhoneNumber;
+        await unit.SaveChangesAsync();
+        return Result.Success();
     }
 }

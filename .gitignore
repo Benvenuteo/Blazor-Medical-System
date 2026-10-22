@@ -74,3 +74,7 @@ MedicalBookingSystem/data/
 .tools/
 playwright-report/
 test-results/
+
+# Uploaded photos live outside the tracked static assets.
+MedicalBookingSystem/MedicalBookingSystem.BlazorServer/data/
+node_modules/

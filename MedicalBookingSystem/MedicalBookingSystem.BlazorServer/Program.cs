@@ -41,6 +41,14 @@ builder.Services.AddMudServices();
 builder.Services.AddRadzenComponents();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<DoctorImageUploader>();
+builder.Services.AddOptions<DoctorMediaOptions>().BindConfiguration("Media")
+    .Validate(options => Uri.TryCreate(options.PublicBaseUrl, UriKind.Absolute, out var uri) &&
+        uri.Scheme is "http" or "https" && string.IsNullOrEmpty(uri.UserInfo) && string.IsNullOrEmpty(uri.Query) && string.IsNullOrEmpty(uri.Fragment),
+        "Configure Media__PublicBaseUrl with the public address of the staff host.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.StoragePath), "Configure Media__StoragePath.")
+    .ValidateOnStart();
+builder.Services.AddSingleton<DoctorPhotoFiles>();
+builder.Services.AddHostedService<DoctorPhotoCleanup>();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -60,6 +68,16 @@ if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"
     app.UseHttpsRedirection();
 }
 app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(app.Services.GetRequiredService<DoctorPhotoFiles>().Directory),
+    RequestPath = "/media/doctors",
+    OnPrepareResponse = context =>
+    {
+        context.Context.Response.Headers.CacheControl = "public,max-age=604800,immutable";
+        context.Context.Response.Headers.XContentTypeOptions = "nosniff";
+    }
+});
 app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();

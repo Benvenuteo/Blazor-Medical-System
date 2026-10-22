@@ -51,6 +51,7 @@ namespace MedicalBookingSystem.Infrastructure
                     : exception.Entries.Any(e => e.Entity is DoctorSchedule) ? PersistenceConflictKind.ScheduleOverlap
                     : exception.Entries.Any(e => e.Entity is Review) ? PersistenceConflictKind.DuplicateReview
                     : exception.Entries.Any(e => e.Entity is Note or Prescription) ? PersistenceConflictKind.DuplicateDocument
+                    : exception.Entries.Any(e => e.Entity is Patient or StaffAccount) ? PersistenceConflictKind.DuplicateAccount
                     : (PersistenceConflictKind?)null;
                 if (kind is null) throw;
                 // A rejected entity must not be written accidentally by a later action in the same circuit.

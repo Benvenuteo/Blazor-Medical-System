@@ -1,6 +1,6 @@
 namespace MedicalBookingSystem.SharedKernel;
 
-public enum ErrorType { None, Validation, NotFound, Conflict }
+public enum ErrorType { None, Validation, NotFound, Conflict, Unauthorized }
 
 public class Result
 {

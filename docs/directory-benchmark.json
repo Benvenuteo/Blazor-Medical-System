@@ -1,0 +1,24 @@
+{
+  "scenario": "100 doctors, 1400 shifts, 1000 historical appointments, 1000 reviews; availability page 3 / 10",
+  "provider": "SQLite file, Release, warm current query",
+  "runtime": "10.0.13",
+  "currentMilliseconds": [
+    167.7246,
+    150.1469,
+    188.4839,
+    179.9509,
+    161.3297
+  ],
+  "previousGraphMilliseconds": [
+    2299.7497,
+    1679.1222,
+    1624.3517
+  ],
+  "currentMedianMilliseconds": 167.7246,
+  "previousMedianMilliseconds": 1679.1222,
+  "currentSelectStatements": 2,
+  "currentPageRows": 10,
+  "currentTrackedEntities": 0,
+  "previousJoinedRows": 140000,
+  "note": "Diagnostic samples, not a production capacity claim; no timing threshold in CI."
+}

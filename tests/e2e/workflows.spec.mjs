@@ -1,0 +1,141 @@
+import { test, expect } from '@playwright/test';
+
+async function patientLogin(page) {
+  await page.goto('/');
+  await page.getByLabel('Email', { exact: true }).fill('patient@example.test');
+  await page.getByLabel('Hasło', { exact: true }).fill('DemoPatient2026!');
+  await page.getByRole('button', { name: 'Zaloguj się', exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+}
+async function staffLogin(page, email = 'doctor@example.test') {
+  await page.goto('http://localhost:5187/Account/Login');
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Hasło', { exact: true }).fill('DemoStaff2026!');
+  await page.getByRole('button', { name: 'Zaloguj się', exact: true }).click();
+  await expect(page).toHaveURL('http://localhost:5187/');
+}
+
+test('patient searches, books, reschedules, cancels and logs out', async ({ page }, info) => {
+  const errors = []; page.on('pageerror', e => errors.push(e.message));
+  await patientLogin(page);
+  await page.goto('/doctors/search');
+  await page.getByLabel('Sortuj według').selectOption('availability');
+  await page.getByRole('button', { name: 'Szukaj', exact: true }).click();
+  await expect(page.getByRole('cell', { name: 'Demonstracyjna', exact: true })).toBeVisible();
+  await page.screenshot({ path: info.outputPath('patient-directory.png'), fullPage: true });
+  await page.getByRole('link', { name: 'Zarezerwuj wizytę', exact: true }).click();
+  const slot = page.getByLabel('Wolny termin');
+  await expect(slot.locator('option')).not.toHaveCount(1);
+  const original = await slot.locator('option').nth(1).getAttribute('value');
+  await slot.selectOption(original);
+  await page.getByRole('button', { name: 'Zarezerwuj', exact: true }).click();
+  await expect(page).toHaveURL(/\/appointments$/);
+  const future = page.getByRole('row').filter({ has: page.getByRole('button', { name: 'Edytuj', exact: true }) }).last();
+  await future.getByRole('button', { name: 'Edytuj', exact: true }).click();
+  const newSlot = page.getByLabel('Nowy termin');
+  await expect(newSlot).toHaveValue(original);
+  const changed = await newSlot.locator('option').nth(2).getAttribute('value');
+  await newSlot.selectOption(changed);
+  await page.getByRole('button', { name: 'Zapisz termin', exact: true }).click();
+  await expect(page).toHaveURL(/\/appointments$/);
+  await page.screenshot({ path: info.outputPath('patient-appointments.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Odwołaj wizytę', exact: true }).last().click();
+  await page.getByRole('button', { name: 'Odwołaj', exact: true }).click();
+  await expect(page.getByText('Wizytę odwołano pomyślnie.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Edytuj', exact: true })).toHaveCount(1);
+  await page.getByRole('button', { name: 'Wyloguj', exact: true }).click();
+  await page.goto('/appointments');
+  await expect(page.getByRole('heading', { name: 'Logowanie', exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('doctor completes a visit and documents it; patient reads records and posts a review', async ({ page, browser }, info) => {
+  const errors = []; page.on('pageerror', e => errors.push(e.message));
+  await staffLogin(page);
+  await page.goto('http://localhost:5187/doctor/appointments');
+  await page.getByRole('button', { name: 'Oznacz jako odbytą', exact: true }).first().click();
+  await expect(page.getByText('Brak zaplanowanych wizyt.', { exact: true })).toBeVisible();
+  await page.goto('http://localhost:5187/doctor/notes');
+  const notes = page.locator('section');
+  await expect(notes).toHaveCount(2);
+  await expect(notes.first().getByLabel('Notatka', { exact: true })).toBeEnabled();
+  await notes.first().getByLabel('Notatka', { exact: true }).fill('Demonstracyjna notatka zapisana w prawdziwej przeglądarce.');
+  await notes.first().getByRole('button', { name: 'Zapisz notatkę', exact: true }).click();
+  await expect(notes).toHaveCount(1);
+  await page.goto('http://localhost:5187/doctor/prescriptions');
+  const prescription = page.locator('section').first();
+  await expect(prescription.getByLabel('Lek', { exact: true })).toBeEnabled();
+  await prescription.getByLabel('Lek', { exact: true }).fill('Preparat demonstracyjny');
+  await prescription.getByLabel('Dawkowanie', { exact: true }).fill('Dawkowanie demonstracyjne');
+  await prescription.getByLabel('Instrukcje', { exact: true }).fill('Dane wyłącznie do prezentacji.');
+  await prescription.getByRole('button', { name: 'Zapisz receptę', exact: true }).click();
+  await expect(page.locator('section')).toHaveCount(1);
+  await page.screenshot({ path: info.outputPath('doctor-documents.png'), fullPage: true });
+  const patientContext = await browser.newContext({ locale: 'pl-PL', baseURL: 'http://localhost:5016' });
+  const patient = await patientContext.newPage();
+  await patientLogin(patient);
+  await patient.goto('/historyAppointments');
+  await expect(patient.getByRole('button', { name: 'Szczegóły', exact: true })).toHaveCount(2);
+  await patient.getByRole('button', { name: 'Szczegóły', exact: true }).first().click();
+  await expect(patient.getByText('Demonstracyjna notatka zapisana w prawdziwej przeglądarce.', { exact: false })).toBeVisible();
+  await expect(patient.getByText('Preparat demonstracyjny', { exact: false })).toBeVisible();
+  await patient.screenshot({ path: info.outputPath('patient-records.png'), fullPage: true });
+  await patient.goto('/doctors/search');
+  await patient.getByRole('button', { name: 'Szukaj', exact: true }).click();
+  await patient.getByRole('button', { name: 'Dodaj opinię', exact: true }).click();
+  await patient.getByLabel('Ocena (1-5)').fill('5');
+  await patient.getByLabel('Komentarz', { exact: true }).fill('Opinia demonstracyjna z testu przeglądarkowego.');
+  await patient.getByRole('button', { name: 'Wyślij opinię', exact: true }).click();
+  await expect(patient.getByRole('listitem').filter({ hasText: 'Opinia demonstracyjna z testu przeglądarkowego.' })).toBeVisible();
+  await expect(patient.getByRole('row').filter({ has: patient.getByRole('link', { name: 'Zarezerwuj wizytę', exact: true }) }).getByRole('cell').nth(5)).toHaveText('1');
+  await patientContext.close();
+  expect(errors).toEqual([]);
+});
+
+test('admin rejects fake photos and publishes a decoded image', async ({ page }, info) => {
+  const errors = []; page.on('pageerror', e => errors.push(e.message));
+  await staffLogin(page, 'admin@example.test');
+  await page.goto('http://localhost:5187/admin/doctors');
+  const input = page.getByLabel('Zmień zdjęcie: Anna Demonstracyjna', { exact: true });
+  await expect(input).toBeEnabled();
+  await input.setInputFiles({ name: 'fake.jpg', mimeType: 'image/jpeg', buffer: Buffer.from('not an image') });
+  await expect(page.getByRole('alert')).toContainText('poprawny');
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAALUlEQVR4nGM0qV7MQEvARFPTRy0YtWDUglELRi0YtWDUglELRi0YtWDUAioCAJBMAZL15RUTAAAAAElFTkSuQmCC', 'base64');
+  await input.setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: png });
+  await expect(page.getByRole('status')).toContainText('Zdjęcie zaktualizowano');
+  const photo = page.getByRole('img', { name: 'Zdjęcie: Anna Demonstracyjna', exact: true });
+  await expect(photo).toHaveAttribute('src', /http:\/\/localhost:5187\/media\/doctors\/[a-f0-9]{32}\.png$/);
+  await expect.poll(() => photo.evaluate(img => img.complete && img.naturalWidth > 0)).toBeTruthy();
+  await page.screenshot({ path: info.outputPath('admin-directory.png'), fullPage: true });
+  await page.getByRole('link', { name: 'Dodaj grafik', exact: true }).click();
+  const startDate = page.getByLabel('Data rozpoczęcia', { exact: true });
+  await expect(startDate).toBeEnabled();
+  const day = new Date(Date.now() + 21 * 86_400_000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Warsaw' });
+  await startDate.fill(day);
+  await page.getByLabel('Data zakończenia', { exact: true }).fill(day);
+  await page.getByLabel('Godzina rozpoczęcia', { exact: true }).fill('09:00');
+  await page.getByLabel('Godzina zakończenia', { exact: true }).fill('12:00');
+  await page.getByRole('button', { name: 'Zapisz grafik', exact: true }).click();
+  await expect(page.getByText('Grafik został zapisany.', { exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('registration validates age and creates a patient account', async ({ page }) => {
+  await page.goto('/register');
+  await page.getByLabel('Email', { exact: true }).fill('browser-registration@example.test');
+  await page.getByLabel('Hasło', { exact: true }).fill('BrowserPatient2026!');
+  await page.getByLabel('Imię', { exact: true }).fill('Alicja');
+  await page.getByLabel('Nazwisko', { exact: true }).fill('Demonstracyjna');
+  await page.getByLabel('Numer telefonu', { exact: true }).fill('+48500000001');
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Warsaw' });
+  await page.getByLabel('Data urodzenia', { exact: true }).fill(today);
+  await page.getByRole('button', { name: 'Zarejestruj się', exact: true }).click();
+  await expect(page.locator('.alert-danger')).toContainText('18 lat');
+  await page.getByLabel('Data urodzenia', { exact: true }).fill('1990-01-01');
+  await page.getByRole('button', { name: 'Zarejestruj się', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Logowanie', exact: true })).toBeVisible();
+  await page.getByLabel('Email', { exact: true }).fill('browser-registration@example.test');
+  await page.getByLabel('Hasło', { exact: true }).fill('BrowserPatient2026!');
+  await page.getByRole('button', { name: 'Zaloguj się', exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+});

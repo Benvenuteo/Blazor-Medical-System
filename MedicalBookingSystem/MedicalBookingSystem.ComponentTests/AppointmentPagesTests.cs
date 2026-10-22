@@ -23,13 +23,13 @@ public sealed class AppointmentPagesTests : BunitContext
         page.Find("#doctor").Change("1");
         page.WaitForAssertion(() => Assert.Contains("02.11.2026 10:00", page.Markup));
         page.Find("#slot").Change(Original.ToString("s"));
-        page.Find("button").Click();
+        page.FindAll("button").Single(b => b.TextContent == "Zarezerwuj").Click();
         page.WaitForAssertion(() =>
         {
             Assert.Contains("Termin został zajęty", page.Markup);
             Assert.DoesNotContain("02.11.2026 10:00", page.Markup);
             Assert.Contains("02.11.2026 10:30", page.Markup);
-            Assert.True(page.Find("button").HasAttribute("disabled"));
+            Assert.True(page.FindAll("button").Single(b => b.TextContent == "Zarezerwuj").HasAttribute("disabled"));
         });
         Assert.Equal(Original, handler.SubmittedDate);
         Assert.Equal(2, handler.SlotRequests);
@@ -60,8 +60,8 @@ public sealed class AppointmentPagesTests : BunitContext
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var path = request.RequestUri!.AbsolutePath;
-            if (request.Method == HttpMethod.Get && path == "/api/doctors/all")
-                return Ok(new[] { new { id = 1, firstName = "Anna", lastName = "Testowa" } });
+            if (request.Method == HttpMethod.Get && path == "/api/doctors")
+                return Ok(new { items = new[] { new { id = 1, firstName = "Anna", lastName = "Testowa" } }, totalCount = 1, page = 1, pageSize = 10 });
             if (request.Method == HttpMethod.Get && path.EndsWith("/slots"))
             {
                 SlotRequests++;

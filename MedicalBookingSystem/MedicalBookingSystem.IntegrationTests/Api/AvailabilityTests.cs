@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using MedicalBookingSystem.Domain.Models;
 using MedicalBookingSystem.Infrastructure;
 using MedicalBookingSystem.IntegrationTests.Support;
+using MedicalBookingSystem.SharedKernel;
 using MedicalBookingSystem.SharedKernel.Dto;
 using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto;
 using Microsoft.EntityFrameworkCore;
@@ -27,13 +28,13 @@ public sealed class AvailabilityTests
         Assert.Equal(scenario.BookingDate.AddMinutes(30), slots[0].StartTime);
         Assert.All(slots, slot => Assert.Equal(TimeSpan.FromMinutes(30), slot.EndTime - slot.StartTime));
         Assert.Equal(scenario.BookingDate.AddHours(4), slots[^1].EndTime);
-        var doctors = await anonymous.GetFromJsonAsync<List<DoctorDto>>($"/api/doctors?Date={date}&SortBy=availability");
+        var doctors = await anonymous.GetFromJsonAsync<PagedResult<DoctorDto>>($"/api/doctors?Date={date}&SortBy=availability");
         Assert.NotNull(doctors);
-        var doctor = Assert.Single(doctors);
+        var doctor = Assert.Single(doctors.Items);
         Assert.Equal(scenario.DoctorId, doctor.Id);
         Assert.Equal(slots[0].StartTime, doctor.NextAvailableSlot);
         var noScheduleDay = scenario.BookingDate.AddDays(2).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
-        Assert.Empty((await anonymous.GetFromJsonAsync<List<DoctorDto>>($"/api/doctors?Date={noScheduleDay}"))!);
+        Assert.Empty((await anonymous.GetFromJsonAsync<PagedResult<DoctorDto>>($"/api/doctors?Date={noScheduleDay}"))!.Items);
     }
 
     [Fact]
@@ -55,7 +56,7 @@ public sealed class AvailabilityTests
         using var forbidden = await other.GetAsync(path);
         Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
         using var noChange = await owner.PutAsJsonAsync($"/api/appointments/{scenario.AppointmentId}", new { newDate = scenario.BookingDate, status = "Completed" });
-        Assert.Equal(HttpStatusCode.OK, noChange.StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, noChange.StatusCode);
         await using var check = scenario.Factory.Services.CreateAsyncScope();
         Assert.Equal(AppointmentStatus.Scheduled, (await check.ServiceProvider.GetRequiredService<ApplicationDbContext>().Appointments.SingleAsync(a => a.Id == scenario.AppointmentId)).Status);
     }

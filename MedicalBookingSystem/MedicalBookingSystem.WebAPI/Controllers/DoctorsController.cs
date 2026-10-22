@@ -29,10 +29,10 @@ namespace MedicalBookingSystem.WebAPI.Controllers
         {
             var validationResult = await _searchValidator.ValidateAsync(dto);
             if (!validationResult.IsValid)
-                return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+                return Problem(statusCode: 400, detail: string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage)));
 
             var result = await _doctorService.SearchDoctorsAsync(dto);
-            return Ok(result.Value);
+            return result.IsSuccess ? Ok(result.Value) : this.FailureResponse(result);
         }
 
         [AllowAnonymous]
@@ -41,9 +41,9 @@ namespace MedicalBookingSystem.WebAPI.Controllers
         {
             var result = await _doctorService.GetDoctorDetailsAsync(id);
             if (result.IsSuccess)
-                return Ok(result);
+                return Ok(result.Value);
 
-            return NotFound(result.Error);
+            return this.FailureResponse(result);
         }
 
         [AllowAnonymous]
@@ -52,21 +52,9 @@ namespace MedicalBookingSystem.WebAPI.Controllers
         {
             var result = await _reviewService.GetDoctorReviewsAsync(id);
             if (result.IsSuccess)
-                return Ok(result);
-
-            return NotFound(result.Error);
-        }
-
-        [AllowAnonymous]
-        [HttpGet("all")]
-        public async Task<IActionResult> GetAll()
-        {
-            var result = await _doctorService.GetAllAsync();
-
-            if (result.IsSuccess)
                 return Ok(result.Value);
 
-            return BadRequest(result.Error);
+            return this.FailureResponse(result);
         }
 
         [AllowAnonymous]
@@ -78,7 +66,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             if (result.IsSuccess)
                 return Ok(result.Value);
 
-            return BadRequest(result.Error);
+            return this.FailureResponse(result);
         }
 
         [AllowAnonymous]
@@ -95,7 +83,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
         {
             var result = await _doctorService.GetDoctorScheduleAsync(doctorId);
             if (!result.IsSuccess)
-                return NotFound(result.Error);
+                return this.FailureResponse(result);
 
             return Ok(result.Value);
         }

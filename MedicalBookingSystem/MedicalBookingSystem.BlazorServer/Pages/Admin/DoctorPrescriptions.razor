@@ -1,3 +1,4 @@
+@inherits MedicalBookingSystem.BlazorServer.Shared.InteractivePageBase
 @page "/doctor/prescriptions"
 @attribute [Authorize(Roles = Roles.Doctor)]
 @using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
@@ -7,6 +8,7 @@
 @inject UserAccess Access
 
 <h3>Recepty do odbytych wizyt</h3>
+<fieldset disabled="@(!IsInteractive || saving)">
 @if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
 @if (appointments is null) { <p>Ładowanie...</p> }
 else if (appointments.Count == 0) { <p>Brak wizyt oczekujących na dokumentację.</p> }
@@ -24,6 +26,8 @@ else
         </section>
     }
 }
+
+</fieldset>
 
 @code {
     private List<AppointmentDto>? appointments;
