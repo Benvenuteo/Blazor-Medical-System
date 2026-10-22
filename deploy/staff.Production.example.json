@@ -1,0 +1,9 @@
+{
+  "AllowedHosts": "staff.example.test",
+  "ConnectionStrings": { "MedicalBookingSystem": "Data Source=/srv/medical/data/medical.db;Pooling=False;Default Timeout=10" },
+  "Seed": { "Enabled": false },
+  "Clinic": { "TimeZone": "Europe/Warsaw" },
+  "Media": { "PublicBaseUrl": "https://staff.example.test", "StoragePath": "/srv/medical/photos" },
+  "DataProtection": { "KeysPath": "/srv/medical/data-protection", "CertificatePath": "/etc/medical/data-protection.pfx" },
+  "Proxy": { "KnownProxies": ["127.0.0.1"] }
+}

@@ -51,7 +51,55 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("Status <> 'Cancelled'");
 
+                    b.HasIndex("DoctorId", "Status", "Date", "Id");
+
+                    b.HasIndex("PatientId", "Status", "Date", "Id");
+
                     b.ToTable("Appointments");
+                });
+
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.ClinicalAuditEntry", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Actor")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ActorRole")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Resource")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ResourceId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredAtUtc", "Id");
+
+                    b.HasIndex("PatientId", "OccurredAtUtc");
+
+                    b.ToTable("ClinicalAudit");
                 });
 
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Doctor", b =>
@@ -281,10 +329,10 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DoctorId");
-
                     b.HasIndex("PatientId", "DoctorId")
                         .IsUnique();
+
+                    b.HasIndex("DoctorId", "CreatedDate", "Id");
 
                     b.ToTable("Reviews");
                 });

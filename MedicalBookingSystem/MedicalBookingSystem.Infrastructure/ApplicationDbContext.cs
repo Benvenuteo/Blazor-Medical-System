@@ -8,6 +8,7 @@ namespace MedicalBookingSystem.Infrastructure
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options) { }
 
+        public DbSet<ClinicalAuditEntry> ClinicalAudit { get; set; }
         public DbSet<Patient> Patients { get; set; }
         public DbSet<StaffAccount> StaffAccounts { get; set; }
         public DbSet<Doctor> Doctors { get; set; }
@@ -51,6 +52,16 @@ namespace MedicalBookingSystem.Infrastructure
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<ClinicalAuditEntry>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.Property(a => a.Actor).HasMaxLength(60).IsRequired();
+                entity.Property(a => a.ActorRole).HasMaxLength(20).IsRequired();
+                entity.Property(a => a.Action).HasMaxLength(20).IsRequired();
+                entity.Property(a => a.Resource).HasMaxLength(40).IsRequired();
+                entity.HasIndex(a => new { a.OccurredAtUtc, a.Id });
+                entity.HasIndex(a => new { a.PatientId, a.OccurredAtUtc });
+            });
             modelBuilder.Entity<StaffAccount>(entity =>
             {
                 entity.ToTable("StaffAccounts", table => table.HasCheckConstraint("CK_StaffAccount_Role",
@@ -97,6 +108,8 @@ namespace MedicalBookingSystem.Infrastructure
                 entity.HasKey(a => a.Id);
                 entity.Property(a => a.Version).IsConcurrencyToken();
                 entity.Property(a => a.Date).IsRequired();
+                entity.HasIndex(a => new { a.PatientId, a.Status, a.Date, a.Id });
+                entity.HasIndex(a => new { a.DoctorId, a.Status, a.Date, a.Id });
                 entity.Property(a => a.Version).IsConcurrencyToken();
                 entity.HasIndex(a => new { a.DoctorId, a.Date }).IsUnique().HasFilter("Status <> 'Cancelled'");
                 entity.HasIndex(a => new { a.PatientId, a.Date }).IsUnique().HasFilter("Status <> 'Cancelled'");
@@ -154,6 +167,7 @@ namespace MedicalBookingSystem.Infrastructure
                 entity.HasKey(r => r.Id);
                 entity.HasIndex(r => new { r.PatientId, r.DoctorId }).IsUnique();
                 entity.Property(r => r.Rating).IsRequired();
+                entity.HasIndex(r => new { r.DoctorId, r.CreatedDate, r.Id });
                 entity.Property(r => r.Comment).HasColumnType("text");
                 entity.Property(r => r.CreatedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
 

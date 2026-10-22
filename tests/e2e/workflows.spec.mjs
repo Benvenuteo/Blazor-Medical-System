@@ -13,6 +13,7 @@ async function staffLogin(page, email = 'doctor@example.test', password = 'DemoS
   await page.getByLabel('Hasło', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Zaloguj się', exact: true }).click();
   await expect(page).toHaveURL(destination);
+  if (destination === 'http://localhost:5187/') await expect(page.locator('.page[aria-busy="false"]')).toBeVisible();
 }
 
 test('patient searches, books, reschedules, cancels and logs out', async ({ page }, info) => {

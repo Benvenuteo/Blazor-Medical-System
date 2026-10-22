@@ -46,6 +46,7 @@ namespace MedicalBookingSystem.Application.Services
                 return Result.Failure<NoteDto>("Notatka została już dodana.", ErrorType.Conflict);
             var note = new Note { AppointmentId = dto.AppointmentId, Content = normalized.Content, CreatedDate = _clock.UtcNow };
             await _uow.Notes.AddAsync(note);
+            await ClinicalAudit.AppendAsync(_uow, _access, _clock, "Create", "Note", appointment.Id, appointment.PatientId);
             try { await _uow.SaveChangesAsync(); }
             catch (PersistenceConflictException)
             {
@@ -74,6 +75,7 @@ namespace MedicalBookingSystem.Application.Services
                 ExpiryDate = _clock.Today.AddDays(dto.ValidityDays)
             };
             await _uow.Prescriptions.AddAsync(prescription);
+            await ClinicalAudit.AppendAsync(_uow, _access, _clock, "Create", "Prescription", appointment.Id, appointment.PatientId);
             try { await _uow.SaveChangesAsync(); }
             catch (PersistenceConflictException)
             {
@@ -85,28 +87,6 @@ namespace MedicalBookingSystem.Application.Services
         private bool CanDocument(Appointment appointment) => appointment.Status == AppointmentStatus.Completed &&
             appointment.Date <= _clock.Now.Subtract(AppointmentSlots.Duration);
 
-        public async Task<Result<IEnumerable<MedicalDocumentDto>>> GetPatientDocumentsAsync(int patientId)
-        {
-            using var _uow = _units.Create();
-            await _access.RequirePatientAsync(patientId);
-            var prescriptions = await _uow.Prescriptions.GetByPatientIdAsync(patientId);
-            var notes = await _uow.Notes.GetByPatientIdAsync(patientId);
-
-            // Mapowanie do klas pochodnych
-            var prescriptionDtos = prescriptions.Select(item => item.ToDto()).ToList();
-            var noteDtos = notes.Select(item => item.ToDto()).ToList();
-
-            // Rzutowanie do typu bazowego
-            var allDocs = prescriptionDtos
-                .Cast<MedicalDocumentDto>()
-                .Concat(noteDtos.Cast<MedicalDocumentDto>())
-                .OrderByDescending(d => d.CreatedDate)
-                .ToList();
-
-            return Result.Success<IEnumerable<MedicalDocumentDto>>(allDocs);
-        }
-
-
         public async Task<Result<PrescriptionDto>> GetPrescriptionAsync(int id)
         {
             using var _uow = _units.Create();
@@ -117,6 +97,8 @@ namespace MedicalBookingSystem.Application.Services
             var appointment = await _uow.Appointments.GetByIdAsync(prescription.AppointmentId);
             if (appointment is null) throw new AccessDeniedException(true);
             await _access.RequireMedicalRecordAsync(appointment.PatientId, appointment.DoctorId);
+            await ClinicalAudit.AppendAsync(_uow, _access, _clock, "Read", "Prescription", appointment.Id, appointment.PatientId);
+            await _uow.SaveChangesAsync();
             var dto = prescription.ToDto();
             return Result<PrescriptionDto>.Success(dto);
         }
@@ -131,6 +113,8 @@ namespace MedicalBookingSystem.Application.Services
             var appointment = await _uow.Appointments.GetByIdAsync(note.AppointmentId);
             if (appointment is null) throw new AccessDeniedException(true);
             await _access.RequireMedicalRecordAsync(appointment.PatientId, appointment.DoctorId);
+            await ClinicalAudit.AppendAsync(_uow, _access, _clock, "Read", "Note", appointment.Id, appointment.PatientId);
+            await _uow.SaveChangesAsync();
             var dto = note.ToDto();
             return Result<NoteDto>.Success(dto);
         }

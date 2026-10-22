@@ -1,3 +1,4 @@
+using MedicalBookingSystem.Infrastructure.Hosting;
 using Microsoft.AspNetCore.Authentication;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
@@ -11,9 +12,9 @@ using MedicalBookingSystem.BlazorServer.Service;
 using MedicalBookingSystem.Infrastructure;
 using MudBlazor.Services;
 using NLog.Web;
-using Radzen;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddHostSecurity(builder.Configuration, builder.Environment, staff: true);
 builder.Logging.ClearProviders();
 builder.Host.UseNLog();
 builder.Services.AddRazorPages();
@@ -49,7 +50,6 @@ var connectionString = MedicalBookingSystem.Infrastructure.DependencyInjection.R
     builder.Environment.ContentRootPath);
 builder.Services.AddInfrastructureServices(connectionString);
 builder.Services.AddMudServices();
-builder.Services.AddRadzenComponents();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<DoctorImageUploader>();
 builder.Services.AddOptions<DoctorMediaOptions>().BindConfiguration("Media")
@@ -72,6 +72,7 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+app.UseHostSecurity(staff: true);
 if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
 {
     app.UseExceptionHandler("/Error");

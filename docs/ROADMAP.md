@@ -1,6 +1,6 @@
 # Plan dopracowania projektu
 
-Każdy etap powinien kończyć się działającym buildem, testami regresyjnymi i opisem zmian w pull requeście. Obecny etap przygotowuje podstawę do kolejnych zmian; nie oznacza zakończenia audytu ani gotowości systemu do publicznego wdrożenia.
+Zakres wersji portfolio jest ukończony i opisany poniżej. Projekt prezentuje działające przypadki użycia, regresje, architekturę i obsługę awarii na danych demonstracyjnych. Publiczne wdrożenie z rzeczywistymi danymi jest osobnym przedsięwzięciem organizacyjnym.
 
 ## 1. Uruchamianie i podstawa testów
 
@@ -54,15 +54,23 @@ Każdy etap powinien kończyć się działającym buildem, testami regresyjnymi 
 - [x] Optymistyczna współbieżność kont i blokada wyłączenia ostatniego administratora w SQLite.
 - [x] Testy przechwyconych cookies, starych tokenów, migracji istniejących kont i otwartego panelu po odebraniu dostępu.
 
-## Kolejne prace
+## 6. Domknięcie wersji portfolio
 
-- [ ] Stronicowanie historii wizyt, dokumentów i opinii oraz filtrów pracy lekarza.
-- [ ] Testy innych przeglądarek, widoków mobilnych i dostępności interfejsu.
+- [x] Stronicowanie historii i kolejek wizyt, dokumentów oraz opinii, z filtrowaniem kolejki lekarza przed paginacją.
+- [x] Indeksy dla właściciela/statusu/daty i test planu zapytania historii.
+- [x] Audyt odczytów oraz utworzenia dokumentacji, atomowy zapis i odmowa wydania treści przy awarii audytu.
+- [x] Stronicowany podgląd metadanych audytu dla administratora i ochrona wpisów przed edycją/usunięciem.
+- [x] Kopie SQLite Online Backup API z WAL, wskazanymi zdjęciami, sumami kontrolnymi i testowanym odtwarzaniem.
+- [x] Bezpieczne odtwarzanie do nowego katalogu, bez reaktywacji starych sesji.
+- [x] Narzędzie utworzenia/odzyskania pierwszego administratora bez hasła w argumentach.
+- [x] Nagłówki bezpieczeństwa panelu, trwałe klucze Data Protection szyfrowane certyfikatem i jawne zaufane proxy.
+- [x] Responsywna nawigacja pacjenta, dostęp klawiaturą do przewijanych tabel i kontrole axe na wybranych ekranach.
+- [x] Testy desktop Chromium, widoku mobilnego i Firefox.
+- [x] Instrukcja architektury, utrzymania, demo i przykład Nginx.
 
-## Dalsze zabezpieczenia przed publicznym wdrożeniem
+## Poza zakresem wersji portfolio
 
-- [ ] Audyt odczytów i zmian dokumentacji oraz testy odzyskiwania danych z kopii zapasowej.
-- [ ] Docelowy przepływ sesji przeglądarkowej, polityka CSP, trwałe klucze Data Protection i konfiguracja zaufanego reverse proxy.
+Praca z rzeczywistymi danymi medycznymi wymaga decyzji właściciela systemu: modelu tożsamości/BFF zamiast localStorage, retencji i niezależnego magazynu audytu, polityk organizacyjnych, kopii poza serwerem, monitoringu, pełnego audytu manualnego dostępności i bezpieczeństwa oraz przeglądu wymagań prawnych. Projekt nie deklaruje takiego wdrożenia ani zgodności na podstawie samych testów. Harmonogramy kopii, infrastruktura i zewnętrzne usługi nie są automatycznie uruchamiane.
 
 ## Kryteria ukończenia
 

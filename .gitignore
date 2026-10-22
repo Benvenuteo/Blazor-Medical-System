@@ -78,3 +78,11 @@ test-results/
 # Uploaded photos live outside the tracked static assets.
 MedicalBookingSystem/MedicalBookingSystem.BlazorServer/data/
 node_modules/
+
+# Operator backups, certificates and local key material
+backups/
+data-protection/
+*.pfx
+*.p12
+*.key
+*.pem

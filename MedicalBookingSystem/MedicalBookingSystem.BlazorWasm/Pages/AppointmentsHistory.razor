@@ -1,3 +1,4 @@
+@using MedicalBookingSystem.SharedKernel
 @using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
 @page "/historyAppointments"
 @attribute [Authorize(Roles = Roles.Patient)]
@@ -21,7 +22,7 @@ else if (appointments.Count == 0)
 }
 else
 {
-    <table class="table mt-3">
+    <div class="table-responsive" tabindex="0" role="region" aria-label="Tabela wyników"><table class="table mt-3">
         <thead>
             <tr>
                 <th>Data</th>
@@ -43,7 +44,7 @@ else
                 </tr>
             }
         </tbody>
-    </table>
+    </table></div>
 
 
     @if (selectedAppointment != null)
@@ -60,7 +61,17 @@ else
     }
 }
 
+<Pagination Page="currentPage" TotalPages="@(page?.TotalPages ?? 0)" TotalCount="@(page?.TotalCount ?? 0)" Busy="isLoading" PageChanged="LoadPageAsync" />
+
 @code {
+    private PagedResult<AppointmentDto>? page;
+    private int currentPage = 1;
+    private async Task LoadPageAsync(int nextPage)
+    {
+        currentPage = nextPage; selectedAppointment = null; errorMessage = null; isLoading = true;
+        await OnInitializedAsync();
+    }
+
     private List<AppointmentDto> appointments = new();
     private bool isLoading = true;
     private string? errorMessage;
@@ -70,9 +81,10 @@ else
     {
         try
         {
-            var response = await Http.GetFromJsonAsync<List<AppointmentDto>>("api/appointments/history");
+            var response = await Http.GetFromJsonAsync<PagedResult<AppointmentDto>>($"api/appointments/history?page={currentPage}");
 
-            appointments = response ?? new();
+            page = response;
+            appointments = response?.Items.ToList() ?? new();
         }
         catch (Exception ex)
         {

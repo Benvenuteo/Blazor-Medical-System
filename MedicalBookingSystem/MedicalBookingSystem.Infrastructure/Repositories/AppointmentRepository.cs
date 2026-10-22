@@ -10,30 +10,9 @@ namespace MedicalBookingSystem.Infrastructure.Repositories
         private readonly ClinicClock _clock;
         public AppointmentRepository(ApplicationDbContext context, ClinicClock clock) : base(context) => _clock = clock;
 
-        public async Task<IEnumerable<Appointment>> GetUpcomingByPatientIdAsync(int patientId)
-        {
-            return await _dbSet
-                .Include(a => a.Doctor)
-                .Where(a => a.PatientId == patientId &&
-                           a.Status == AppointmentStatus.Scheduled)
-                .OrderBy(a => a.Date)
-                .AsNoTracking()
-                .ToListAsync();
-        }
 
-        public async Task<IEnumerable<Appointment>> GetHistoryByPatientIdAsync(int patientId)
-        {
-            return await _dbSet
-                .Include(a => a.Doctor)
-                .Include(a => a.Note)
-                .Include(a => a.Prescription)
-                .Where(a => a.PatientId == patientId &&
-                           a.Date <= _clock.Now &&
-                           a.Status == AppointmentStatus.Completed)
-                .OrderByDescending(a => a.Date)
-                .AsNoTracking()
-                .ToListAsync();
-        }
+
+
 
         public async Task<Appointment?> GetAppointmentByIdAsync(int id)
         {
@@ -49,33 +28,8 @@ namespace MedicalBookingSystem.Infrastructure.Repositories
                     .FirstOrDefaultAsync();
         }
 
-        public async Task<IEnumerable<Appointment>> GetScheduledByDoctorIdAsync(int doctorId)
-        {
-            return await _dbSet
-                .Include(a => a.Doctor)
-                .Where(a => a.DoctorId == doctorId)
-                .Include(a => a.Note)
-                .Include(a => a.Prescription)
-                .Include(a => a.Patient)
-                .Where(a => a.Status == AppointmentStatus.Scheduled)
-                .OrderBy(a => a.Date)
-                .AsNoTracking()
-                .ToListAsync();
-        }
 
-        public async Task<IEnumerable<Appointment>> GetCompletedByDoctorIdAsync(int doctorId)
-        {
-            return await _dbSet
-                .Include(a => a.Doctor)
-                .Where(a => a.DoctorId == doctorId)
-                .Include(a => a.Note)
-                .Include(a => a.Prescription)
-                .Include(a => a.Patient)
-                .Where(a => a.Date < _clock.Now &&
-                           a.Status == AppointmentStatus.Completed)
-                .OrderByDescending(a => a.Date)
-                .AsNoTracking()
-                .ToListAsync();
-        }
+
+
     }
 }

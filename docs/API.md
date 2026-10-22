@@ -46,9 +46,19 @@ Usługi aplikacyjne otrzymują `IUnitOfWorkFactory`. Każda operacja tworzy wła
 
 Walidator grafiku również ma osobny kontekst odczytu; ograniczenia SQLite rozstrzygają wyścig między walidacją a zapisem. Testy ponownie używają tej samej instancji usługi, zapisują zmianę z innego kontekstu i sprawdzają świeży odczyt. Drugi test wymusza dwie jednoczesne operacje i potwierdza różne identyfikatory kontekstów.
 
-## Zakres
+## Stronicowane listy operacyjne
 
-Paginacja obejmuje katalog lekarzy, listę kont personelu i kandydatów do przypisania konta. Listy wizyt, dokumentów i opinii zachowują dotychczasowe kontrakty list; ich stronicowanie oraz większe wolumeny wymagają osobnego etapu. Szczegóły lekarza i publiczny grafik ograniczają przedziały grafiku do bieżącego trzymiesięcznego horyzontu. Ta wersja nie wprowadza cache dostępności.
+Wspólny format `PagedResult` obejmuje także:
+
+- `GET /api/appointments/upcoming` i `/history` — własne wizyty pacjenta.
+- `GET /api/doctor/appointments` i `/completed` — kolejki uwierzytelnionego lekarza.
+- `GET /api/medical-records/patient/{patientId}` — metadane dokumentów właściciela.
+- `GET /api/reviews/doctor/{doctorId}` i `/api/doctors/{id}/reviews` — publiczne opinie.
+- `GET /api/admin/clinical-audit` — metadane audytu, wyłącznie administrator.
+
+Każda lista przyjmuje `Page=1`, `PageSize=10`, maksymalnie 50 pozycji i stronę do 100000. Odpowiedzi list zastępują wcześniejsze nieograniczone tablice; oba interfejsy są zaktualizowane. Listy wizyt przyjmują także `From`, `To` (włącznie, lokalny czas placówki) i `MissingDocument=Note|Prescription`. Kolejki dokumentowania filtrują brak dokumentu w SQL przed stronicowaniem. Historia ma kolejność data/Id malejąco, zaplanowane wizyty rosnąco, opinie czas/Id malejąco.
+
+Lista dokumentów zawiera ID, ID wizyty, typ i czas utworzenia. Treść pobiera się osobno z uprawnieniami właściciela/przypisanego lekarza i zapisem audytu. Nie udostępniamy historii klinicznej administratorowi przez rejestr audytu. Czasy audytu są jawnie serializowane jako UTC. Podział stron jest odczytem bieżącego stanu; przy równoczesnych zmianach liczba i skład stron mogą się zmienić.
 
 ## Konta personelu i sesje
 

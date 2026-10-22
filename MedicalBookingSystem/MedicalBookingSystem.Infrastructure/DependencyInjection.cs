@@ -45,6 +45,7 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWorkFactory, UnitOfWorkFactory>();
         services.AddScoped<IDoctorDirectoryQueries, DoctorDirectoryQueries>();
         services.AddScoped<IStaffAccountQueries, StaffAccountQueries>();
+        services.AddScoped<IWorklistQueries, WorklistQueries>();
         services.AddScoped<DataSeeder>();
         return services;
     }

@@ -1,0 +1,13 @@
+<nav aria-label="@Label" class="d-flex flex-wrap gap-3 align-items-center my-3">
+    <button type="button" class="btn btn-outline-primary" disabled="@(Busy || Page <= 1)" @onclick="() => PageChanged.InvokeAsync(Page - 1)">Poprzednia strona</button>
+    <span>Strona @Page z @Math.Max(1, TotalPages) · Wyniki: @TotalCount</span>
+    <button type="button" class="btn btn-outline-primary" disabled="@(Busy || Page >= TotalPages)" @onclick="() => PageChanged.InvokeAsync(Page + 1)">Następna strona</button>
+</nav>
+@code {
+    [Parameter] public int Page { get; set; } = 1;
+    [Parameter] public int TotalPages { get; set; }
+    [Parameter] public int TotalCount { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public string Label { get; set; } = "Strony wyników";
+    [Parameter] public EventCallback<int> PageChanged { get; set; }
+}

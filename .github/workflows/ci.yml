@@ -74,9 +74,9 @@ jobs:
       - name: Install browser tests
         working-directory: tests/e2e
         run: npm ci
-      - name: Install Chromium
+      - name: Install Chromium and Firefox
         working-directory: tests/e2e
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox
       - name: Run real browser workflows
         working-directory: tests/e2e
         run: npm test

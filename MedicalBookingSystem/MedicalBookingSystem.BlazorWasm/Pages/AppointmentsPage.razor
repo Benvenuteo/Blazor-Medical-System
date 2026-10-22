@@ -1,3 +1,4 @@
+@using MedicalBookingSystem.SharedKernel
 @using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
 @page "/appointments"
 @attribute [Authorize(Roles = Roles.Patient)]
@@ -25,7 +26,7 @@ else if (appointments.Count == 0)
 }
 else
 {
-    <table class="table mt-3">
+    <div class="table-responsive" tabindex="0" role="region" aria-label="Tabela wyników"><table class="table mt-3">
         <thead>
             <tr>
                 <th>Data</th>
@@ -49,7 +50,7 @@ else
                 </tr>
             }
         </tbody>
-    </table>
+    </table></div>
 
     <button class="btn btn-success mt-3" @onclick="CreateAppointment">Dodaj wizytę</button>
 
@@ -68,7 +69,17 @@ else
 
 }
 
+<Pagination Page="currentPage" TotalPages="@(page?.TotalPages ?? 0)" TotalCount="@(page?.TotalCount ?? 0)" Busy="isLoading" PageChanged="LoadPageAsync" />
+
 @code {
+    private PagedResult<AppointmentDto>? page;
+    private int currentPage = 1;
+    private async Task LoadPageAsync(int nextPage)
+    {
+        currentPage = nextPage; selectedAppointment = null; errorMessage = null; isLoading = true;
+        await OnInitializedAsync();
+    }
+
     private List<AppointmentDto> appointments = new();
     private bool isLoading = true;
     private string? errorMessage;
@@ -96,9 +107,10 @@ else
     {
         try
         {
-            var response = await Http.GetFromJsonAsync<List<AppointmentDto>>("api/appointments/upcoming");
+            var response = await Http.GetFromJsonAsync<PagedResult<AppointmentDto>>($"api/appointments/upcoming?page={currentPage}");
 
-            appointments = response ?? new();
+            page = response;
+            appointments = response?.Items.ToList() ?? new();
         }
         catch (Exception ex)
         {
@@ -127,7 +139,7 @@ else
 
             if (result.IsSuccessStatusCode)
             {
-                appointments = appointments.Where(a => a.Id != appointmentId).ToList();
+                await LoadPageAsync(appointments.Count == 1 && currentPage > 1 ? currentPage - 1 : currentPage);
                 Snackbar.Add("Wizytę odwołano pomyślnie.", Severity.Success);
             }
             else

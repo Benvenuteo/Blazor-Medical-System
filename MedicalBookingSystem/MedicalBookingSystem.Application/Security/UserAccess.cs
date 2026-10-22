@@ -10,6 +10,13 @@ public sealed class UserAccess(ICurrentUser currentUser, SessionGuard sessions)
 {
     private async Task<ClaimsPrincipal> GetUserAsync() => await sessions.RequireAsync(await currentUser.GetPrincipalAsync());
 
+    public async Task<AccountIdentity> IdentityAsync()
+    {
+        var user = await GetUserAsync();
+        if (!AccountClaims.TryReadIdentity(user, out var identity)) throw new AccessDeniedException(false);
+        return identity;
+    }
+
     public async Task<int> StaffAccountIdAsync()
     {
         var user = await GetUserAsync();

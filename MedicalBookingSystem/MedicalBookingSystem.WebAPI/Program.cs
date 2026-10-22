@@ -1,3 +1,4 @@
+using MedicalBookingSystem.Infrastructure.Hosting;
 using Microsoft.OpenApi;
 using MedicalBookingSystem.WebAPI.OpenApi;
 using System.Threading.RateLimiting;
@@ -18,6 +19,7 @@ using Microsoft.IdentityModel.Tokens;
 using NLog.Web;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddHostSecurity(builder.Configuration, builder.Environment, staff: false);
 builder.Logging.ClearProviders();
 builder.Host.UseNLog();
 
@@ -111,6 +113,7 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+app.UseHostSecurity(staff: false);
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseStatusCodePages();
 if (app.Environment.IsDevelopment())

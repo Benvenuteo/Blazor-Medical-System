@@ -2,7 +2,11 @@
 
 System rezerwacji wizyt medycznych z API ASP.NET Core, aplikacją pacjenta w Blazor WebAssembly i panelem obsługi w Blazor Server. Dane przechowywane są w SQLite przez Entity Framework Core.
 
-Projekt jest rozwijany etapami. Wdrożono .NET 10 LTS, migracje, testy, kontrolę dostępu oraz rezerwacje z ochroną przed równoczesnym zajęciem terminu. Pacjent wybiera rzeczywisty slot, lekarz oznacza wizytę jako odbytą, a następnie dodaje dokumentację. Katalog lekarzy jest stronicowany w SQLite, operacje panelu mają osobne konteksty EF, a zdjęcia są dekodowane i kodowane ponownie. Administrator zarządza kontami personelu i hasłami tymczasowymi. Zmiana hasła, reset, dezaktywacja i wylogowanie wszystkich sesji unieważniają dotychczasowe logowania. Główne przepływy sprawdzają testy Chromium. Stan kolejnych prac opisuje [plan](docs/ROADMAP.md), [zasady rezerwacji](docs/BOOKING.md) i [kontrola dostępu](docs/SECURITY.md).
+Wersja portfolio obejmuje pełny przepływ pacjent–lekarz–administrator: rezerwację rzeczywistego slotu, zmianę/anulowanie wizyty, zakończenie przez lekarza, dokumentację i opinię. Konta, własność danych, cykl życia wizyty i równoczesne rezerwacje są chronione w usługach oraz SQLite.
+
+Listy są stronicowane w bazie, każda operacja panelu ma własny kontekst EF, zdjęcia są dekodowane i kodowane ponownie, a zmiany kont unieważniają stare sesje. Dostęp do dokumentacji trafia do audytu. Narzędzie utrzymaniowe tworzy sprawdzane kopie bazy z WAL i zdjęciami oraz odtwarza je bez przywracania wcześniejszych sesji.
+
+Szczegóły: [architektura](docs/ARCHITECTURE.md), [ukończony zakres](docs/ROADMAP.md), [rezerwacje](docs/BOOKING.md), [kontrola dostępu](docs/SECURITY.md) i [utrzymanie](docs/OPERATIONS.md).
 
 ## Wymagania
 
@@ -94,6 +98,7 @@ Początkowa migracja służy do tworzenia nowej bazy. Stara baza utworzona przez
 | Projekt | Odpowiedzialność |
 | --- | --- |
 | Domain | Encje i kontrakty repozytoriów |
+| Maintenance | Zweryfikowane kopie bazy/zdjęć, odtwarzanie i administracja awaryjna |
 | Application | Usługi przypadków użycia, walidatory, jawne mapowania DTO i zegar |
 | Infrastructure | EF Core, SQLite, repozytoria, Unit of Work i migracje |
 | SharedKernel | Kontrakty DTO i wyniki operacji |
@@ -101,8 +106,14 @@ Początkowa migracja służy do tworzenia nowej bazy. Stara baza utworzona przez
 | BlazorWasm | Interfejs pacjenta |
 | BlazorServer | Panel obsługi |
 
-Testy jednostkowe korzystają z xUnit i Moq, integracyjne z rzeczywistego API i SQLite, a komponentowe z bUnit. Workflow `Build and test` sprawdza 276 przypadków .NET na Linux i Windows, zapisuje raporty TRX/Cobertura i pomiar katalogu, a osobne zadanie uruchamia sześć scenariuszy Playwright w Chromium.
+Testy jednostkowe korzystają z xUnit i Moq, integracyjne z rzeczywistego API i SQLite, a komponentowe z bUnit. Workflow `Build and test` sprawdza 310 przypadków .NET na Linux i Windows, zapisuje raporty TRX/Cobertura i pomiar katalogu, a osobne zadanie uruchamia 10 scenariuszy Playwright: sześć przepływów Chromium oraz po dwa sprawdzenia mobilne i w Firefoksie, z automatyczną kontrolą dostępności.
 
 Zrzuty działającej aplikacji i scenariusz demonstracyjny: [DEMO.md](docs/DEMO.md).
 
-Szczegóły: [kontrakty API](docs/API.md), [zdjęcia](docs/MEDIA.md), [wydajność](docs/PERFORMANCE.md), [zasady rezerwacji](docs/BOOKING.md), [strategia testowania](docs/TESTING.md), [kontrola dostępu](docs/SECURITY.md) i [plan dalszych etapów](docs/ROADMAP.md).
+Szczegóły: [kontrakty API](docs/API.md), [zdjęcia](docs/MEDIA.md), [wydajność](docs/PERFORMANCE.md), [zasady rezerwacji](docs/BOOKING.md), [strategia testowania](docs/TESTING.md), [kontrola dostępu](docs/SECURITY.md) i [zakres projektu](docs/ROADMAP.md).
+
+## Weryfikacja i prezentacja
+
+Po szybkim starcie przejdź przez [scenariusz demo](docs/DEMO.md). Testy obejmują 120 przypadków jednostkowych, 180 integracyjnych i 10 komponentowych. Osobne scenariusze przeglądarkowe używają prawdziwych hostów, JWT, cookies i SignalR. Testy mobilne oraz Firefox sprawdzają nawigację i reguły dostępności axe; nie zastępują pełnego audytu manualnego WCAG.
+
+Polecenia backupu, odzyskania administratora i wymagane ustawienia Production opisuje [OPERATIONS.md](docs/OPERATIONS.md). Przykład reverse proxy: [nginx.conf.example](deploy/nginx.conf.example). Wersja portfolio działa na danych fikcyjnych; zakres ewentualnego wdrożenia z rzeczywistą dokumentacją jest opisany oddzielnie w planie.

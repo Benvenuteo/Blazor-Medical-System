@@ -1,3 +1,4 @@
+using MedicalBookingSystem.SharedKernel.Dto;
 using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.SharedKernel.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -12,11 +13,13 @@ namespace MedicalBookingSystem.WebAPI.Controllers
     [Authorize(Roles = Roles.Patient)]
     public class AppointmentsController : ControllerBase
     {
+        private readonly WorklistService _lists;
         private readonly UserAccess _access;
         private readonly IAppointmentService _appointmentService;
 
-        public AppointmentsController(IAppointmentService appointmentService, UserAccess access)
+        public AppointmentsController(IAppointmentService appointmentService, UserAccess access, WorklistService lists)
         {
+            _lists = lists;
             _access = access;
             _appointmentService = appointmentService;
         }
@@ -57,10 +60,10 @@ namespace MedicalBookingSystem.WebAPI.Controllers
         }
 
         [HttpGet("upcoming")]
-        public async Task<IActionResult> GetUpcomingAppointments()
+        public async Task<IActionResult> GetUpcomingAppointments([FromQuery] AppointmentListQueryDto query)
         {
             var patientId = await _access.PatientIdAsync();
-            var result = await _appointmentService.GetUpcomingAppointmentsAsync(patientId);
+            var result = await _lists.PatientAppointmentsAsync(patientId, false, query);
 
             if (result.IsSuccess)
                 return Ok(result.Value);
@@ -69,10 +72,10 @@ namespace MedicalBookingSystem.WebAPI.Controllers
         }
 
         [HttpGet("history")]
-        public async Task<IActionResult> GetAppointmentHistory()
+        public async Task<IActionResult> GetAppointmentHistory([FromQuery] AppointmentListQueryDto query)
         {
             var patientId = await _access.PatientIdAsync();
-            var result = await _appointmentService.GetPastAppointmentsAsync(patientId);
+            var result = await _lists.PatientAppointmentsAsync(patientId, true, query);
 
             if (result.IsSuccess)
                 return Ok(result.Value);

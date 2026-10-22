@@ -73,8 +73,8 @@ public sealed class VisitWorkflowTests
         var patientPrescription = await renewedPatient.GetFromJsonAsync<PrescriptionDto>(prescriptionCreated.Headers.Location);
         Assert.Equal(note.content, patientNote!.Content);
         Assert.Equal(prescription.medication, patientPrescription!.Medication);
-        var history = await renewedPatient.GetFromJsonAsync<List<AppointmentDto>>("/api/appointments/history");
-        var visit = Assert.Single(history!);
+        var history = await renewedPatient.GetFromJsonAsync<MedicalBookingSystem.SharedKernel.PagedResult<AppointmentDto>>("/api/appointments/history");
+        var visit = Assert.Single(history!.Items);
         Assert.Equal(id, visit.Id);
         Assert.Equal("Completed", visit.Status);
         Assert.True(visit.HasNote);

@@ -17,6 +17,7 @@ internal sealed class RepositoryMocks
 
     public RepositoryMocks()
     {
+        UnitOfWork.SetupGet(unit => unit.ClinicalAudit).Returns(new Mock<IClinicalAuditWriter>().Object);
         UnitOfWork.SetupGet(unit => unit.Patients).Returns(Patients.Object);
         UnitOfWork.SetupGet(unit => unit.Doctors).Returns(Doctors.Object);
         UnitOfWork.SetupGet(unit => unit.DoctorSchedules).Returns(Schedules.Object);

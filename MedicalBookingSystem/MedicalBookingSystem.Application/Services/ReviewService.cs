@@ -69,15 +69,7 @@ namespace MedicalBookingSystem.Application.Services
             return Result.Success();
         }
 
-        public async Task<Result<IEnumerable<ReviewDto>>> GetDoctorReviewsAsync(int doctorId)
-        {
-            using var _uow = _units.Create();
-            var reviews = await _uow.Reviews
-                .GetByDoctorIdAsync(doctorId);
 
-            IEnumerable<ReviewDto> reviewDtos = reviews.Select(item => item.ToDto()).ToList();
-            return Result<IEnumerable<ReviewDto>>.Success(reviewDtos);
-        }
 
         public async Task<Result<ReviewDto>> GetReviewAsync(int reviewId)
         {

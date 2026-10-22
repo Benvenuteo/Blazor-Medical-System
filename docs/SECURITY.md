@@ -57,13 +57,13 @@ Zwykłe **Wyloguj** usuwa token/cookie z bieżącej przeglądarki. Jego przechwy
 
 Pacjent korzysta z `/account/security`: zmiana hasła przez profil albo `POST /api/auth/logout-all`. Personel ma formularze `/Account/ChangePassword` i `/Account/LogoutAll`; API udostępnia także `POST /api/auth/staff/change-password`. Żadna z tych operacji nie przyjmuje identyfikatora właściciela sesji od klienta.
 
-Migracja `AccountSessions` zachowuje hashe istniejących kont i nadaje im odrębne znaczniki. Wcześniejsze tokeny/cookies nie mają poprawnego znacznika i wymagają ponownego logowania. Konta demo nie wymagają zmiany hasła przy starcie. Pierwszy administrator poza demo i odzyskanie dostępu po utracie jego hasła wymagają osobnej procedury operatora; projektu nie należy publicznie wdrażać z kontami demo.
+Migracja `AccountSessions` zachowuje hashe istniejących kont i nadaje im odrębne znaczniki. Wcześniejsze tokeny/cookies nie mają poprawnego znacznika i wymagają ponownego logowania. Konta demo nie wymagają zmiany hasła przy starcie. Pierwszego administratora oraz odzyskanie jego dostępu obsługuje narzędzie utrzymaniowe opisane w [OPERATIONS.md](OPERATIONS.md). Konta demo pozostają przeznaczone do lokalnej prezentacji.
 
 ## Zakres obecnego etapu
 
-To lokalny projekt demonstracyjny. Audyt dokumentacji i odtwarzanie z kopii zapasowej pozostają zadaniami w `ROADMAP.md`.
+Projekt demonstracyjny ma audyt dokumentacji, weryfikowane kopie i testy odtwarzania. Procedury oraz zakres ochrony zapisano w [OPERATIONS.md](OPERATIONS.md).
 
-Token w localStorage jest dostępny dla kodu JavaScript działającego w originie aplikacji. Docelowe publiczne wdrożenie wymaga dopracowania ochrony XSS/CSP i przepływu sesji, trwałego magazynu kluczy Data Protection oraz konfiguracji zaufanego proxy dla HTTPS i limitów IP. Reguły cyklu życia wizyty i ochronę rezerwacji opisuje [BOOKING.md](BOOKING.md).
+Token w localStorage jest dostępny dla kodu JavaScript działającego w originie aplikacji. Panel ma CSP, szyfrowany trwały magazyn Data Protection dla Production i jawne zaufane proxy. Dla statycznego WASM nagłówki konfiguruje host; przykład dostarcza Nginx. Model BFF/HttpOnly dla pacjenta pozostaje decyzją osobnego wdrożenia. Reguły cyklu życia wizyty i ochronę rezerwacji opisuje [BOOKING.md](BOOKING.md).
 
 ## Odczyty i pliki
 

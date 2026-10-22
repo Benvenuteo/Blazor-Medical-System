@@ -9,9 +9,5 @@ public interface IAppointmentService
     Task<Result> CancelAppointmentAsync(int id, int patientId);
     Task<Result> UpdateAppointmentAsync(int id, UpdateAppointmentDto dto);
     Task<Result> CompleteAppointmentAsync(int id);
-    Task<Result<IEnumerable<AppointmentDto>>> GetUpcomingAppointmentsAsync(int patientId);
-    Task<Result<IEnumerable<AppointmentDto>>> GetPastAppointmentsAsync(int patientId);
     Task<Result<AppointmentDetailsDto>> GetAppointmentDetailsAsync(int appointmentId, int patientId);
-    Task<List<AppointmentDto>> GetScheduledAppointmentsByDoctorIdAsync(int doctorId);
-    Task<List<AppointmentDto>> GetCompletedAppointmentsByDoctorIdAsync(int doctorId);
 }

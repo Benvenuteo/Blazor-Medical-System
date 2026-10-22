@@ -80,23 +80,14 @@ public sealed class AppointmentService(
             return Result.Failure("Można zakończyć wyłącznie zaplanowaną wizytę.", ErrorType.Conflict);
         if (appointment.Date > clock.Now.Subtract(AppointmentSlots.Duration))
             return Result.Failure("Wizytę można oznaczyć jako odbytą po zakończeniu jej terminu.", ErrorType.Conflict);
+        await ClinicalAudit.AppendAsync(unitOfWork, access, clock, "Complete", "Appointment", appointment.Id, appointment.PatientId);
         appointment.Status = AppointmentStatus.Completed;
         return await SaveChangeAsync(unitOfWork);
     }
 
-    public async Task<Result<IEnumerable<AppointmentDto>>> GetPastAppointmentsAsync(int patientId)
-    {
-        using var unitOfWork = units.Create();
-        await access.RequirePatientAsync(patientId);
-        return Result.Success<IEnumerable<AppointmentDto>>((await unitOfWork.Appointments.GetHistoryByPatientIdAsync(patientId)).Select(a => a.ToDto()).ToList());
-    }
 
-    public async Task<Result<IEnumerable<AppointmentDto>>> GetUpcomingAppointmentsAsync(int patientId)
-    {
-        using var unitOfWork = units.Create();
-        await access.RequirePatientAsync(patientId);
-        return Result.Success<IEnumerable<AppointmentDto>>((await unitOfWork.Appointments.GetUpcomingByPatientIdAsync(patientId)).Select(a => a.ToDto()).ToList());
-    }
+
+
 
     public async Task<Result<AppointmentDetailsDto>> GetAppointmentDetailsAsync(int appointmentId, int patientId)
     {
@@ -105,22 +96,14 @@ public sealed class AppointmentService(
         var appointment = await unitOfWork.Appointments.GetAppointmentByIdAsync(appointmentId);
         if (appointment is null) return Result.Failure<AppointmentDetailsDto>("Nie znaleziono wizyty.", ErrorType.NotFound);
         await access.RequirePatientAsync(appointment.PatientId);
+        await ClinicalAudit.AppendAsync(unitOfWork, access, clock, "Read", "AppointmentDetails", appointment.Id, appointment.PatientId);
+        await unitOfWork.SaveChangesAsync();
         return Result.Success(appointment.ToDetailsDto());
     }
 
-    public async Task<List<AppointmentDto>> GetScheduledAppointmentsByDoctorIdAsync(int doctorId)
-    {
-        using var unitOfWork = units.Create();
-        await access.RequireDoctorAsync(doctorId);
-        return (await unitOfWork.Appointments.GetScheduledByDoctorIdAsync(doctorId)).Select(a => a.ToDto()).ToList();
-    }
 
-    public async Task<List<AppointmentDto>> GetCompletedAppointmentsByDoctorIdAsync(int doctorId)
-    {
-        using var unitOfWork = units.Create();
-        await access.RequireDoctorAsync(doctorId);
-        return (await unitOfWork.Appointments.GetCompletedByDoctorIdAsync(doctorId)).Select(a => a.ToDto()).ToList();
-    }
+
+
 
     private Result CheckPatientChange(Appointment appointment)
     {

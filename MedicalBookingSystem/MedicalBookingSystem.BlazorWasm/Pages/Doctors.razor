@@ -51,7 +51,7 @@ else if (!string.IsNullOrEmpty(errorMessage))
 }
 else if (doctors != null && doctors.Any())
 {
-    <table class="table table-bordered mt-3">
+    <div class="table-responsive" tabindex="0" role="region" aria-label="Tabela wyników"><table class="table table-bordered mt-3">
         <thead>
             <tr>
                 <th>Zdjęcie</th>
@@ -110,10 +110,10 @@ else if (doctors != null && doctors.Any())
                             }
                             else if (reviewsByDoctor.TryGetValue(doctor.Id, out var reviewList))
                             {
-                                @if (reviewList is not null && reviewList.Any())
+                                @if (reviewList is not null && reviewList.Items.Any())
                                 {
                                     <ul class="list-group">
-                                        @foreach (var review in reviewList)
+                                        @foreach (var review in reviewList.Items)
                                         {
                                             <li class="list-group-item">
                                                 <strong>@review.Rating ★</strong><br />
@@ -121,6 +121,7 @@ else if (doctors != null && doctors.Any())
                                             </li>
                                         }
                                     </ul>
+                                    <Pagination Page="reviewList.Page" TotalPages="reviewList.TotalPages" TotalCount="reviewList.TotalCount" Busy="@(loadingReviews.Contains(doctor.Id))" PageChanged="p => LoadReviewPageAsync(doctor.Id, p)" Label="Strony opinii" />
                                 }
                                 else if (reviewList is null)
                                 {
@@ -140,7 +141,7 @@ else if (doctors != null && doctors.Any())
                 }
             }
         </tbody>
-    </table>
+    </table></div>
     <nav aria-label="Strony lekarzy" class="d-flex align-items-center gap-3">
         <button class="btn btn-outline-primary" disabled="@(isLoading || searchDto.Page <= 1)" @onclick="() => ChangePage(-1)">Poprzednia</button>
         <span>Strona @searchDto.Page z @(page?.TotalPages ?? 0) · Wyniki: @(page?.TotalCount ?? 0)</span>
@@ -182,7 +183,7 @@ else if (doctors != null)
 
     private HashSet<int> expandedDoctorIds = new();
     private HashSet<int> loadingReviews = new();
-    private Dictionary<int, List<ReviewDto>?> reviewsByDoctor = new();
+    private Dictionary<int, PagedResult<ReviewDto>?> reviewsByDoctor = new();
     private bool showReviewForm = false;
     private int selectedDoctorId;
     private CreateReviewDto newReview = new();
@@ -287,22 +288,17 @@ else if (doctors != null)
 
             if (!reviewsByDoctor.TryGetValue(doctorId, out var cached) || cached is null)
             {
-                loadingReviews.Add(doctorId);
-                try
-                {
-                    var reviews = await Http.GetFromJsonAsync<List<ReviewDto>>($"api/reviews/doctor/{doctorId}");
-                    reviewsByDoctor[doctorId] = reviews ?? new();
-                }
-                catch
-                {
-                    reviewsByDoctor[doctorId] = null; // błąd
-                }
-                finally
-                {
-                    loadingReviews.Remove(doctorId);
-                }
+                await LoadReviewPageAsync(doctorId, 1);
             }
         }
+    }
+
+    private async Task LoadReviewPageAsync(int doctorId, int pageNumber)
+    {
+        loadingReviews.Add(doctorId);
+        try { reviewsByDoctor[doctorId] = await Http.GetFromJsonAsync<PagedResult<ReviewDto>>($"api/reviews/doctor/{doctorId}?page={pageNumber}"); }
+        catch (HttpRequestException) { reviewsByDoctor[doctorId] = null; }
+        finally { loadingReviews.Remove(doctorId); }
     }
 
 }

@@ -1,3 +1,4 @@
+using MedicalBookingSystem.SharedKernel.Dto;
 using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.SharedKernel.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -12,20 +13,22 @@ namespace MedicalBookingSystem.WebAPI.Controllers
     [Authorize]
     public class MedicalRecordsController : ControllerBase
     {
+        private readonly WorklistService _lists;
         private readonly UserAccess _access;
         private readonly IMedicalRecordService _medicalRecordService;
 
-        public MedicalRecordsController(IMedicalRecordService medicalRecordService, UserAccess access)
+        public MedicalRecordsController(IMedicalRecordService medicalRecordService, UserAccess access, WorklistService lists)
         {
+            _lists = lists;
             _access = access;
             _medicalRecordService = medicalRecordService;
         }
 
         [Authorize(Roles = Roles.Patient)]
         [HttpGet("patient/{patientId}")]
-        public async Task<IActionResult> GetPatientDocuments(int patientId)
+        public async Task<IActionResult> GetPatientDocuments(int patientId, [FromQuery] PageQueryDto query)
         {
-            var result = await _medicalRecordService.GetPatientDocumentsAsync(patientId);
+            var result = await _lists.DocumentsAsync(patientId, query);
             return result.IsSuccess ? Ok(result.Value) : this.FailureResponse(result);
         }
 

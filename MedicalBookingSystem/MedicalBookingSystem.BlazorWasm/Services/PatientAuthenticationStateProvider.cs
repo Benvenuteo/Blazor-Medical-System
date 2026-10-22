@@ -13,6 +13,7 @@ public sealed class PatientAuthenticationStateProvider(ILocalStorageService stor
     public const string TokenKey = "medical_access_token";
     private static readonly ClaimsPrincipal Anonymous = new(new ClaimsIdentity());
     private Timer? _expiryTimer;
+    private bool _wasAuthenticated;
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
@@ -23,13 +24,18 @@ public sealed class PatientAuthenticationStateProvider(ILocalStorageService stor
     public async Task<string?> GetTokenAsync()
     {
         var token = await storage.GetItemAsync<string>(TokenKey);
-        if (string.IsNullOrWhiteSpace(token)) return null;
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            if (_wasAuthenticated) await LogoutAsync();
+            return null;
+        }
         var user = ReadPrincipal(token);
         if (user.Identity?.IsAuthenticated != true)
         {
             await LogoutAsync();
             return null;
         }
+        _wasAuthenticated = true;
         ScheduleExpiry(user);
         return token;
     }
@@ -40,12 +46,14 @@ public sealed class PatientAuthenticationStateProvider(ILocalStorageService stor
         if (user.Identity?.IsAuthenticated != true) throw new InvalidOperationException("Nieprawidłowy token logowania.");
         await storage.SetItemAsync(TokenKey, token);
         await storage.RemoveItemAsync("patientId");
+        _wasAuthenticated = true;
         ScheduleExpiry(user);
         NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(user)));
     }
 
     public async Task LogoutAsync()
     {
+        _wasAuthenticated = false;
         _expiryTimer?.Dispose();
         _expiryTimer = null;
         await storage.RemoveItemAsync(TokenKey);

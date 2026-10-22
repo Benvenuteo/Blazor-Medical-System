@@ -1,3 +1,4 @@
+using MedicalBookingSystem.SharedKernel.Dto;
 using Microsoft.AspNetCore.Authorization;
 using FluentValidation;
 using MedicalBookingSystem.Application.Services;
@@ -11,13 +12,15 @@ namespace MedicalBookingSystem.WebAPI.Controllers
     public class DoctorsController : ControllerBase
     {
         private readonly IDoctorService _doctorService;
+        private readonly WorklistService _lists;
         private readonly IReviewService _reviewService;
         private readonly IValidator<SearchDoctorsDto> _searchValidator;
 
         public DoctorsController(IReviewService reviewService,
             IDoctorService doctorService,
-            IValidator<SearchDoctorsDto> searchValidator)
+            IValidator<SearchDoctorsDto> searchValidator, WorklistService lists)
         {
+            _lists = lists;
             _reviewService = reviewService;
             _doctorService = doctorService;
             _searchValidator = searchValidator;
@@ -48,9 +51,9 @@ namespace MedicalBookingSystem.WebAPI.Controllers
 
         [AllowAnonymous]
         [HttpGet("{id}/reviews")]
-        public async Task<IActionResult> GetDoctorReviews(int id)
+        public async Task<IActionResult> GetDoctorReviews(int id, [FromQuery] PageQueryDto query)
         {
-            var result = await _reviewService.GetDoctorReviewsAsync(id);
+            var result = await _lists.ReviewsAsync(id, query);
             if (result.IsSuccess)
                 return Ok(result.Value);
 

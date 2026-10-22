@@ -34,13 +34,13 @@ public sealed class DoctorReviewsTests : BunitContext
             var path = request.RequestUri!.AbsolutePath;
             var response = path switch
             {
-                "/api/doctors/specializations" => new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(Array.Empty<object>()) },
+                "/api/doctors/specializations" => new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new MedicalBookingSystem.SharedKernel.PagedResult<object>([], 0, 1, 10)) },
                 "/api/doctors" => new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     Content = JsonContent.Create(new { items = new[] { new { id = 1, firstName = "Anna", lastName = "Testowa", averageRating = 0, reviewCount = 0 } }, totalCount = 1, page = 1, pageSize = 10 })
                 },
                 "/api/reviews/doctor/1" when failReviews => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable),
-                "/api/reviews/doctor/1" => new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(Array.Empty<object>()) },
+                "/api/reviews/doctor/1" => new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new MedicalBookingSystem.SharedKernel.PagedResult<object>([], 0, 1, 10)) },
                 _ => new HttpResponseMessage(HttpStatusCode.NotFound)
             };
             return Task.FromResult(response);

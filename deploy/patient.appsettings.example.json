@@ -1,0 +1,4 @@
+{
+  "MedicalBookingSystemAPIUrl": "https://api.example.test",
+  "MedicalBookingSystemServerUrl": "https://staff.example.test"
+}

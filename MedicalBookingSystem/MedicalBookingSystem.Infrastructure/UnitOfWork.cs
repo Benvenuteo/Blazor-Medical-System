@@ -15,6 +15,7 @@ namespace MedicalBookingSystem.Infrastructure
         public UnitOfWork(ApplicationDbContext context, ClinicClock clock)
         {
             _context = context;
+            ClinicalAudit = new ClinicalAuditWriter(context);
             Patients = new PatientRepository(context);
             StaffAccounts = new StaffAccountRepository(context);
             Doctors = new DoctorRepository(context);
@@ -26,6 +27,7 @@ namespace MedicalBookingSystem.Infrastructure
             Specializations = new SpecializationRepository(context);
         }
 
+        public IClinicalAuditWriter ClinicalAudit { get; }
         public IPatientRepository Patients { get; }
         public IRepository<MedicalBookingSystem.Domain.Models.StaffAccount> StaffAccounts { get; }
         public IDoctorRepository Doctors { get; }

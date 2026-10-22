@@ -1,5 +1,6 @@
 using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.SharedKernel.Security;
+using MedicalBookingSystem.SharedKernel.Dto;
 using Microsoft.AspNetCore.Authorization;
 using MedicalBookingSystem.Application.Services;
 using MedicalBookingSystem.SharedKernel.Dto.ReviewsDto;
@@ -13,11 +14,13 @@ namespace MedicalBookingSystem.WebAPI.Controllers
     public class ReviewsController : ControllerBase
     {
         private readonly UserAccess _access;
+        private readonly WorklistService _lists;
         private readonly IReviewService _reviewService;
 
-        public ReviewsController(IReviewService reviewService, UserAccess access)
+        public ReviewsController(IReviewService reviewService, UserAccess access, WorklistService lists)
         {
             _access = access;
+            _lists = lists;
             _reviewService = reviewService;
         }
 
@@ -59,9 +62,9 @@ namespace MedicalBookingSystem.WebAPI.Controllers
 
         [AllowAnonymous]
         [HttpGet("doctor/{doctorId}")]
-        public async Task<IActionResult> GetDoctorReviews(int doctorId)
+        public async Task<IActionResult> GetDoctorReviews(int doctorId, [FromQuery] PageQueryDto query)
         {
-            var result = await _reviewService.GetDoctorReviewsAsync(doctorId);
+            var result = await _lists.ReviewsAsync(doctorId, query);
 
             if (result.IsSuccess)
                 return Ok(result.Value);

@@ -8,7 +8,6 @@ namespace MedicalBookingSystem.Application.Services
     {
         Task<Result<PrescriptionDto>> CreatePrescriptionAsync(CreatePrescriptionDto dto, int doctorId);
         Task<Result<NoteDto>> AddNoteToAppointmentAsync(CreateNoteDto dto, int doctorId);
-        Task<Result<IEnumerable<MedicalDocumentDto>>> GetPatientDocumentsAsync(int patientId);
         Task<Result<PrescriptionDto>> GetPrescriptionAsync(int id);
         Task<Result<NoteDto>> GetNoteAsync(int id);
     }

@@ -17,7 +17,7 @@
 </EditForm>
 @if (page is not null)
 {
-    <div class="table-responsive"><table class="table"><thead><tr><th>Konto</th><th>Rola</th><th>Status</th><th>Lekarz</th><th>Akcje</th></tr></thead><tbody>
+    <div class="table-responsive" tabindex="0" role="region" aria-label="Tabela wyników"><table class="table"><thead><tr><th>Konto</th><th>Rola</th><th>Status</th><th>Lekarz</th><th>Akcje</th></tr></thead><tbody>
     @foreach (var account in page.Items)
     {
         <tr @key="account.Id"><td>@account.DisplayName<br />@account.Email @(account.IsCurrentUser ? "(Twoje konto)" : "")</td>

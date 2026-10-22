@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<StaffPasswordService>();
         services.AddScoped<SessionManagementService>();
         services.AddScoped<StaffAccountService>();
+        services.AddScoped<WorklistService>();
         services.AddScoped<UserAccess>();
         services.AddScoped<IAppointmentService, AppointmentService>();
         services.AddScoped<IDoctorService, DoctorService>();

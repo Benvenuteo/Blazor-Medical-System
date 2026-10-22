@@ -1,14 +1,22 @@
 @inherits MedicalBookingSystem.BlazorServer.Shared.InteractivePageBase
 @page "/doctor/prescriptions"
 @attribute [Authorize(Roles = Roles.Doctor)]
+@using MedicalBookingSystem.SharedKernel
+@using MedicalBookingSystem.SharedKernel.Dto
 @using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
 @using MedicalBookingSystem.SharedKernel.Dto.NotesPrescriptionDto
+@inject WorklistService Lists
 @inject IAppointmentService AppointmentService
 @inject IMedicalRecordService MedicalRecordService
 @inject UserAccess Access
 
 <h3>Recepty do odbytych wizyt</h3>
 <fieldset disabled="@(!IsInteractive || saving)">
+<EditForm Model="query" OnSubmit="SearchAsync" class="d-flex flex-wrap gap-3 mb-3">
+    <label>Od dnia<InputDate @bind-Value="from" class="form-control" /></label>
+    <label>Do dnia<InputDate @bind-Value="to" class="form-control" /></label>
+    <button type="submit" class="btn btn-outline-primary">Filtruj wizyty</button>
+</EditForm>
 @if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
 @if (appointments is null) { <p>Ładowanie...</p> }
 else if (appointments.Count == 0) { <p>Brak wizyt oczekujących na dokumentację.</p> }
@@ -27,9 +35,16 @@ else
     }
 }
 
+<Pagination Page="query.Page" TotalPages="@(page?.TotalPages ?? 0)" TotalCount="@(page?.TotalCount ?? 0)" Busy="saving" PageChanged="ChangePageAsync" />
 </fieldset>
 
 @code {
+    private AppointmentListQueryDto query = new();
+    private PagedResult<AppointmentDto>? page;
+    private DateTime? from, to;
+    private Task SearchAsync() { query.Page = 1; return ReloadAsync(); }
+    private Task ChangePageAsync(int value) { query.Page = value; return ReloadAsync(); }
+
     private List<AppointmentDto>? appointments;
     private readonly Dictionary<int, CreatePrescriptionDto> drafts = new();
     private int doctorId;
@@ -39,7 +54,14 @@ else
     protected override async Task OnInitializedAsync()
     {
         doctorId = await Access.DoctorIdAsync();
-        appointments = (await AppointmentService.GetCompletedAppointmentsByDoctorIdAsync(doctorId)).Where(a => !a.HasPrescription).ToList();
+        await ReloadAsync();
+    }
+    private async Task ReloadAsync()
+    {
+        query.From = from?.Date; query.To = to?.Date.AddDays(1).AddTicks(-1); query.MissingDocument = "Prescription";
+        var result = await Lists.DoctorAppointmentsAsync(doctorId, true, query);
+        if (!result.IsSuccess) { error = result.Error; return; }
+        page = result.Value; appointments = page.Items.ToList(); drafts.Clear();
         foreach (var appointment in appointments)
             drafts[appointment.Id] = new CreatePrescriptionDto { AppointmentId = appointment.Id, ValidityDays = 7 };
     }
@@ -52,7 +74,11 @@ else
         {
             var result = await MedicalRecordService.CreatePrescriptionAsync(drafts[id], doctorId);
             error = result.Error;
-            if (result.IsSuccess) { appointments?.RemoveAll(a => a.Id == id); drafts.Remove(id); }
+            if (result.IsSuccess)
+            {
+                if (appointments?.Count == 1 && query.Page > 1) query.Page--;
+                await ReloadAsync();
+            }
         }
         finally { saving = false; }
     }

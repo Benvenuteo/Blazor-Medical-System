@@ -73,6 +73,19 @@ public sealed class PatientAuthenticationTests : BunitContext
         Assert.EndsWith("/", navigation.Uri);
     }
 
+    [Fact]
+    public async Task TokenRemovedInAnotherTab_NotifiesAnonymousOnlyOnce()
+    {
+        using var authentication = new PatientAuthenticationStateProvider(_storage.Object);
+        await authentication.SignInAsync(Token());
+        var notifications = 0;
+        authentication.AuthenticationStateChanged += _ => notifications++;
+        _items.Remove(PatientAuthenticationStateProvider.TokenKey);
+        Assert.Null(await authentication.GetTokenAsync());
+        Assert.False((await authentication.GetAuthenticationStateAsync()).User.Identity!.IsAuthenticated);
+        Assert.Equal(1, notifications);
+    }
+
     private static string Token(string role = Roles.Patient, int seconds = 300)
     {
         var expires = DateTimeOffset.UtcNow.AddSeconds(seconds).ToUnixTimeSeconds();
