@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using MedicalBookingSystem.SharedKernel.Dto;
 
 namespace MedicalBookingSystem.Application.Validators
@@ -9,21 +9,25 @@ namespace MedicalBookingSystem.Application.Validators
         {
             RuleFor(x => x.FirstName)
                 .NotEmpty().WithMessage("Imię jest wymagane")
-                .MaximumLength(50).WithMessage("Imię nie może przekraczać 50 znaków");
+                .MaximumLength(50).WithMessage("Imię nie może przekraczać 50 znaków")
+                .When(x => x.FirstName is not null);
 
             RuleFor(x => x.LastName)
                 .NotEmpty().WithMessage("Nazwisko jest wymagane")
-                .MaximumLength(50).WithMessage("Nazwisko nie może przekraczać 50 znaków");
+                .MaximumLength(50).WithMessage("Nazwisko nie może przekraczać 50 znaków")
+                .When(x => x.LastName is not null);
 
             RuleFor(x => x.PhoneNumber)
                 .Matches(@"^\+?[0-9\s-]{9,}$").WithMessage("Nieprawidłowy format numeru telefonu")
                 .When(x => !string.IsNullOrEmpty(x.PhoneNumber));
 
             RuleFor(x => x.CurrentPassword)
+                .MaximumLength(128).WithMessage("Hasło może mieć najwyżej 128 znaków")
                 .NotEmpty().WithMessage("Aktualne hasło jest wymagane do zmiany danych")
                 .When(x => !string.IsNullOrEmpty(x.NewPassword));
 
             RuleFor(x => x.NewPassword)
+                .MaximumLength(128).WithMessage("Hasło może mieć najwyżej 128 znaków")
                 .MinimumLength(8).WithMessage("Nowe hasło musi mieć minimum 8 znaków")
                 .Matches("[A-Z]").WithMessage("Nowe hasło musi zawierać przynajmniej 1 wielką literę")
                 .Matches("[0-9]").WithMessage("Nowe hasło musi zawierać przynajmniej 1 cyfrę")

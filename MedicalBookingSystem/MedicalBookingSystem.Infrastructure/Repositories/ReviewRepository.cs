@@ -1,4 +1,4 @@
-﻿using MedicalBookingSystem.Domain.Contracts;
+using MedicalBookingSystem.Domain.Contracts;
 using MedicalBookingSystem.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,15 +8,7 @@ namespace MedicalBookingSystem.Infrastructure.Repositories
     {
         public ReviewRepository(ApplicationDbContext context) : base(context) { }
 
-        public async Task<IEnumerable<Review>> GetByDoctorIdAsync(int doctorId)
-        {
-            return await _dbSet
-                .Include(r => r.Patient)
-                .Where(r => r.DoctorId == doctorId)
-                .OrderByDescending(r => r.CreatedDate)
-                .AsNoTracking()
-                .ToListAsync();
-        }
+
 
         public async Task<double> GetAverageRatingAsync(int doctorId)
         {

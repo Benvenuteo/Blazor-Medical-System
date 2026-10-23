@@ -1,3 +1,19 @@
-﻿@page "/dashboard"
+@page "/dashboard"
+@attribute [Authorize(Roles = Roles.Patient)]
 
-<h1 class="text-center mt-5">System rezerwacji wizyt lekarskich <strong>"SZNUR"</strong></h1>
+<h1>Panel pacjenta</h1>
+<p>Wyszukaj lekarza, wybierz wolny termin i sprawdź dokumentację swoich wizyt.</p>
+<div class="row g-3">
+    <div class="col-md-4"><section class="card h-100"><div class="card-body">
+        <h2 class="h5">Znajdź lekarza</h2><p>Filtruj po specjalizacji, regionie i dacie. Porównaj oceny oraz najbliższe wolne terminy.</p>
+        <a class="btn btn-primary" href="doctors/search">Wyszukaj lekarza</a>
+    </div></section></div>
+    <div class="col-md-4"><section class="card h-100"><div class="card-body">
+        <h2 class="h5">Moje wizyty</h2><p>Sprawdź terminy, zmień rezerwację lub odwołaj wizytę z wyprzedzeniem co najmniej 24 godzin.</p>
+        <a class="btn btn-outline-primary" href="appointments">Pokaż wizyty</a>
+    </div></section></div>
+    <div class="col-md-4"><section class="card h-100"><div class="card-body">
+        <h2 class="h5">Historia i dokumentacja</h2><p>Po odbytej wizycie odczytaj notatkę i receptę udostępnione przez lekarza.</p>
+        <a class="btn btn-outline-primary" href="historyAppointments">Otwórz historię</a>
+    </div></section></div>
+</div>

@@ -1,98 +1,82 @@
-﻿@page "/admin/doctors/notes/{id:int}"
+@inherits MedicalBookingSystem.BlazorServer.Shared.InteractivePageBase
+@page "/doctor/notes"
+@attribute [Authorize(Roles = Roles.Doctor)]
+@using MedicalBookingSystem.SharedKernel
+@using MedicalBookingSystem.SharedKernel.Dto
 @using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
 @using MedicalBookingSystem.SharedKernel.Dto.NotesPrescriptionDto
+@inject WorklistService Lists
 @inject IAppointmentService AppointmentService
 @inject IMedicalRecordService MedicalRecordService
+@inject UserAccess Access
 
-<h3>Dodaj notatki do przyszłych wizyt</h3>
-
-@if (_appointments == null)
-{
-    <p><em>Ładowanie wizyt...</em></p>
-}
-else if (!_appointments.Any())
-{
-    <p><em>Brak wizyt do wypisania notatek.</em></p>
-}
+<h3>Notatki do odbytych wizyt</h3>
+<fieldset disabled="@(!IsInteractive || saving)">
+<EditForm Model="query" OnSubmit="SearchAsync" class="d-flex flex-wrap gap-3 mb-3">
+    <label>Od dnia<InputDate @bind-Value="from" class="form-control" /></label>
+    <label>Do dnia<InputDate @bind-Value="to" class="form-control" /></label>
+    <button type="submit" class="btn btn-outline-primary">Filtruj wizyty</button>
+</EditForm>
+@if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
+@if (appointments is null) { <p>Ładowanie...</p> }
+else if (appointments.Count == 0) { <p>Brak wizyt oczekujących na dokumentację.</p> }
 else
 {
-    @foreach (var appointment in _appointments)
+    @foreach (var appointment in appointments)
     {
-        <div class="mb-4 p-3 border rounded">
-            <p><b>Data:</b> @appointment.Date</p>
-            <p><b>Status:</b> @appointment.Status</p>
-            <p><b>Pacjent ID:</b> @appointment.PatientId</p>
-
-            @if (_noteContents.ContainsKey(appointment.Id))
-            {
-                <textarea class="form-control mb-2" @bind="_noteContents[appointment.Id]" placeholder="Wpisz notatkę..."></textarea>
-                <button class="btn btn-primary" @onclick="() => AddNoteAsync(appointment.Id)">Zapisz notatkę</button>
-            }
-
-            @if (_successMessages.TryGetValue(appointment.Id, out var msg))
-            {
-                <p class="text-success">@msg</p>
-            }
-
-            @if (_errorMessages.TryGetValue(appointment.Id, out var err))
-            {
-                <p class="text-danger">@err</p>
-            }
-        </div>
+        <section class="border rounded p-3 mb-3" @key="appointment.Id">
+            <p>@appointment.Date.ToString("dd.MM.yyyy HH:mm") — <b>Pacjent ID:</b> @appointment.PatientId</p>
+            <label>Notatka<textarea class="form-control mb-2" @bind="drafts[appointment.Id].Content" maxlength="2000"></textarea></label>
+            <div><button class="btn btn-primary" disabled="@saving" @onclick="() => SaveAsync(appointment.Id)">Zapisz notatkę</button></div>
+        </section>
     }
 }
 
-@code {
-    [Parameter] public int Id { get; set; }
+<Pagination Page="query.Page" TotalPages="@(page?.TotalPages ?? 0)" TotalCount="@(page?.TotalCount ?? 0)" Busy="saving" PageChanged="ChangePageAsync" />
+</fieldset>
 
-    private List<AppointmentDto> _appointments;
-    private Dictionary<int, string> _noteContents = new();
-    private Dictionary<int, string> _successMessages = new();
-    private Dictionary<int, string> _errorMessages = new();
+@code {
+    private AppointmentListQueryDto query = new();
+    private PagedResult<AppointmentDto>? page;
+    private DateTime? from, to;
+    private Task SearchAsync() { query.Page = 1; return ReloadAsync(); }
+    private Task ChangePageAsync(int value) { query.Page = value; return ReloadAsync(); }
+
+    private List<AppointmentDto>? appointments;
+    private readonly Dictionary<int, CreateNoteDto> drafts = new();
+    private int doctorId;
+    private bool saving;
+    private string? error;
 
     protected override async Task OnInitializedAsync()
     {
-        _appointments = AppointmentService.GetNextAppointmentsByDoctorId(Id);
-
-        // Inicjalizacja treści notatek dla każdej wizyty
-        foreach (var appointment in _appointments)
-        {
-            _noteContents[appointment.Id] = string.Empty;
-        }
+        doctorId = await Access.DoctorIdAsync();
+        await ReloadAsync();
+    }
+    private async Task ReloadAsync()
+    {
+        query.From = from?.Date; query.To = to?.Date.AddDays(1).AddTicks(-1); query.MissingDocument = "Note";
+        var result = await Lists.DoctorAppointmentsAsync(doctorId, true, query);
+        if (!result.IsSuccess) { error = result.Error; return; }
+        page = result.Value; appointments = page.Items.ToList(); drafts.Clear();
+        foreach (var appointment in appointments)
+            drafts[appointment.Id] = new CreateNoteDto { AppointmentId = appointment.Id };
     }
 
-    private async Task AddNoteAsync(int appointmentId)
+    private async Task SaveAsync(int id)
     {
-        _successMessages.Remove(appointmentId);
-        _errorMessages.Remove(appointmentId);
-
-        if (!_noteContents.TryGetValue(appointmentId, out var content) || string.IsNullOrWhiteSpace(content))
+        if (saving) return;
+        saving = true;
+        try
         {
-            _errorMessages[appointmentId] = "Notatka nie może być pusta.";
-            return;
-        }
-
-        var dto = new CreateNoteDto
+            var result = await MedicalRecordService.AddNoteToAppointmentAsync(drafts[id], doctorId);
+            error = result.Error;
+            if (result.IsSuccess)
             {
-                AppointmentId = appointmentId,
-                Content = content
-            };
-
-        var result = await MedicalRecordService.AddNoteToAppointmentAsync(dto, Id);
-
-        if (result.IsSuccess)
-        {
-            _successMessages[appointmentId] = "Notatka została dodana.";
-
-            // Usuń formularz i dane z listy
-            _appointments.RemoveAll(a => a.Id == appointmentId);
-            _noteContents.Remove(appointmentId);
+                if (appointments?.Count == 1 && query.Page > 1) query.Page--;
+                await ReloadAsync();
+            }
         }
-        else
-        {
-            _errorMessages[appointmentId] = "Błąd: " + result.Error;
-        }
-
-        StateHasChanged();
+        finally { saving = false; }
     }
 }

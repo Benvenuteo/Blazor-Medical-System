@@ -53,3 +53,36 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 /MedicalBookingSystem/.vs/MedicalBookingSystem/FileContentIndex
+
+# Local IDE state and personal launch settings
+.vs/
+.idea/
+*.user
+*.suo
+*.slnLaunch
+
+# Runtime SQLite files are regenerated from migrations and synthetic seed data.
+*.db
+*.db-shm
+*.db-wal
+MedicalBookingSystem/data/
+
+# Local secrets and downloaded tooling
+.env
+.env.*
+!.env.example
+.tools/
+playwright-report/
+test-results/
+
+# Uploaded photos live outside the tracked static assets.
+MedicalBookingSystem/MedicalBookingSystem.BlazorServer/data/
+node_modules/
+
+# Operator backups, certificates and local key material
+backups/
+data-protection/
+*.pfx
+*.p12
+*.key
+*.pem

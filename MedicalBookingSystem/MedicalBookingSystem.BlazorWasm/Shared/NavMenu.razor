@@ -1,13 +1,13 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+@inject PatientAuthenticationStateProvider Authentication
+@inject NavigationManager Navigation
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">S.Z.N.U.R</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+        <a class="navbar-brand" href="">Rezerwacje medyczne</a>
+
     </div>
 </div>
 
-<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+<div>
     <nav class="flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="appointments">
@@ -24,21 +24,21 @@
                 <span class="oi oi-plus" aria-hidden="true"></span> Lekarze
             </NavLink>
         </div>
+        <div class="nav-item px-3"><NavLink class="nav-link" href="/documents">Moje dokumenty</NavLink></div>
+        <div class="nav-item px-3"><NavLink class="nav-link" href="/account/security">Bezpieczeństwo konta</NavLink></div>
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+            <button type="button" class="nav-link btn btn-link text-white" @onclick="LogoutAsync">
                 <span class="oi oi-logout" aria-hidden="true"></span> Wyloguj
-            </NavLink>
+            </button>
         </div>
     </nav>
 </div>
 
 @code {
-    private bool collapseNavMenu = true;
-
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
+    private async Task LogoutAsync()
     {
-        collapseNavMenu = !collapseNavMenu;
+        await Authentication.LogoutAsync();
+        Navigation.NavigateTo("/", replace: true);
     }
+
 }

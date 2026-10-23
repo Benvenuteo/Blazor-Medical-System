@@ -1,4 +1,4 @@
-﻿using MedicalBookingSystem.Domain.Models;
+using MedicalBookingSystem.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace MedicalBookingSystem.Infrastructure
@@ -8,7 +8,9 @@ namespace MedicalBookingSystem.Infrastructure
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options) { }
 
+        public DbSet<ClinicalAuditEntry> ClinicalAudit { get; set; }
         public DbSet<Patient> Patients { get; set; }
+        public DbSet<StaffAccount> StaffAccounts { get; set; }
         public DbSet<Doctor> Doctors { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
         public DbSet<Review> Reviews { get; set; }
@@ -18,13 +20,69 @@ namespace MedicalBookingSystem.Infrastructure
         public DbSet<DoctorSchedule> DoctorSchedules { get; set; }
         public DbSet<DoctorSpecialization> DoctorSpecializations { get; set; }
 
+        private void StampAccountVersions()
+        {
+            foreach (var entry in ChangeTracker.Entries<Patient>().Where(e => e.State is EntityState.Added or EntityState.Modified))
+                entry.Property(a => a.Version).CurrentValue = Guid.NewGuid();
+            foreach (var entry in ChangeTracker.Entries<StaffAccount>().Where(e => e.State is EntityState.Added or EntityState.Modified))
+                entry.Property(a => a.Version).CurrentValue = Guid.NewGuid();
+        }
+
+        // SQLite has no rowversion. Every appointment write gets an application-managed concurrency token.
+        private void StampAppointmentVersions()
+        {
+            foreach (var entry in ChangeTracker.Entries<Appointment>()
+                .Where(e => e.State is EntityState.Added or EntityState.Modified))
+                entry.Property(a => a.Version).CurrentValue = Guid.NewGuid();
+        }
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            StampAppointmentVersions();
+            StampAccountVersions();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+        {
+            StampAppointmentVersions();
+            StampAccountVersions();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<ClinicalAuditEntry>(entity =>
+            {
+                entity.HasKey(a => a.Id);
+                entity.Property(a => a.Actor).HasMaxLength(60).IsRequired();
+                entity.Property(a => a.ActorRole).HasMaxLength(20).IsRequired();
+                entity.Property(a => a.Action).HasMaxLength(20).IsRequired();
+                entity.Property(a => a.Resource).HasMaxLength(40).IsRequired();
+                entity.HasIndex(a => new { a.OccurredAtUtc, a.Id });
+                entity.HasIndex(a => new { a.PatientId, a.OccurredAtUtc });
+            });
+            modelBuilder.Entity<StaffAccount>(entity =>
+            {
+                entity.ToTable("StaffAccounts", table => table.HasCheckConstraint("CK_StaffAccount_Role",
+                    "(Role = 'Doctor' AND DoctorId IS NOT NULL) OR (Role = 'Admin' AND DoctorId IS NULL)"));
+                entity.HasKey(a => a.Id);
+                entity.Property(a => a.Version).IsConcurrencyToken();
+                entity.Property(a => a.Email).IsRequired().HasMaxLength(255).UseCollation("NOCASE");
+                entity.HasIndex(a => a.Email).IsUnique();
+                entity.Property(a => a.DisplayName).IsRequired().HasMaxLength(200);
+                entity.Property(a => a.PasswordHash).IsRequired();
+                entity.Property(a => a.Role).HasConversion<string>().HasMaxLength(20);
+                entity.HasIndex(a => a.DoctorId).IsUnique();
+                entity.HasOne(a => a.Doctor).WithMany().HasForeignKey(a => a.DoctorId).OnDelete(DeleteBehavior.Restrict);
+            });
+
             // Konfiguracja encji Patient
             modelBuilder.Entity<Patient>(entity =>
             {
                 entity.HasKey(p => p.Id);
-                entity.Property(p => p.Email).IsRequired().HasMaxLength(255);
+                entity.Property(p => p.Version).IsConcurrencyToken();
+                entity.Property(p => p.Email).IsRequired().HasMaxLength(255).UseCollation("NOCASE");
                 entity.HasIndex(p => p.Email).IsUnique();
                 entity.Property(p => p.FirstName).IsRequired().HasMaxLength(100);
                 entity.Property(p => p.LastName).IsRequired().HasMaxLength(100);
@@ -48,7 +106,13 @@ namespace MedicalBookingSystem.Infrastructure
             modelBuilder.Entity<Appointment>(entity =>
             {
                 entity.HasKey(a => a.Id);
+                entity.Property(a => a.Version).IsConcurrencyToken();
                 entity.Property(a => a.Date).IsRequired();
+                entity.HasIndex(a => new { a.PatientId, a.Status, a.Date, a.Id });
+                entity.HasIndex(a => new { a.DoctorId, a.Status, a.Date, a.Id });
+                entity.Property(a => a.Version).IsConcurrencyToken();
+                entity.HasIndex(a => new { a.DoctorId, a.Date }).IsUnique().HasFilter("Status <> 'Cancelled'");
+                entity.HasIndex(a => new { a.PatientId, a.Date }).IsUnique().HasFilter("Status <> 'Cancelled'");
                 entity.Property(a => a.Status)
                     .IsRequired()
                     .HasConversion<string>()
@@ -101,7 +165,9 @@ namespace MedicalBookingSystem.Infrastructure
             modelBuilder.Entity<Review>(entity =>
             {
                 entity.HasKey(r => r.Id);
+                entity.HasIndex(r => new { r.PatientId, r.DoctorId }).IsUnique();
                 entity.Property(r => r.Rating).IsRequired();
+                entity.HasIndex(r => new { r.DoctorId, r.CreatedDate, r.Id });
                 entity.Property(r => r.Comment).HasColumnType("text");
                 entity.Property(r => r.CreatedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
 

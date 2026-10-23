@@ -1,4 +1,4 @@
-﻿namespace MedicalBookingSystem.Domain.Models
+namespace MedicalBookingSystem.Domain.Models
 {
     public class DoctorSchedule
     {
@@ -9,6 +9,6 @@
         public bool IsAvailable { get; set; } = true;
 
         // Relacja
-        public Doctor Doctor { get; set; }
+        public Doctor Doctor { get; set; } = null!;
     }
 }

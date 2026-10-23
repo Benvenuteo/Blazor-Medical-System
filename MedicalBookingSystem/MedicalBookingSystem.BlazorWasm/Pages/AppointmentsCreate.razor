@@ -1,159 +1,125 @@
-﻿@page "/appointments/create"
-@using System.Net.Http.Json
-@using MudBlazor
+@page "/appointments/create"
+@attribute [Authorize(Roles = Roles.Patient)]
+@using MedicalBookingSystem.SharedKernel.Dto
+@using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
 @inject HttpClient Http
 @inject NavigationManager Navigation
-@inject Blazored.LocalStorage.ILocalStorageService localStorage
 
-<MudPaper Class="p-4">
-    <MudText Typo="Typo.h5">Zarezerwuj wizytę</MudText>
-
-    @if (!string.IsNullOrEmpty(errorMessage))
+<h3>Zarezerwuj wizytę</h3>
+<p>Wizyty trwają 30 minut. Wszystkie terminy podano w czasie placówki.</p>
+@if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
+<label for="doctor">Lekarz</label>
+<select id="doctor" disabled="@saving" class="form-select mb-3" value="@selectedDoctorId" @onchange="DoctorChanged">
+    <option value="0">Wybierz lekarza</option>
+    @foreach (var doctor in doctors) { <option value="@doctor.Id">@doctor.FirstName @doctor.LastName</option> }
+</select>
+@if (page is not null)
+{
+    <nav aria-label="Wybór lekarza" class="d-flex gap-2 mb-3">
+        <button class="btn btn-outline-primary" disabled="@(saving || doctorPage <= 1)" @onclick="() => LoadDoctorsAsync(-1)">Poprzedni lekarze</button>
+        <button class="btn btn-outline-primary" disabled="@(saving || doctorPage >= page.TotalPages)" @onclick="() => LoadDoctorsAsync(1)">Następni lekarze</button>
+    </nav>
+}
+@if (loading) { <p>Ładowanie terminów...</p> }
+else if (selectedDoctorId > 0)
+{
+    @if (slots.Count == 0) { <p>Brak dostępnych terminów.</p> }
+    else
     {
-        <MudAlert Severity="Severity.Error" Dense Class="mt-2">@errorMessage</MudAlert>
+        <label for="slot">Wolny termin</label>
+        <select id="slot" disabled="@saving" class="form-select mb-3" @bind="selectedStart">
+            <option value="">Wybierz termin</option>
+            @foreach (var slot in slots)
+            {
+                <option value="@slot.StartTime.ToString("s")">@slot.StartTime.ToString("dd.MM.yyyy HH:mm") – @slot.EndTime.ToString("HH:mm")</option>
+            }
+        </select>
+        <button class="btn btn-primary" disabled="@(saving || string.IsNullOrEmpty(selectedStart))" @onclick="BookAsync">Zarezerwuj</button>
     }
-
-    <MudSelect T="int" Label="Wybierz lekarza"
-               Value="@selectedDoctorId"
-               ValueChanged="OnDoctorChanged"
-               ValueExpression="() => selectedDoctorId">
-        @foreach (var doctor in doctors)
-        {
-            <MudSelectItem Value="doctor.Id">@doctor.FirstName @doctor.LastName</MudSelectItem>
-        }
-    </MudSelect>
-
-    @if (schedules?.Any() == true)
-    {
-        <MudTable Items="@schedules" Hover="true" Dense Class="mt-4">
-            <HeaderContent>
-                <MudTh>Data</MudTh>
-                <MudTh>Godzina</MudTh>
-                <MudTh>Akcja</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd>@context.StartTime.ToString("dd.MM.yyyy")</MudTd>
-                <MudTd>@context.StartTime.ToString("HH:mm") - @context.EndTime.ToString("HH:mm")</MudTd>
-                <MudTd>
-                    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => SelectSchedule(context))">Wybierz</MudButton>
-                </MudTd>
-            </RowTemplate>
-        </MudTable>
-    }
-    else if (selectedDoctorId != 0)
-    {
-        <MudText Class="mt-4" Color="Color.Warning">Brak dostępnych terminów.</MudText>
-    }
-
-    @if (selectedSlot != null)
-    {
-        <MudDivider Class="my-4" />
-        <MudText Typo="Typo.subtitle1">Wybrany termin:</MudText>
-        <MudText>@selectedSlot.StartTime.ToString("dddd, dd MMMM yyyy HH:mm")</MudText>
-        <MudButton Color="Color.Success" Variant="Variant.Filled" Class="mt-2" OnClick="HandleCreate">Zarezerwuj wizytę</MudButton>
-    }
-</MudPaper>
+}
 
 @code {
-    private List<DoctorDto> doctors = new();
-    private List<DoctorScheduleDto> schedules = new();
-    private DoctorScheduleDto? selectedSlot;
+    [SupplyParameterFromQuery(Name = "doctorId")] public int? DoctorId { get; set; }
+    private PagedResult<DoctorDto>? page;
+    private int doctorPage = 1;
+    private List<DoctorDto> doctors = [];
+    private List<AvailableSlotDto> slots = [];
     private int selectedDoctorId;
-    private string? errorMessage;
+    private string selectedStart = string.Empty;
+    private string? error;
+    private bool loading;
+    private bool saving;
 
     protected override async Task OnInitializedAsync()
     {
+        if (DoctorId is > 0)
+        {
+            try
+            {
+                var doctor = await Http.GetFromJsonAsync<DoctorDetailsDto>($"api/doctors/{DoctorId}");
+                if (doctor is not null) { doctors = [doctor]; selectedDoctorId = doctor.Id; await LoadSlotsAsync(); }
+            }
+            catch (HttpRequestException) { error = "Nie udało się pobrać lekarza."; }
+        }
+        else await LoadDoctorsAsync(0);
+    }
+
+    private async Task LoadDoctorsAsync(int delta)
+    {
+        doctorPage += delta;
         try
         {
-            doctors = await Http.GetFromJsonAsync<List<DoctorDto>>("api/doctors/all");
+            page = await Http.GetFromJsonAsync<PagedResult<DoctorDto>>($"api/doctors?Page={doctorPage}&PageSize=10");
+            doctors = page?.Items.ToList() ?? [];
+            selectedDoctorId = 0; selectedStart = string.Empty; slots = [];
         }
-        catch (Exception ex)
-        {
-            errorMessage = $"Nie udało się pobrać listy lekarzy: {ex.Message}";
-        }
+        catch (HttpRequestException) { error = "Nie udało się pobrać lekarzy."; }
     }
 
-    private async Task OnDoctorChanged(int doctorId)
+    private async Task DoctorChanged(ChangeEventArgs args)
     {
-        schedules.Clear();
-        selectedSlot = null;
+        if (!int.TryParse(args.Value?.ToString(), out selectedDoctorId)) selectedDoctorId = 0;
+        selectedStart = string.Empty;
+        error = null;
+        await LoadSlotsAsync();
+    }
 
-        if (doctorId == null)
-            return;
-
+    private async Task LoadSlotsAsync()
+    {
+        var doctorId = selectedDoctorId;
+        slots = [];
+        loading = false;
+        if (doctorId <= 0) return;
+        loading = true;
         try
         {
-            var result = await Http.GetFromJsonAsync<List<DoctorScheduleDto>>($"api/doctors/{doctorId}/schedule");
-            schedules = result
-                .Where(s => s.IsAvailable && s.StartTime.Date <= DateTime.Today.AddDays(30))
-                .OrderBy(s => s.StartTime)
-                .ToList();
+            var available = await Http.GetFromJsonAsync<List<AvailableSlotDto>>($"api/doctors/{doctorId}/slots") ?? [];
+            if (selectedDoctorId == doctorId) slots = available;
         }
-        catch (Exception ex)
-        {
-            errorMessage = $"Nie udało się pobrać harmonogramu: {ex.Message}";
-        }
+        catch (HttpRequestException) { if (selectedDoctorId == doctorId) error = "Nie udało się pobrać terminów."; }
+        finally { if (selectedDoctorId == doctorId) loading = false; }
     }
 
-    private void SelectSchedule(DoctorScheduleDto schedule)
+    private async Task BookAsync()
     {
-        selectedSlot = schedule;
-    }
-
-    private async Task HandleCreate()
-    {
+        if (saving || !DateTime.TryParse(selectedStart, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None, out var start)) return;
+        saving = true;
         try
         {
-            var patientIdStr = await localStorage.GetItemAsync<string>("patientId");
-            if (!int.TryParse(patientIdStr, out int patientId))
+            using var response = await Http.PostAsJsonAsync("api/appointments", new CreateAppointmentDto
             {
-                errorMessage = "Nieprawidłowy identyfikator pacjenta.";
-                return;
-            }
-
-            var appointment = new CreateAppointmentDto
+                DoctorId = selectedDoctorId, Date = DateTime.SpecifyKind(start, DateTimeKind.Unspecified)
+            });
+            if (response.IsSuccessStatusCode) { Navigation.NavigateTo("/appointments"); return; }
+            error = await ApiErrors.ReadAsync(response);
+            if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
             {
-                DoctorId = selectedSlot.DoctorId,
-                Date = selectedSlot.StartTime,
-                PatientId = patientId
-            };
-
-            var response = await Http.PostAsJsonAsync("api/appointments", appointment);
-            if (response.IsSuccessStatusCode)
-            {
-                Navigation.NavigateTo("/appointments");
-            }
-            else
-            {
-                errorMessage = "Nie udało się dodać wizyty: " + await response.Content.ReadAsStringAsync();
+                selectedStart = string.Empty;
+                await LoadSlotsAsync();
             }
         }
-        catch (Exception ex)
-        {
-            errorMessage = $"Błąd przy zapisie wizyty: {ex.Message}";
-        }
-    }
-
-    public class CreateAppointmentDto
-    {
-        public DateTime Date { get; set; }
-        public int PatientId { get; set; }
-        public int DoctorId { get; set; }
-    }
-
-    public class DoctorDto
-    {
-        public int Id { get; set; }
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-    }
-
-    public class DoctorScheduleDto
-    {
-        public int Id { get; set; }
-        public int DoctorId { get; set; }
-        public DateTime StartTime { get; set; }
-        public DateTime EndTime { get; set; }
-        public bool IsAvailable { get; set; }
+        catch (HttpRequestException) { error = "Nie udało się zapisać wizyty. Spróbuj ponownie."; }
+        finally { saving = false; }
     }
 }

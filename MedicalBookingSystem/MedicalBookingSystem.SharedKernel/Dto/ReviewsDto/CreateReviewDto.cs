@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace MedicalBookingSystem.SharedKernel.Dto.ReviewsDto
 {
@@ -8,7 +8,7 @@ namespace MedicalBookingSystem.SharedKernel.Dto.ReviewsDto
         public int Rating { get; set; }
 
         [StringLength(2000)]
-        public string Comment { get; set; }
+        public string Comment { get; set; } = string.Empty;
 
         [Required]
         public int DoctorId { get; set; }

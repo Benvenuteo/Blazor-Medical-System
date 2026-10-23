@@ -1,31 +1,119 @@
-Blazor Medical System
+# Medical Booking System
 
-Blazor Medical System is a comprehensive medical booking application built using Blazor Server and Blazor WebAssembly, adhering to clean architecture principles. The system is divided into distinct layers: Application, Infrastructure, Domain Logic, WebAPI, Blazor Server, Blazor WebAssembly, and a SharedKernel project for common elements. It utilizes SQLite as the database, with data access implemented through repositories and the Unit of Work pattern. The WebAPI layer provides CRUD operations for all data entities and supports additional business logic requirements. Logging is implemented in server-side projects (WebAPI and Blazor Server), generating daily log files and separating system errors into dedicated logs. The user interface in both Blazor projects leverages external component libraries (Radzen and MudBlazor) for enhanced functionality and includes image support (.jpg, .png). All form fields are validated to ensure data integrity. This project aims to provide a scalable and maintainable solution for medical appointment management.
+System rezerwacji wizyt medycznych z API ASP.NET Core, aplikacją pacjenta w Blazor WebAssembly i panelem obsługi w Blazor Server. Dane przechowywane są w SQLite przez Entity Framework Core.
 
-Features
+Wersja portfolio obejmuje pełny przepływ pacjent–lekarz–administrator: rezerwację rzeczywistego slotu, zmianę/anulowanie wizyty, zakończenie przez lekarza, dokumentację i opinię. Konta, własność danych, cykl życia wizyty i równoczesne rezerwacje są chronione w usługach oraz SQLite.
 
+Listy są stronicowane w bazie, każda operacja panelu ma własny kontekst EF, zdjęcia są dekodowane i kodowane ponownie, a zmiany kont unieważniają stare sesje. Dostęp do dokumentacji trafia do audytu. Narzędzie utrzymaniowe tworzy sprawdzane kopie bazy z WAL i zdjęciami oraz odtwarza je bez przywracania wcześniejszych sesji.
 
+Szczegóły: [architektura](docs/ARCHITECTURE.md), [ukończony zakres](docs/ROADMAP.md), [rezerwacje](docs/BOOKING.md), [kontrola dostępu](docs/SECURITY.md) i [utrzymanie](docs/OPERATIONS.md).
 
+## Wymagania
 
+- .NET SDK **10.0.113** — wersja przypięta w `global.json`; obsługiwane są nowsze poprawki tej samej serii `10.0.1xx`.
+- Windows, Linux albo macOS z obsługą .NET 10.
+- Opcjonalnie Visual Studio lub Rider; aplikacje można też uruchomić z terminala.
 
-Clean architecture with separated concerns across multiple layers.
+Wersje pakietów znajdują się w `Directory.Packages.props`. Znane podatności zależności powodują błąd przywracania pakietów w CI.
 
+## Szybki start
 
+Z katalogu głównego repozytorium:
 
-SQLite database with repository and Unit of Work patterns.
+```bash
+dotnet restore MedicalBookingSystem/MedicalBookingSystem.sln
+dotnet build MedicalBookingSystem/MedicalBookingSystem.sln --configuration Release --no-restore
+dotnet test MedicalBookingSystem/MedicalBookingSystem.sln --configuration Release --no-build --no-restore
+```
 
+Uruchom API jako pierwsze:
 
+```bash
+dotnet run --project MedicalBookingSystem/MedicalBookingSystem.WebAPI
+```
 
-WebAPI with full CRUD operations and business logic endpoints.
+W profilu Development API automatycznie nakłada migracje na bazę `MedicalBookingSystem/data/medical.db` i przygotowuje fikcyjne dane demo. Baza nie jest przechowywana w Git.
 
+W dwóch kolejnych terminalach uruchom aplikacje:
 
+```bash
+dotnet run --project MedicalBookingSystem/MedicalBookingSystem.BlazorWasm
+```
 
-Blazor Server and WebAssembly UIs with Radzen and MudBlazor components.
+```bash
+dotnet run --project MedicalBookingSystem/MedicalBookingSystem.BlazorServer
+```
 
+| Aplikacja | Adres lokalny |
+| --- | --- |
+| Aplikacja pacjenta | http://localhost:5016 |
+| API i Swagger | http://localhost:5031/swagger |
+| Logowanie personelu | http://localhost:5187/Account/Login |
+| Kontrola działania API | http://localhost:5031/health/live |
 
+| Rola demo | Email | Hasło |
+| --- | --- | --- |
+| Pacjent | `patient@example.test` | `DemoPatient2026!` |
+| Lekarz | `doctor@example.test` | `DemoStaff2026!` |
+| Administrator | `admin@example.test` | `DemoStaff2026!` |
 
-Daily logging with separate error logs for server-side operations.
+To publiczne dane demonstracyjne, dostępne po włączeniu seeda. Lekarz, pacjent i wizyty są fikcyjne. API uruchomione po aktualizacji dodaje konta personelu również do wcześniejszej bazy demo, bez resetowania istniejących haseł. Lekarz widzi swoje zaplanowane wizyty, notatki, recepty i grafik; administrator zarządza listą lekarzy, zdjęciami, grafikami i kontami personelu pod `/admin/accounts`. Nowe i resetowane konta wymagają zmiany hasła przed wejściem do panelu. Konta demo zachowują podane wyżej hasła.
 
+Świeża baza demo zawiera odbytą wizytę oraz zaplanowaną wizytę z poprzedniego dnia, gotową do oznaczenia jako odbyta w panelu lekarza. Przyszłe grafiki powstają względem daty pierwszego uruchomienia. Gdy baza demo przestanie zawierać przyszłe terminy, dodaj grafik przez panel lub utwórz nową, pustą bazę demo pod inną ścieżką.
 
+## Konfiguracja
 
-Form validation and support for image uploads (.jpg, .png).
+Wspólna ścieżka bazy ustawiana jest przez `ConnectionStrings:MedicalBookingSystem`. Ścieżki względne rozwiązywane są względem katalogu z plikiem rozwiązania, a po publikacji — względem katalogu aplikacji. API i panel muszą wskazywać tę samą bazę.
+
+Ustawienia można nadpisać przez zmienne środowiskowe .NET, np.:
+
+- `ConnectionStrings__MedicalBookingSystem` — pełny connection string SQLite.
+- `Clinic__TimeZone` — strefa placówki; domyślnie `Europe/Warsaw`.
+- `Database__InitializeOnStartup` — nakładanie migracji przy starcie API; domyślnie wyłączone poza Development.
+- `Seed__Enabled`, `Seed__PatientPassword` i `Seed__StaffPassword` — opcjonalne fikcyjne dane demonstracyjne.
+- `JwtSettings__SecretKey` — co najmniej 32 bajty; wymagany poza Development.
+- `Cors__AllowedOrigins__0` — dozwolony adres aplikacji pacjenta.
+- `AllowedHosts` — nazwy hostów obsługiwane przez wdrożenie.
+- `Media__PublicBaseUrl` i `Media__StoragePath` — publiczny adres panelu i trwały katalog zdjęć; [konfiguracja mediów](docs/MEDIA.md).
+
+Development generuje tymczasowy klucz JWT na czas życia procesu. Restart API unieważnia takie tokeny. Klucz używany poza środowiskiem lokalnym przechowuj w konfiguracji środowiska, bez wpisywania go do repozytorium.
+
+Daty wizyt i grafików oznaczają lokalny czas placówki. Znaczniki utworzenia dokumentów oraz terminy wygaśnięcia tokenów korzystają z UTC. Reguły wymagające bieżącego czasu używają kontrolowanego `ClinicClock` opartego na `TimeProvider`.
+
+## Migracje
+
+```bash
+dotnet tool restore
+dotnet ef database update --project MedicalBookingSystem/MedicalBookingSystem.Infrastructure --startup-project MedicalBookingSystem/MedicalBookingSystem.WebAPI
+```
+
+Fabryka czasu projektowania nie uruchamia hostów ani seeda. Domyślnie narzędzie aktualizuje ten sam plik `MedicalBookingSystem/data/medical.db`, którego używają aplikacje. Dla innej bazy ustaw `MEDICAL_MIGRATION_CONNECTION` na właściwy connection string przed wykonaniem polecenia. W Development szybki start nakłada migracje automatycznie.
+
+Migracja `AccountSessions` nadaje istniejącym kontom indywidualne znaczniki sesji i wersji bez zmiany hashy haseł. Po aktualizacji wcześniejsze tokeny i cookies wymagają ponownego logowania. API i panel muszą działać na tej samej, zaktualizowanej bazie.
+
+Początkowa migracja służy do tworzenia nowej bazy. Stara baza utworzona przez `EnsureCreated` nie ma historii migracji i nie powinna być aktualizowana tym poleceniem bez osobnego planu przeniesienia danych.
+
+## Struktura i testy
+
+| Projekt | Odpowiedzialność |
+| --- | --- |
+| Domain | Encje i kontrakty repozytoriów |
+| Maintenance | Zweryfikowane kopie bazy/zdjęć, odtwarzanie i administracja awaryjna |
+| Application | Usługi przypadków użycia, walidatory, jawne mapowania DTO i zegar |
+| Infrastructure | EF Core, SQLite, repozytoria, Unit of Work i migracje |
+| SharedKernel | Kontrakty DTO i wyniki operacji |
+| WebAPI | HTTP, konfiguracja JWT i obsługa błędów |
+| BlazorWasm | Interfejs pacjenta |
+| BlazorServer | Panel obsługi |
+
+Testy jednostkowe korzystają z xUnit i Moq, integracyjne z rzeczywistego API i SQLite, a komponentowe z bUnit. Workflow `Build and test` sprawdza 310 przypadków .NET na Linux i Windows, zapisuje raporty TRX/Cobertura i pomiar katalogu, a osobne zadanie uruchamia 10 scenariuszy Playwright: sześć przepływów Chromium oraz po dwa sprawdzenia mobilne i w Firefoksie, z automatyczną kontrolą dostępności.
+
+Zrzuty działającej aplikacji i scenariusz demonstracyjny: [DEMO.md](docs/DEMO.md).
+
+Szczegóły: [kontrakty API](docs/API.md), [zdjęcia](docs/MEDIA.md), [wydajność](docs/PERFORMANCE.md), [zasady rezerwacji](docs/BOOKING.md), [strategia testowania](docs/TESTING.md), [kontrola dostępu](docs/SECURITY.md) i [zakres projektu](docs/ROADMAP.md).
+
+## Weryfikacja i prezentacja
+
+Po szybkim starcie przejdź przez [scenariusz demo](docs/DEMO.md). Testy obejmują 120 przypadków jednostkowych, 180 integracyjnych i 10 komponentowych. Osobne scenariusze przeglądarkowe używają prawdziwych hostów, JWT, cookies i SignalR. Testy mobilne oraz Firefox sprawdzają nawigację i reguły dostępności axe; nie zastępują pełnego audytu manualnego WCAG.
+
+Polecenia backupu, odzyskania administratora i wymagane ustawienia Production opisuje [OPERATIONS.md](docs/OPERATIONS.md). Przykład reverse proxy: [nginx.conf.example](deploy/nginx.conf.example). Wersja portfolio działa na danych fikcyjnych; zakres ewentualnego wdrożenia z rzeczywistą dokumentacją jest opisany oddzielnie w planie.

@@ -1,170 +1,145 @@
-using FluentValidation;
-using FluentValidation.AspNetCore;
-using MedicalBookingSystem.Application.Mappings;
-using MedicalBookingSystem.Application.Services;
-using MedicalBookingSystem.Application.Validators;
-using MedicalBookingSystem.Domain.Contracts;
-using MedicalBookingSystem.Infrastructure;
-using MedicalBookingSystem.Infrastructure.Repositories;
-using MedicalBookingSystem.SharedKernel;
-using MedicalBookingSystem.SharedKernel.Dto;
-using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto;
-using MedicalBookingSystem.SharedKernel.Dto.DtoHelp;
-using MedicalBookingSystem.SharedKernel.Dto.NotesPrescriptionDto;
-using MedicalBookingSystem.SharedKernel.Dto.ReviewsDto;
-using MedicalBookingSystem.WebAPI.JWT;
-using MedicalBookingSystem.WebAPI.Middleware;
-using Microsoft.AspNet.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using NLog;
-using NLog.Web;
+using MedicalBookingSystem.Infrastructure.Hosting;
+using Microsoft.OpenApi;
+using MedicalBookingSystem.WebAPI.OpenApi;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using MedicalBookingSystem.Application.Security;
+using MedicalBookingSystem.WebAPI.Security;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using MedicalBookingSystem.Application;
+using MedicalBookingSystem.Infrastructure;
+using MedicalBookingSystem.SharedKernel;
+using MedicalBookingSystem.WebAPI.JWT;
+using MedicalBookingSystem.WebAPI.Middleware;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using NLog.Web;
 
-// Early init of NLog to allow startup and exception logging, before host is built
-var logger = NLog.LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
-logger.Debug("init main");
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddHostSecurity(builder.Configuration, builder.Environment, staff: false);
+builder.Logging.ClearProviders();
+builder.Host.UseNLog();
 
-try
+builder.Services.AddApplicationServices(builder.Configuration["Clinic:TimeZone"] ?? "Europe/Warsaw");
+var connectionString = MedicalBookingSystem.Infrastructure.DependencyInjection.ResolveConnectionString(
+    builder.Configuration.GetConnectionString("MedicalBookingSystem") ?? "Data Source=data/medical.db",
+    builder.Environment.ContentRootPath);
+builder.Services.AddInfrastructureServices(connectionString);
+builder.Services.Configure<DemoDataOptions>(builder.Configuration.GetSection("Seed"));
+
+builder.Services.AddControllers().AddJsonOptions(options =>
 {
-    var builder = WebApplication.CreateBuilder(args);
-
-    // Add services to the container.
-
-    // NLog: Setup NLog for Dependency injection
-    builder.Logging.ClearProviders();
-    builder.Host.UseNLog();
-
-    builder.Services.AddControllers();
-    // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-    builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
-
-    // rejestracja automappera w kontenerze IoC
-    builder.Services.AddAutoMapper(typeof(MedicalBookingSystemMappingProfile));
-
-    // rejestracja automatycznej walidacji (FluentValidation waliduje i przekazuje wynik przez ModelState)
-    builder.Services.AddFluentValidationAutoValidation();
-
-    // rejestracja kontekstu bazy w kontenerze IoC
-    // var sqliteConnectionString = "Data Source=Kiosk.WebAPI.Logger.db";
-    var sqliteConnectionString = @"Data Source=c:\Projekt_Aplikacje_Biznesowe\MedicalBookingSystem\MedicalSystem.db";
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlite(sqliteConnectionString));
-
-    // rejestracja walidatora
-    builder.Services.AddScoped<IValidator<RegisterPatientDto>, RegisterPatientDtoValidator>();
-    builder.Services.AddScoped<IValidator<LoginDto>, LoginDtoValidator>();
-    builder.Services.AddScoped<IValidator<CreateAppointmentDto>, CreateAppointmentDtoValidator>();
-    builder.Services.AddScoped<IValidator<UpdateAppointmentDto>, UpdateAppointmentDtoValidator>();
-    builder.Services.AddScoped<IValidator<CreateReviewDto>, CreateReviewDtoValidator>();
-    builder.Services.AddScoped<IValidator<CreatePrescriptionDto>, CreatePrescriptionDtoValidator>();
-    builder.Services.AddScoped<IValidator<CreateNoteDto>, CreateNoteDtoValidator>();
-    builder.Services.AddScoped<IValidator<SearchDoctorsDto>, SearchDoctorsDtoValidator>();
-    builder.Services.AddScoped<IValidator<UpdatePatientDto>, UpdatePatientDtoValidator>();
-    builder.Services.AddScoped<IValidator<CreateScheduleDto>, CreateScheduleDtoValidator>();
-    builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-    builder.Services.AddScoped<DataSeeder>();
-    builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
-
-    builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
-    builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
-    builder.Services.AddScoped<IDoctorScheduleRepository, DoctorScheduleRepository>();
-    builder.Services.AddScoped<INoteRepository, NoteRepository>();
-    builder.Services.AddScoped<IPatientRepository, PatientRepository>();
-    builder.Services.AddScoped<IPrescriptionRepository, PrescriptionRepository>();
-    builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
-    builder.Services.AddScoped<ISpecializationRepository, SpecializationRepository>();
-
-    builder.Services.AddScoped<IAppointmentService, AppointmentService>();
-    builder.Services.AddScoped<IDoctorService, DoctorService>();
-    builder.Services.AddScoped<IMedicalRecordService, MedicalRecordService>();
-    builder.Services.AddScoped<IPatientService, PatientService>();
-    builder.Services.AddScoped<IReviewService, ReviewService>();
-
-    builder.Services.AddControllers()
-    .AddJsonOptions(options =>
+    options.JsonSerializerOptions.Converters.Add(new MedicalDocumentConverter());
+    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+});
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        options.JsonSerializerOptions.Converters.Add(new MedicalDocumentConverter());
-        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT",
+        Description = "Token returned by /api/auth/login or /api/auth/staff/login."
     });
-
-    builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
-    builder.Services.AddScoped<JwtService>();
-    builder.Services.AddScoped<ExceptionMiddleware>();
-
-    builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer", options =>
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
     {
-        var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
-        options.TokenValidationParameters = new TokenValidationParameters
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+    options.OperationFilter<AnonymousOperationFilter>();
+});
+builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
+{
+    context.ProblemDetails.Instance = context.HttpContext.Request.Path;
+    context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+});
+builder.Services.AddScoped<ExceptionMiddleware>();
+
+// Local demo instances get a process-local key; deployed hosts must configure a real secret.
+if (builder.Environment.IsDevelopment() && string.IsNullOrEmpty(builder.Configuration["JwtSettings:SecretKey"]))
+    builder.Configuration["JwtSettings:SecretKey"] = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+
+builder.Services.AddOptions<JwtSettings>()
+    .Bind(builder.Configuration.GetSection("JwtSettings"))
+    .Validate(settings => !string.IsNullOrWhiteSpace(settings.Issuer), "JWT issuer is required.")
+    .Validate(settings => !string.IsNullOrWhiteSpace(settings.Audience), "JWT audience is required.")
+    .Validate(settings => Encoding.UTF8.GetByteCount(settings.SecretKey ?? string.Empty) >= 32,
+        "Configure JwtSettings__SecretKey with at least 32 bytes.")
+    .ValidateOnStart();
+builder.Services.AddScoped<JwtService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
+builder.Services.AddAuthentication("Bearer").AddJwtBearer("Bearer", options =>
+{
+    options.MapInboundClaims = false;
+    options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+    {
+        OnTokenValidated = async context =>
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings.Issuer,
-            ValidAudience = jwtSettings.Audience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
-        };
-    });
-
-    builder.Services.AddAuthorization();
-
-    // rejestruje w kontenerze zale¿noœci politykê CORS o nazwie MedicalBookingSystem,
-    // która zapewnia dostêp do API z dowolnego miejsca oraz przy pomocy dowolnej metody
-    builder.Services.AddCors(o => o.AddPolicy("MedicalBookingSystem", builder =>
+            var sessions = context.HttpContext.RequestServices.GetRequiredService<ISessionValidator>();
+            if (context.Principal is null || await sessions.ValidateAsync(context.Principal, context.HttpContext.RequestAborted) == SessionStatus.Invalid)
+                context.Fail("The account session is no longer valid.");
+        }
+    };
+    var settings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()!;
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
-    }));
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateIssuerSigningKey = true,
+        ValidateLifetime = true,
+        ValidIssuer = settings.Issuer,
+        ValidAudience = settings.Audience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.SecretKey)),
+        ClockSkew = TimeSpan.Zero,
+        ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
+    };
+});
+builder.Services.AddAuthorization(options =>
+    options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+builder.Services.AddCors(options => options.AddPolicy("MedicalBookingSystem", policy =>
+    policy.WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
+        .AllowAnyMethod().AllowAnyHeader()));
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("authentication", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
+        }));
+});
 
-    var app = builder.Build();
-
-    // Configure the HTTP request pipeline.
-    app.UseStaticFiles();
-    if (app.Environment.IsDevelopment())
-    {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
-
-    app.UseMiddleware<ExceptionMiddleware>();
-
+var app = builder.Build();
+app.UseHostSecurity(staff: false);
+app.UseMiddleware<ExceptionMiddleware>();
+app.UseStatusCodePages();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
     app.UseHttpsRedirection();
+app.UseRouting();
+app.UseCors("MedicalBookingSystem");
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+app.MapGet("/health/live", () => Results.Ok(new { status = "healthy" })).AllowAnonymous();
 
-    app.UseAuthentication();
-
-    app.UseAuthorization();
-
-    app.MapControllers();
-
-    // wstawia politykê CORS obs³ugi do potoku ¿¹dania
-    app.UseCors("MedicalBookingSystem");
-
-    // seeding data
-    using (var scope = app.Services.CreateScope())
-    {
-        var dataSeeder = scope.ServiceProvider.GetRequiredService<DataSeeder>();
-        dataSeeder.Seed();
-    }
-
-    app.Run();
-}
-catch (Exception exception)
+if (builder.Configuration.GetValue<bool>("Database:InitializeOnStartup"))
 {
-    // NLog: catch setup errors
-    logger.Error(exception, "Stopped program because of exception");
-    throw;
-}
-finally
-{
-    // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
-    NLog.LogManager.Shutdown();
+    await using var scope = app.Services.CreateAsyncScope();
+    var database = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await database.Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<DataSeeder>().SeedAsync();
 }
 
+app.Run();
 
-
-
-
-
+// Exposes the actual application entry point to WebApplicationFactory integration tests.
+public partial class Program;

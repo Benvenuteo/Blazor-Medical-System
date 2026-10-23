@@ -1,0 +1,61 @@
+@page "/documents"
+@attribute [Authorize(Roles = Roles.Patient)]
+@using MedicalBookingSystem.SharedKernel
+@using MedicalBookingSystem.SharedKernel.Dto
+@using MedicalBookingSystem.SharedKernel.Dto.NotesPrescriptionDto
+@using MedicalBookingSystem.SharedKernel.Security
+@inject HttpClient Http
+@inject PatientAuthenticationStateProvider Authentication
+
+<PageTitle>Moje dokumenty</PageTitle>
+<h1>Moje dokumenty</h1>
+@if (error is not null) { <p class="alert alert-danger" role="alert">@error</p> }
+@if (page is not null)
+{
+    <ul class="list-group">
+    @foreach (var item in page.Items)
+    {
+        <li class="list-group-item d-flex flex-wrap gap-3 align-items-center">
+            <span>@(item.DocumentType == "Note" ? "Notatka" : "Recepta") · @item.CreatedDate.ToString("dd.MM.yyyy") · Wizyta @item.AppointmentId</span>
+            <button type="button" class="btn btn-outline-primary" disabled="@loading" @onclick="() => ReadAsync(item)">Otwórz dokument @item.Id</button>
+        </li>
+    }
+    </ul>
+    <Pagination Page="number" TotalPages="page.TotalPages" TotalCount="page.TotalCount" Busy="loading" PageChanged="LoadAsync" />
+}
+@if (note is not null) { <section class="card card-body"><h2>Notatka</h2><p>@note.Content</p></section> }
+@if (prescription is not null)
+{
+    <section class="card card-body"><h2>Recepta</h2><p>@prescription.Medication</p><p>@prescription.Dosage</p><p>@prescription.Instructions</p><p>Ważna do @prescription.ExpiryDate.ToString("dd.MM.yyyy")</p></section>
+}
+@code {
+    private PagedResult<MedicalDocumentSummaryDto>? page;
+    private NoteDto? note;
+    private PrescriptionDto? prescription;
+    private int number = 1, patientId;
+    private bool loading;
+    private string? error;
+    protected override async Task OnInitializedAsync()
+    {
+        patientId = AccountClaims.ReadId((await Authentication.GetAuthenticationStateAsync()).User, AccountClaims.PatientId) ?? 0;
+        await LoadAsync(1);
+    }
+    private async Task LoadAsync(int next)
+    {
+        loading = true; number = next; note = null; prescription = null; error = null;
+        try { page = await Http.GetFromJsonAsync<PagedResult<MedicalDocumentSummaryDto>>($"api/medical-records/patient/{patientId}?page={number}"); }
+        catch (HttpRequestException) { error = "Nie udało się pobrać dokumentów."; }
+        finally { loading = false; }
+    }
+    private async Task ReadAsync(MedicalDocumentSummaryDto item)
+    {
+        loading = true; error = null; note = null; prescription = null;
+        try
+        {
+            if (item.DocumentType == "Note") note = await Http.GetFromJsonAsync<NoteDto>($"api/medical-records/notes/{item.Id}");
+            else prescription = await Http.GetFromJsonAsync<PrescriptionDto>($"api/medical-records/prescriptions/{item.Id}");
+        }
+        catch (HttpRequestException) { error = "Nie udało się pobrać dokumentu."; }
+        finally { loading = false; }
+    }
+}

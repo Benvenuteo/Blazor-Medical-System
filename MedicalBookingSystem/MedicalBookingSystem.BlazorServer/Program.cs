@@ -1,113 +1,114 @@
-using FluentValidation;
-using MedicalBookingSystem.Application.Mappings;
-using MedicalBookingSystem.Application.Services;
-using MedicalBookingSystem.Application.Validators;
+using MedicalBookingSystem.Infrastructure.Hosting;
+using Microsoft.AspNetCore.Authentication;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using MedicalBookingSystem.Application.Security;
+using MedicalBookingSystem.BlazorServer.Security;
+using MedicalBookingSystem.SharedKernel.Security;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using MedicalBookingSystem.Application;
 using MedicalBookingSystem.BlazorServer.Service;
-using MedicalBookingSystem.Domain.Contracts;
 using MedicalBookingSystem.Infrastructure;
-using MedicalBookingSystem.Infrastructure.Repositories;
-using MedicalBookingSystem.SharedKernel.Dto;
-using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto;
-using MedicalBookingSystem.SharedKernel.Dto.DtoHelp;
-using MedicalBookingSystem.SharedKernel.Dto.NotesPrescriptionDto;
-using MedicalBookingSystem.SharedKernel.Dto.ReviewsDto;
-using Microsoft.AspNet.Identity;
-using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
-using NLog;
 using NLog.Web;
-using Radzen;
 
-
-// Early init of NLog to allow startup and exception logging, before host is built
-var logger = NLog.LogManager.Setup().LoadConfigurationFromAppSettings().GetCurrentClassLogger();
-logger.Debug("init main");
-try
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddHostSecurity(builder.Configuration, builder.Environment, staff: true);
+builder.Logging.ClearProviders();
+builder.Host.UseNLog();
+builder.Services.AddRazorPages();
+builder.Services.AddServerSideBlazor();
+builder.Services.AddScoped<Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider, StaffAuthenticationStateProvider>();
+builder.Services.AddScoped<ICurrentUser, CircuitCurrentUser>();
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
 {
-    var builder = WebApplication.CreateBuilder(args);
-
-    // Add services to the container.
-    builder.Services.AddRazorPages();
-    builder.Services.AddServerSideBlazor();
-
-    // rejestracja automappera w kontenerze IoC
-    builder.Services.AddAutoMapper(typeof(MedicalBookingSystemMappingProfile));
-
-    // rejestracja kontekstu bazy w kontenerze IoC
-    var sqliteConnectionString = @"Data Source=c:\Projekt_Aplikacje_Biznesowe\MedicalBookingSystem\MedicalSystem.db";
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlite(sqliteConnectionString));
-
-    // rejestracja walidatora
-    builder.Services.AddScoped<IValidator<RegisterPatientDto>, RegisterPatientDtoValidator>();
-    builder.Services.AddScoped<IValidator<LoginDto>, LoginDtoValidator>();
-    builder.Services.AddScoped<IValidator<CreateAppointmentDto>, CreateAppointmentDtoValidator>();
-    builder.Services.AddScoped<IValidator<UpdateAppointmentDto>, UpdateAppointmentDtoValidator>();
-    builder.Services.AddScoped<IValidator<CreateReviewDto>, CreateReviewDtoValidator>();
-    builder.Services.AddScoped<IValidator<CreatePrescriptionDto>, CreatePrescriptionDtoValidator>();
-    builder.Services.AddScoped<IValidator<CreateNoteDto>, CreateNoteDtoValidator>();
-    builder.Services.AddScoped<IValidator<SearchDoctorsDto>, SearchDoctorsDtoValidator>();
-    builder.Services.AddScoped<IValidator<UpdatePatientDto>, UpdatePatientDtoValidator>();
-    builder.Services.AddScoped<IValidator<CreateScheduleDto>, CreateScheduleDtoValidator>();
-    builder.Services.AddScoped<DataSeeder>();
-
-    builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
-    builder.Services.AddMudServices();
-    builder.Services.AddHttpContextAccessor();
-    builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-    builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
-    builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
-    builder.Services.AddScoped<IDoctorScheduleRepository, DoctorScheduleRepository>();
-    builder.Services.AddScoped<INoteRepository, NoteRepository>();
-    builder.Services.AddScoped<IPatientRepository, PatientRepository>();
-    builder.Services.AddScoped<IPrescriptionRepository, PrescriptionRepository>();
-    builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
-    builder.Services.AddScoped<ISpecializationRepository, SpecializationRepository>();
-
-    builder.Services.AddScoped<IAppointmentService, AppointmentService>();
-    builder.Services.AddScoped<IDoctorService, DoctorService>();
-    builder.Services.AddScoped<IMedicalRecordService, MedicalRecordService>();
-    builder.Services.AddScoped<IPatientService, PatientService>();
-    builder.Services.AddScoped<IReviewService, ReviewService>();
-    builder.Services.AddScoped<DoctorImageUploader>();
-    builder.Services.AddRadzenComponents();
-
-    var app = builder.Build();
-
-    // Configure the HTTP request pipeline.
-    if (!app.Environment.IsDevelopment())
+    options.LoginPath = "/Account/Login";
+    options.AccessDeniedPath = "/Account/Denied";
+    options.Cookie.Name = "MedicalStaff";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")
+        ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
+    options.ExpireTimeSpan = TimeSpan.FromHours(1);
+    options.SlidingExpiration = false;
+    options.Events.OnValidatePrincipal = async context =>
     {
-        app.UseExceptionHandler("/Error");
-        // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-        app.UseHsts();
-    }
+        var sessions = context.HttpContext.RequestServices.GetRequiredService<ISessionValidator>();
+        if (context.Principal is null || await sessions.ValidateAsync(context.Principal, context.HttpContext.RequestAborted) == SessionStatus.Invalid)
+        {
+            context.RejectPrincipal();
+            await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        }
+    };
+});
+builder.Services.AddAuthorization(options => options.FallbackPolicy = new AuthorizationPolicyBuilder()
+    .RequireAuthenticatedUser().RequireRole(Roles.Doctor, Roles.Admin).Build());
+builder.Services.AddApplicationServices(builder.Configuration["Clinic:TimeZone"] ?? "Europe/Warsaw");
+var connectionString = MedicalBookingSystem.Infrastructure.DependencyInjection.ResolveConnectionString(
+    builder.Configuration.GetConnectionString("MedicalBookingSystem") ?? "Data Source=data/medical.db",
+    builder.Environment.ContentRootPath);
+builder.Services.AddInfrastructureServices(connectionString);
+builder.Services.AddMudServices();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<DoctorImageUploader>();
+builder.Services.AddOptions<DoctorMediaOptions>().BindConfiguration("Media")
+    .Validate(options => Uri.TryCreate(options.PublicBaseUrl, UriKind.Absolute, out var uri) &&
+        uri.Scheme is "http" or "https" && string.IsNullOrEmpty(uri.UserInfo) && string.IsNullOrEmpty(uri.Query) && string.IsNullOrEmpty(uri.Fragment),
+        "Configure Media__PublicBaseUrl with the public address of the staff host.")
+    .Validate(options => !string.IsNullOrWhiteSpace(options.StoragePath), "Configure Media__StoragePath.")
+    .ValidateOnStart();
+builder.Services.AddSingleton<DoctorPhotoFiles>();
+builder.Services.AddHostedService<DoctorPhotoCleanup>();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("authentication", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
+        }));
+});
+
+var app = builder.Build();
+app.UseHostSecurity(staff: true);
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
+{
+    app.UseExceptionHandler("/Error");
+    app.UseHsts();
     app.UseHttpsRedirection();
-
-    app.UseStaticFiles();
-
-    app.UseRouting();
-
-    app.MapBlazorHub();
-    app.MapFallbackToPage("/_Host");
-
-    // seeding data
-    //using (var scope = app.Services.CreateScope())
-    //{
-    //    var dataSeeder = scope.ServiceProvider.GetRequiredService<DataSeeder>();
-    //    dataSeeder.Seed();
-    //}
-
-    app.Run();
 }
-catch (Exception exception)
+app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
 {
-    // NLog: catch setup errors
-    logger.Error(exception, "Stopped program because of exception");
-    throw;
-}
-finally
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(app.Services.GetRequiredService<DoctorPhotoFiles>().Directory),
+    RequestPath = "/media/doctors",
+    OnPrepareResponse = context =>
+    {
+        context.Context.Response.Headers.CacheControl = "public,max-age=604800,immutable";
+        context.Context.Response.Headers.XContentTypeOptions = "nosniff";
+    }
+});
+app.UseRouting();
+app.UseRateLimiter();
+app.UseAuthentication();
+app.Use(async (context, next) =>
 {
-    // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
-    NLog.LogManager.Shutdown();
-}
+    if (context.User.Identity?.IsAuthenticated == true && context.User.HasClaim(AccountClaims.PasswordChangeRequired, "true") &&
+        !context.Request.Path.Equals("/Account/ChangePassword", StringComparison.OrdinalIgnoreCase) &&
+        !context.Request.Path.Equals("/Account/Logout", StringComparison.OrdinalIgnoreCase) &&
+        !context.Request.Path.Equals("/Account/LogoutAll", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.Redirect("/Account/ChangePassword");
+        return;
+    }
+    await next(context);
+});
+app.UseAuthorization();
+app.MapRazorPages();
+app.MapBlazorHub(options => options.CloseOnAuthenticationExpiration = true).RequireAuthorization();
+app.MapFallbackToPage("/_Host");
+app.Run();
+
+namespace MedicalBookingSystem.BlazorServer { public sealed class StaffEntryPoint; }

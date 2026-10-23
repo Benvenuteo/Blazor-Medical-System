@@ -1,4 +1,4 @@
-﻿namespace MedicalBookingSystem.Domain.Exceptions
+namespace MedicalBookingSystem.Domain.Exceptions
 {
     // Wyjątek: Obiekt nie został znaleziony
     public class NotFoundException : Exception

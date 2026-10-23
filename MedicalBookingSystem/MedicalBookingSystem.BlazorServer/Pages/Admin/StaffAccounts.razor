@@ -1,0 +1,156 @@
+@page "/admin/accounts"
+@attribute [Authorize(Roles = Roles.Admin)]
+@inherits MedicalBookingSystem.BlazorServer.Shared.InteractivePageBase
+@using MedicalBookingSystem.SharedKernel
+@using MedicalBookingSystem.SharedKernel.Dto.Accounts
+@inject StaffAccountService Accounts
+
+<PageTitle>Konta personelu</PageTitle>
+<h1>Konta personelu</h1>
+<p>Rola i przypisanie lekarza są stałe. Wyłączenie konta, zmiana emaila i reset hasła kończą jego dotychczasowe sesje.</p>
+@if (error is not null) { <p class="alert alert-danger" role="alert">@error</p> }
+@if (success is not null) { <p class="alert alert-success" role="status">@success</p> }
+<fieldset disabled="@(!IsInteractive || busy)">
+<EditForm Model="search" OnSubmit="SearchAsync" class="d-flex gap-2 mb-3">
+    <label for="account-search">Email lub nazwa</label><InputText id="account-search" @bind-Value="search.Search" class="form-control" />
+    <button type="submit" class="btn btn-primary">Szukaj kont</button>
+</EditForm>
+@if (page is not null)
+{
+    <div class="table-responsive" tabindex="0" role="region" aria-label="Tabela wyników"><table class="table"><thead><tr><th>Konto</th><th>Rola</th><th>Status</th><th>Lekarz</th><th>Akcje</th></tr></thead><tbody>
+    @foreach (var account in page.Items)
+    {
+        <tr @key="account.Id"><td>@account.DisplayName<br />@account.Email @(account.IsCurrentUser ? "(Twoje konto)" : "")</td>
+        <td>@(account.Role == Roles.Admin ? "Administrator" : "Lekarz")</td>
+        <td>@(account.IsActive ? "Aktywne" : "Wyłączone") @(account.MustChangePassword ? "· wymagane nowe hasło" : "")</td>
+        <td>@account.DoctorName</td><td><button class="btn btn-outline-primary" @onclick="() => Select(account)">Edytuj</button></td></tr>
+    }
+    </tbody></table></div>
+    <nav aria-label="Strony kont" class="d-flex gap-3 align-items-center mb-4">
+        <button class="btn btn-outline-primary" disabled="@(search.Page <= 1)" @onclick="() => ChangePageAsync(-1)">Poprzednia</button>
+        <span>Strona @search.Page z @(page.TotalPages) · Konta: @(page.TotalCount)</span>
+        <button class="btn btn-outline-primary" disabled="@(search.Page >= page.TotalPages)" @onclick="() => ChangePageAsync(1)">Następna</button>
+    </nav>
+}
+@if (selected is not null)
+{
+    <section class="card card-body mb-4"><h2>Edycja: @selected.Email</h2>
+    <EditForm Model="update" OnSubmit="SaveAsync">
+        <label for="edit-name">Nazwa konta</label><InputText id="edit-name" @bind-Value="update.DisplayName" class="form-control mb-2" />
+        <label for="edit-email">Email konta</label><InputText id="edit-email" @bind-Value="update.Email" disabled="@selected.IsCurrentUser" class="form-control mb-2" />
+        <label class="d-block mb-3"><InputCheckbox @bind-Value="update.IsActive" disabled="@selected.IsCurrentUser" /> Konto aktywne</label>
+        <button type="submit" class="btn btn-primary">Zapisz konto</button>
+        <button type="button" class="btn btn-link" @onclick="ClearSelection">Zamknij edycję</button>
+    </EditForm>
+    @if (!selected.IsCurrentUser)
+    {
+        <hr /><h3>Reset hasła</h3><p>Ustaw hasło tymczasowe i przekaż je właścicielowi bezpiecznym kanałem. Przy logowaniu będzie wymagana jego zmiana.</p>
+        <EditForm Model="reset" OnSubmit="ResetAsync">
+            <label for="reset-password">Nowe hasło tymczasowe</label><InputText id="reset-password" type="password" autocomplete="new-password" @bind-Value="reset.NewPassword" class="form-control mb-2" />
+            <button type="submit" class="btn btn-warning">Resetuj hasło</button>
+        </EditForm>
+    }
+    </section>
+}
+<section class="card card-body"><h2>Nowe konto</h2><p>Hasło: 12–128 znaków, duża litera i cyfra. Nowy użytkownik musi zmienić je przy pierwszym logowaniu.</p>
+<EditForm Model="create" OnSubmit="CreateAsync">
+    <label for="new-name">Nazwa nowego konta</label><InputText id="new-name" @bind-Value="create.DisplayName" class="form-control mb-2" />
+    <label for="new-email">Email nowego konta</label><InputText id="new-email" type="email" @bind-Value="create.Email" class="form-control mb-2" />
+    <label for="new-role">Rola</label><InputSelect id="new-role" @bind-Value="create.Role" class="form-select mb-2"><option value="Doctor">Lekarz</option><option value="Admin">Administrator</option></InputSelect>
+    @if (create.Role == Roles.Doctor)
+    {
+        <label for="new-doctor">Lekarz bez konta</label><InputSelect id="new-doctor" @bind-Value="create.DoctorId" class="form-select mb-2">
+        <option value="">Wybierz lekarza</option>
+        @if (doctors is not null) { @foreach (var doctor in doctors.Items) { <option value="@doctor.Id">@doctor.DisplayName (@doctor.LicenseNumber)</option> } }
+        </InputSelect>
+    }
+    <label for="initial-password">Hasło tymczasowe</label><InputText id="initial-password" type="password" autocomplete="new-password" @bind-Value="create.InitialPassword" class="form-control mb-2" />
+    <button type="submit" class="btn btn-success">Utwórz konto</button>
+</EditForm>
+@if (create.Role == Roles.Doctor)
+{
+    <hr /><EditForm Model="doctorSearch" OnSubmit="FindDoctorsAsync" class="d-flex gap-2 mb-2">
+        <label for="doctor-search">Imię, nazwisko lub PWZ</label><InputText id="doctor-search" @bind-Value="doctorSearch.Search" class="form-control" />
+        <button type="submit" class="btn btn-outline-primary">Szukaj lekarzy bez konta</button>
+    </EditForm>
+    @if (doctors is not null)
+    {
+        <nav aria-label="Strony lekarzy bez konta" class="d-flex gap-3 align-items-center">
+            <button class="btn btn-outline-primary" disabled="@(doctorSearch.Page <= 1)" @onclick="() => DoctorPageAsync(-1)">Poprzedni lekarze</button>
+            <span>Strona @doctorSearch.Page z @doctors.TotalPages · Lekarze: @doctors.TotalCount</span>
+            <button class="btn btn-outline-primary" disabled="@(doctorSearch.Page >= doctors.TotalPages)" @onclick="() => DoctorPageAsync(1)">Następni lekarze</button>
+        </nav>
+    }
+}
+</section></fieldset>
+
+@code {
+    private AccountSearchDto search = new(), doctorSearch = new();
+    private PagedResult<StaffAccountDto>? page;
+    private PagedResult<StaffDoctorOptionDto>? doctors;
+    private CreateStaffAccountDto create = new();
+    private StaffAccountDto? selected;
+    private UpdateStaffAccountDto update = new();
+    private ResetStaffPasswordDto reset = new();
+    private bool busy;
+    private string? error, success;
+
+    protected override async Task OnInitializedAsync() { await LoadAsync(); await LoadDoctorsAsync(); }
+    private async Task LoadAsync()
+    {
+        var result = await Accounts.SearchAsync(search);
+        if (result.IsSuccess) page = result.Value; else error = result.Error;
+    }
+    private async Task LoadDoctorsAsync()
+    {
+        var result = await Accounts.UnassignedDoctorsAsync(doctorSearch);
+        if (result.IsSuccess) doctors = result.Value; else error = result.Error;
+    }
+    private Task SearchAsync() { search.Page = 1; return RunAsync(LoadAsync); }
+    private Task ChangePageAsync(int delta) { search.Page += delta; return RunAsync(LoadAsync); }
+    private Task FindDoctorsAsync() { doctorSearch.Page = 1; create.DoctorId = null; return RunAsync(LoadDoctorsAsync); }
+    private Task DoctorPageAsync(int delta) { doctorSearch.Page += delta; create.DoctorId = null; return RunAsync(LoadDoctorsAsync); }
+    private void Select(StaffAccountDto account)
+    {
+        selected = account;
+        update = new() { Email = account.Email, DisplayName = account.DisplayName, IsActive = account.IsActive, Version = account.Version };
+        reset = new() { Version = account.Version };
+    }
+    private void ClearSelection() { selected = null; reset = new(); }
+    private Task CreateAsync() => RunAsync(async () =>
+    {
+        if (create.Role == Roles.Admin) create.DoctorId = null;
+        var result = await Accounts.CreateAsync(create);
+        create.InitialPassword = string.Empty;
+        if (result.IsSuccess) { create = new(); success = "Konto utworzone. Wymagana zmiana hasła przy logowaniu."; await LoadAsync(); await LoadDoctorsAsync(); }
+        else error = result.Error;
+    });
+    private Task SaveAsync() => RunAsync(async () =>
+    {
+        if (selected is null) return;
+        var result = await Accounts.UpdateAsync(selected.Id, update);
+        if (result.IsSuccess) { Select(result.Value); success = "Konto zapisane."; }
+        else { error = result.Error; await RefreshSelectedAsync(); }
+        await LoadAsync();
+    });
+    private Task ResetAsync() => RunAsync(async () =>
+    {
+        if (selected is null) return;
+        var result = await Accounts.ResetPasswordAsync(selected.Id, reset);
+        reset.NewPassword = string.Empty;
+        if (result.IsSuccess) success = "Hasło zresetowane. Dotychczasowe sesje zakończone."; else error = result.Error;
+        await RefreshSelectedAsync(); await LoadAsync();
+    });
+    private async Task RefreshSelectedAsync()
+    {
+        if (selected is null) return;
+        var latest = await Accounts.GetAsync(selected.Id);
+        if (latest.IsSuccess) Select(latest.Value); else ClearSelection();
+    }
+    private async Task RunAsync(Func<Task> operation)
+    {
+        if (busy) return;
+        busy = true; error = null; success = null;
+        try { await operation(); } finally { busy = false; }
+    }
+}

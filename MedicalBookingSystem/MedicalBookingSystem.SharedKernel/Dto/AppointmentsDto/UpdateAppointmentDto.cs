@@ -1,10 +1,6 @@
-﻿using MedicalBookingSystem.Domain.Models;
+namespace MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto;
 
-namespace MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
+public sealed class UpdateAppointmentDto
 {
-    public class UpdateAppointmentDto
-    {
-        public DateTime NewDate { get; set; }
-        public AppointmentStatus? Status { get; set; }
-    }
+    public DateTime NewDate { get; set; }
 }

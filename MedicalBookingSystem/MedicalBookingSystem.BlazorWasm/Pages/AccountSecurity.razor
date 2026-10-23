@@ -1,0 +1,55 @@
+@page "/account/security"
+@attribute [Authorize(Roles = Roles.Patient)]
+@using MedicalBookingSystem.SharedKernel.Dto
+@inject HttpClient Http
+@inject PatientAuthenticationStateProvider Authentication
+@inject NavigationManager Navigation
+
+<PageTitle>Bezpieczeństwo konta</PageTitle>
+<h1>Bezpieczeństwo konta</h1>
+<p>Zmiana hasła kończy wszystkie dotychczasowe sesje. Po zmianie zaloguj się ponownie.</p>
+@if (error is not null) { <p class="alert alert-danger" role="alert">@error</p> }
+<fieldset disabled="@busy">
+<EditForm Model="password" OnSubmit="ChangeAsync">
+    <label for="current-password">Aktualne hasło</label><InputText id="current-password" type="password" autocomplete="current-password" @bind-Value="password.CurrentPassword" class="form-control mb-3" />
+    <label for="new-password">Nowe hasło</label><InputText id="new-password" type="password" autocomplete="new-password" @bind-Value="password.NewPassword" class="form-control mb-3" />
+    <label for="confirm-password">Powtórz nowe hasło</label><InputText id="confirm-password" type="password" autocomplete="new-password" @bind-Value="password.ConfirmNewPassword" class="form-control mb-3" />
+    <p>Hasło musi mieć 8–128 znaków i zawierać dużą literę oraz cyfrę.</p>
+    <button type="submit" class="btn btn-primary">Zmień hasło</button>
+</EditForm>
+<hr /><h2>Aktywne sesje</h2><p>Możesz zakończyć wszystkie logowania na tym koncie, również na innych urządzeniach.</p>
+<label class="d-block mb-3"><InputCheckbox @bind-Value="confirmed" /> Potwierdzam wylogowanie wszystkich sesji</label>
+<button class="btn btn-outline-danger" disabled="@(!confirmed)" @onclick="RevokeAsync">Wyloguj wszystkie sesje</button>
+</fieldset>
+
+@code {
+    private UpdatePatientDto password = new();
+    private bool busy, confirmed;
+    private string? error;
+    private Task ChangeAsync() => RunAsync(async () =>
+    {
+        if (string.IsNullOrWhiteSpace(password.NewPassword)) { error = "Podaj nowe hasło."; return; }
+        using var response = await Http.PutAsJsonAsync("api/patients/profile", password);
+        if (response.IsSuccessStatusCode) await FinishAsync(); else error = await ApiErrors.ReadAsync(response);
+    });
+    private Task RevokeAsync() => RunAsync(async () =>
+    {
+        if (!confirmed) return;
+        using var response = await Http.PostAsync("api/auth/logout-all", null);
+        if (response.IsSuccessStatusCode) await FinishAsync(); else error = await ApiErrors.ReadAsync(response);
+    });
+    private async Task FinishAsync()
+    {
+        password = new();
+        await Authentication.LogoutAsync();
+        Navigation.NavigateTo("/?sessionEnded=true", replace: true);
+    }
+    private async Task RunAsync(Func<Task> operation)
+    {
+        if (busy) return;
+        busy = true; error = null;
+        try { await operation(); }
+        catch (HttpRequestException) { error = "Nie udało się połączyć z serwerem."; }
+        finally { busy = false; }
+    }
+}

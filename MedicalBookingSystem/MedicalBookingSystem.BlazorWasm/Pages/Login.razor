@@ -1,20 +1,29 @@
-﻿@page "/"
+@using MedicalBookingSystem.SharedKernel.Dto
+@page "/"
 @inject HttpClient Http
 @inject NavigationManager Navigation
-@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject PatientAuthenticationStateProvider Authentication
+
 
 <h3>Logowanie</h3>
+@if (SessionEnded)
+{
+    <p role="status">Sesje zakończone. Zaloguj się ponownie.</p>
+}
 
+<EditForm Model="loginDto" OnSubmit="HandleLogin">
 <div class="mb-3">
-    <label>Email:</label>
-    <input @bind="loginDto.Email" class="form-control" />
+    <label for="email">Email</label>
+    <input id="email" type="email" autocomplete="username" @bind="loginDto.Email" class="form-control" />
 </div>
 <div class="mb-3">
-    <label>Hasło:</label>
-    <input type="password" @bind="loginDto.Password" class="form-control" />
+    <label for="password">Hasło</label>
+    <input id="password" autocomplete="current-password" type="password" @bind="loginDto.Password" class="form-control" />
 </div>
-<button class="btn btn-primary" @onclick="HandleLogin">Zaloguj się</button>
-<button class="btn btn-link" @onclick="Register">Zarejestruj się</button>
+<button type="submit" disabled="@saving" class="btn btn-primary">Zaloguj się</button>
+<button type="button" class="btn btn-link" @onclick="Register">Zarejestruj się</button>
+
+</EditForm>
 
 @if (!string.IsNullOrEmpty(error))
 {
@@ -22,8 +31,10 @@
 }
 
 @code {
+    [SupplyParameterFromQuery(Name = "sessionEnded")] public bool SessionEnded { get; set; }
     private LoginDto loginDto = new();
     private string? error;
+    private bool saving;
 
     private void Register(){
         Navigation.NavigateTo($"/register");
@@ -31,6 +42,8 @@
 
     private async Task HandleLogin()
     {
+        if (saving) return;
+        saving = true;
         error = null;
 
         try
@@ -38,37 +51,22 @@
             var response = await Http.PostAsJsonAsync("api/auth/login", loginDto);
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<AuthResult>();
-                await localStorage.SetItemAsync("patientId", result.Patient.Id.ToString());
+                var result = await response.Content.ReadFromJsonAsync<AuthenticationResponseDto>();
+                if (string.IsNullOrWhiteSpace(result?.Token))
+                {
+                    error = "Serwer zwrócił nieprawidłową odpowiedź logowania.";
+                    return;
+                }
+                await Authentication.SignInAsync(result.Token);
                 Navigation.NavigateTo("/dashboard");
             }
             else
             {
-                error = await response.Content.ReadAsStringAsync();
+                error = await ApiErrors.ReadAsync(response);
             }
         }
-        catch (Exception ex)
-        {
-            error = "Wystąpił błąd: " + ex.Message;
-        }
+        catch (HttpRequestException) { error = "Nie udało się połączyć z serwerem."; }
+        finally { saving = false; }
     }
 
-    class AuthResult
-    {
-        public string Token { get; set; } = string.Empty;
-        public PatientDto Patient { get; set; } = new();
-    }
-
-    class PatientDto
-    {
-        public int Id { get; set; }
-        public string Email { get; set; } = string.Empty;
-        // Dodaj inne pola jeśli chcesz
-    }
-
-    class LoginDto
-    {
-        public string Email { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-    }
 }

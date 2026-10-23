@@ -1,8 +1,13 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
 
 <PageTitle>Management System</PageTitle>
 
-<div class="page">
+<div class="page" aria-busy="@(!connected ? "true" : "false")">
     <div class="sidebar">
         <NavMenu />
     </div>
@@ -13,3 +18,13 @@
         </article>
     </main>
 </div>
+
+@code {
+    private bool connected;
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender) return;
+        connected = true;
+        StateHasChanged();
+    }
+}

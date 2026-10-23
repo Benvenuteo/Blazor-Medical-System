@@ -1,0 +1,90 @@
+name: Build and test
+
+on:
+  push:
+    branches: [main, 'feat/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: .NET 10 / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      DOTNET_NOLOGO: 1
+      MEDICAL_BENCHMARK_OUTPUT: ${{ github.workspace }}/TestResults/benchmarks/directory.json
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: Restore
+        run: dotnet restore MedicalBookingSystem/MedicalBookingSystem.sln
+      - name: Build
+        run: dotnet build MedicalBookingSystem/MedicalBookingSystem.sln --configuration Release --no-restore
+      - name: Test and collect coverage
+        run: dotnet test MedicalBookingSystem/MedicalBookingSystem.sln --configuration Release --no-build --no-restore --logger trx --results-directory TestResults --collect "XPlat Code Coverage" --settings coverage.runsettings
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-results-${{ matrix.os }}
+          path: TestResults/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  browser:
+    name: Browser workflows / Ubuntu
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      DOTNET_NOLOGO: 1
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+      - name: Build applications
+        run: dotnet build MedicalBookingSystem/MedicalBookingSystem.sln --configuration Release
+      - name: Install browser tests
+        working-directory: tests/e2e
+        run: npm ci
+      - name: Install Chromium and Firefox
+        working-directory: tests/e2e
+        run: npx playwright install --with-deps chromium firefox
+      - name: Run real browser workflows
+        working-directory: tests/e2e
+        run: npm test
+      - name: Upload browser report, traces and screenshots
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: browser-workflows
+          path: TestResults/e2e/
+          if-no-files-found: ignore
+          retention-days: 14

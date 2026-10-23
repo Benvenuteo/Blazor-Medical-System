@@ -1,0 +1,71 @@
+@inherits MedicalBookingSystem.BlazorServer.Shared.InteractivePageBase
+@page "/doctor/appointments"
+@attribute [Authorize(Roles = Roles.Doctor)]
+@using MedicalBookingSystem.SharedKernel
+@using MedicalBookingSystem.SharedKernel.Dto
+@using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
+@using MedicalBookingSystem.Application.Time
+@using MedicalBookingSystem.Domain.Scheduling
+@inject WorklistService Lists
+@inject IAppointmentService Service
+@inject UserAccess Access
+@inject ClinicClock Clock
+
+<h3>Moje zaplanowane wizyty</h3>
+<fieldset disabled="@(!IsInteractive || saving)">
+<EditForm Model="query" OnSubmit="SearchAsync" class="d-flex flex-wrap gap-3 mb-3">
+    <label>Od dnia<InputDate @bind-Value="from" class="form-control" /></label>
+    <label>Do dnia<InputDate @bind-Value="to" class="form-control" /></label>
+    <button type="submit" class="btn btn-outline-primary">Filtruj wizyty</button>
+</EditForm>
+@if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
+@if (appointments is null) { <p>Ładowanie...</p> }
+else if (appointments.Count == 0) { <p>Brak zaplanowanych wizyt.</p> }
+else
+{
+    <div class="table-responsive" tabindex="0" role="region" aria-label="Tabela wyników"><table class="table"><thead><tr><th>Termin</th><th>Pacjent</th><th>Akcja</th></tr></thead><tbody>
+    @foreach (var appointment in appointments)
+    {
+        <tr @key="appointment.Id"><td>@appointment.Date.ToString("dd.MM.yyyy HH:mm")</td><td>@appointment.PatientId</td><td>
+            <button class="btn btn-primary" disabled="@(saving || appointment.Date.Add(AppointmentSlots.Duration) > Clock.Now)"
+                @onclick="() => CompleteAsync(appointment.Id)">Oznacz jako odbytą</button>
+        </td></tr>
+    }
+    </tbody></table></div>
+}
+<p><a href="/doctor/notes">Notatki do odbytych wizyt</a> · <a href="/doctor/prescriptions">Recepty do odbytych wizyt</a></p>
+
+<Pagination Page="query.Page" TotalPages="@(page?.TotalPages ?? 0)" TotalCount="@(page?.TotalCount ?? 0)" Busy="saving" PageChanged="ChangePageAsync" />
+</fieldset>
+
+@code {
+    private AppointmentListQueryDto query = new();
+    private PagedResult<AppointmentDto>? page;
+    private DateTime? from, to;
+    private Task SearchAsync() { query.Page = 1; return ReloadAsync(); }
+    private Task ChangePageAsync(int value) { query.Page = value; return ReloadAsync(); }
+
+    private List<AppointmentDto>? appointments;
+    private string? error;
+    private bool saving;
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+    private async Task ReloadAsync()
+    {
+        query.From = from?.Date; query.To = to?.Date.AddDays(1).AddTicks(-1);
+        var result = await Lists.DoctorAppointmentsAsync(await Access.DoctorIdAsync(), false, query);
+        if (result.IsSuccess) { page = result.Value; appointments = page.Items.ToList(); }
+        else error = result.Error;
+    }
+    private async Task CompleteAsync(int id)
+    {
+        if (saving) return;
+        saving = true;
+        try
+        {
+            var result = await Service.CompleteAppointmentAsync(id);
+            error = result.Error;
+            await ReloadAsync();
+        }
+        finally { saving = false; }
+    }
+}

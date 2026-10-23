@@ -1,0 +1,10 @@
+{
+  "AllowedHosts": "api.example.test",
+  "ConnectionStrings": { "MedicalBookingSystem": "Data Source=/srv/medical/data/medical.db;Pooling=False;Default Timeout=10" },
+  "Database": { "InitializeOnStartup": false },
+  "Seed": { "Enabled": false },
+  "Clinic": { "TimeZone": "Europe/Warsaw" },
+  "Cors": { "AllowedOrigins": ["https://patient.example.test"] },
+  "JwtSettings": { "Issuer": "MedicalBookingSystem", "Audience": "MedicalBookingSystem.Clients" },
+  "Proxy": { "KnownProxies": ["127.0.0.1"] }
+}

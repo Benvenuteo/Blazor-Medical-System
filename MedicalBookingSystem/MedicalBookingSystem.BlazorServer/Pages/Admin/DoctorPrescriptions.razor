@@ -1,103 +1,85 @@
-﻿@page "/admin/doctors/prescriptions/{id:int}"
+@inherits MedicalBookingSystem.BlazorServer.Shared.InteractivePageBase
+@page "/doctor/prescriptions"
+@attribute [Authorize(Roles = Roles.Doctor)]
+@using MedicalBookingSystem.SharedKernel
+@using MedicalBookingSystem.SharedKernel.Dto
 @using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
 @using MedicalBookingSystem.SharedKernel.Dto.NotesPrescriptionDto
+@inject WorklistService Lists
 @inject IAppointmentService AppointmentService
-@inject NavigationManager Navigation
 @inject IMedicalRecordService MedicalRecordService
-@using MudBlazor
-@using MudBlazor.Components
-@using System.ComponentModel.DataAnnotations
+@inject UserAccess Access
 
-<MudText Typo="Typo.h5" Class="mb-4">Dodaj recepty do przeszłych wizyt</MudText>
-
-@if (_appointments == null)
-{
-    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
-}
-else if (!_appointments.Any())
-{
-    <MudText Typo="Typo.subtitle1" Color="Color.Secondary">Brak wizyt do wypisania recepty.</MudText>
-}
+<h3>Recepty do odbytych wizyt</h3>
+<fieldset disabled="@(!IsInteractive || saving)">
+<EditForm Model="query" OnSubmit="SearchAsync" class="d-flex flex-wrap gap-3 mb-3">
+    <label>Od dnia<InputDate @bind-Value="from" class="form-control" /></label>
+    <label>Do dnia<InputDate @bind-Value="to" class="form-control" /></label>
+    <button type="submit" class="btn btn-outline-primary">Filtruj wizyty</button>
+</EditForm>
+@if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
+@if (appointments is null) { <p>Ładowanie...</p> }
+else if (appointments.Count == 0) { <p>Brak wizyt oczekujących na dokumentację.</p> }
 else
 {
-    @foreach (var appointment in _appointments)
+    @foreach (var appointment in appointments)
     {
-        <MudCard Class="mb-6 p-4">
-            <MudCardContent>
-                <MudText Typo="Typo.subtitle1">Data: @appointment.Date</MudText>
-                <MudText Typo="Typo.subtitle2">Status: @appointment.Status</MudText>
-                <MudText Typo="Typo.subtitle2">Pacjent ID: @appointment.PatientId</MudText>
-
-                <MudForm @ref="_forms[appointment.Id]">
-                    <MudTextField @bind-Value="_prescriptions[appointment.Id].Medication" Label="Lek" Required="true" />
-                    <MudTextField @bind-Value="_prescriptions[appointment.Id].Dosage" Label="Dawkowanie" Required="true" />
-                    <MudTextField @bind-Value="_prescriptions[appointment.Id].Instructions" Label="Instrukcje" Required="true" />
-                    <MudNumericField T="int" @bind-Value="_prescriptions[appointment.Id].ValidityDays"
-                                     Label="Dni ważności" Required="true" Min="1" Max="30" />
-
-                    <MudButton OnClick="@(() => AddPrescriptionAsync(appointment.Id))"
-                               Variant="MudBlazor.Variant.Filled" Color="Color.Primary" Class="mt-3">
-                        Zapisz receptę
-                    </MudButton>
-                </MudForm>
-            </MudCardContent>
-        </MudCard>
+        <section class="border rounded p-3 mb-3" @key="appointment.Id">
+            <p>@appointment.Date.ToString("dd.MM.yyyy HH:mm") — <b>Pacjent ID:</b> @appointment.PatientId</p>
+            <label>Lek<input class="form-control mb-2" @bind="drafts[appointment.Id].Medication" maxlength="100" /></label>
+            <label>Dawkowanie<input class="form-control mb-2" @bind="drafts[appointment.Id].Dosage" maxlength="50" /></label>
+            <label>Instrukcje<textarea class="form-control mb-2" @bind="drafts[appointment.Id].Instructions"></textarea></label>
+            <label>Ważność w dniach<input type="number" min="1" max="365" class="form-control mb-2" @bind="drafts[appointment.Id].ValidityDays" /></label>
+            <div><button class="btn btn-primary" disabled="@saving" @onclick="() => SaveAsync(appointment.Id)">Zapisz receptę</button></div>
+        </section>
     }
 }
 
-@code {
-    [Parameter] public int Id { get; set; }
+<Pagination Page="query.Page" TotalPages="@(page?.TotalPages ?? 0)" TotalCount="@(page?.TotalCount ?? 0)" Busy="saving" PageChanged="ChangePageAsync" />
+</fieldset>
 
-    private List<AppointmentDto> _appointments;
-    private Dictionary<int, CreatePrescriptionDto> _prescriptions = new();
-    private Dictionary<int, string> _successMessages = new();
-    private Dictionary<int, MudForm> _forms = new();
+@code {
+    private AppointmentListQueryDto query = new();
+    private PagedResult<AppointmentDto>? page;
+    private DateTime? from, to;
+    private Task SearchAsync() { query.Page = 1; return ReloadAsync(); }
+    private Task ChangePageAsync(int value) { query.Page = value; return ReloadAsync(); }
+
+    private List<AppointmentDto>? appointments;
+    private readonly Dictionary<int, CreatePrescriptionDto> drafts = new();
+    private int doctorId;
+    private bool saving;
+    private string? error;
 
     protected override async Task OnInitializedAsync()
     {
-        _appointments = AppointmentService.GetPreviousAppointmentsByDoctorId(Id);
-
-        foreach (var app in _appointments)
-        {
-            _prescriptions[app.Id] = new CreatePrescriptionDto
-                {
-                    AppointmentId = app.Id,
-                    ValidityDays = 7
-                };
-
-            _forms[app.Id] = new MudForm();
-        }
+        doctorId = await Access.DoctorIdAsync();
+        await ReloadAsync();
+    }
+    private async Task ReloadAsync()
+    {
+        query.From = from?.Date; query.To = to?.Date.AddDays(1).AddTicks(-1); query.MissingDocument = "Prescription";
+        var result = await Lists.DoctorAppointmentsAsync(doctorId, true, query);
+        if (!result.IsSuccess) { error = result.Error; return; }
+        page = result.Value; appointments = page.Items.ToList(); drafts.Clear();
+        foreach (var appointment in appointments)
+            drafts[appointment.Id] = new CreatePrescriptionDto { AppointmentId = appointment.Id, ValidityDays = 7 };
     }
 
-    private async Task AddPrescriptionAsync(int appointmentId)
+    private async Task SaveAsync(int id)
     {
-        var form = _forms[appointmentId];
-        await form.Validate();
-
-        if (!form.IsValid)
+        if (saving) return;
+        saving = true;
+        try
         {
-            Console.WriteLine("Formularz nie przeszedł walidacji.");
-            return;
+            var result = await MedicalRecordService.CreatePrescriptionAsync(drafts[id], doctorId);
+            error = result.Error;
+            if (result.IsSuccess)
+            {
+                if (appointments?.Count == 1 && query.Page > 1) query.Page--;
+                await ReloadAsync();
+            }
         }
-
-        var dto = _prescriptions[appointmentId];
-        var result = await MedicalRecordService.CreatePrescriptionAsync(dto, Id);
-
-        if (result.IsSuccess)
-        {
-            _successMessages[appointmentId] = "Recepta została dodana.";
-
-            // Usuwanie formularza z widoku
-            var appointmentToRemove = _appointments.FirstOrDefault(a => a.Id == appointmentId);
-            if (appointmentToRemove != null)
-                _appointments.Remove(appointmentToRemove);
-
-            _prescriptions.Remove(appointmentId);
-            _forms.Remove(appointmentId);
-        }
-        else
-        {
-            _successMessages[appointmentId] = "Błąd: " + result.Error;
-        }
+        finally { saving = false; }
     }
 }

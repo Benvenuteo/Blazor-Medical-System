@@ -1,137 +1,90 @@
-﻿@page "/admin/doctors"
+@inherits MedicalBookingSystem.BlazorServer.Shared.InteractivePageBase
+@page "/admin/doctors"
+@attribute [Authorize(Roles = Roles.Admin)]
 @using MedicalBookingSystem.BlazorServer.Service
+@using MedicalBookingSystem.SharedKernel
 @using MedicalBookingSystem.SharedKernel.Dto
-@using Radzen.Blazor
+@using MedicalBookingSystem.SharedKernel.Dto.DtoHelp
 @inject IDoctorService DoctorService
 @inject DoctorImageUploader Uploader
-@inject NavigationManager Navigation
-@inject IJSRuntime JS
 
 <PageTitle>Lista lekarzy</PageTitle>
 <h3>Lista lekarzy</h3>
-
-
-<RadzenDataGrid AllowFiltering="true" AllowColumnResize="true" AllowAlternatingRows="false"
-                FilterMode="FilterMode.Advanced" AllowSorting="true" PageSize="5" AllowPaging="true"
-                ShowPagingSummary="true"
-                Data="@_doctorList" ColumnWidth="100px" LogicalFilterOperator="LogicalFilterOperator.Or"
-                SelectionMode="DataGridSelectionMode.Single" Style="width:90%">
-    <Columns>
-        <RadzenDataGridColumn Property="Id" Title="ID" Width="100px" />
-        <RadzenDataGridColumn Property="FirstName" Title="First Name" Width="150px" />
-        <RadzenDataGridColumn Property="LastName" Title="Last Name" Width="150px" />
-        <RadzenDataGridColumn Property="LicenseNumber" Title="License #" Width="150px" />
-        <RadzenDataGridColumn Property="Region" Title="Region" Width="150px" />
-        <RadzenDataGridColumn Property="Bio" Title="Biography" Width="200px" />
-        <RadzenDataGridColumn Property="AverageRating" Title="Avg. Rating" Width="120px" />
-        <RadzenDataGridColumn Property="ReviewCount" Title="Reviews" Width="60px" />
-        <RadzenDataGridColumn Title="Photo" Width="160px">
-            <Template Context="data">
-                <img src="@data.ImageUrl" alt="Doctor photo" style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%;" />
-                <div class="mt-1">
-                    <label class="btn btn-sm btn-outline-primary">
-                        Zmień
-                        <InputFile OnChange="@(e => OnImageSelected(e, data.Id))" style="display:none" />
-                    </label>
-                </div>
-            </Template>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn Property="Id" Title="Recepty do wypisania" Width="180px">
-            <Template Context="data">
-                <RadzenButton ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="info" class="m-1" Click=@(() => OpenListPrescription(data.Id)) Text="Recepty" />
-            </Template>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn Property="Id" Title="Notatki do wizyty" Width="180px">
-            <Template Context="data">
-                <RadzenButton ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Icon="info" class="m-1" Click=@(() => OpenListNotes(data.Id)) Text="Notatki" />
-            </Template>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn Title="Grafik" Width="150px">
-            <Template Context="data">
-                <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="calendar"
-                              Click=@(() => OpenCreateSchedule(data.Id))
-                              Text="Dodaj grafik" />
-            </Template>
-        </RadzenDataGridColumn>
-    </Columns>
-</RadzenDataGrid>
-
-@if (!string.IsNullOrWhiteSpace(_errorMessage))
+<fieldset disabled="@(!IsInteractive || loading || uploading)">
+<EditForm Model="search" OnSubmit="NewSearchAsync" class="d-flex gap-2 mb-3">
+    <label for="region">Region</label>
+    <InputText id="region" class="form-control" @bind-Value="search.Region" />
+    <button class="btn btn-primary" type="submit" disabled="@loading">Szukaj</button>
+</EditForm>
+@if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
+@if (success is not null) { <div class="alert alert-success" role="status">@success</div> }
+@if (loading) { <p>Ładowanie lekarzy...</p> }
+else if (page is not null)
 {
-    <div class="alert alert-danger mt-3">@_errorMessage</div>
+    <table class="table align-middle">
+        <thead><tr><th>Lekarz</th><th>Numer PWZ</th><th>Region</th><th>Ocena</th><th>Zdjęcie</th><th>Grafik</th></tr></thead>
+        <tbody>
+            @foreach (var doctor in page.Items)
+            {
+                <tr @key="doctor.Id">
+                    <td>@doctor.FirstName @doctor.LastName</td><td>@doctor.LicenseNumber</td><td>@doctor.Region</td>
+                    <td>@doctor.AverageRating.ToString("0.0") (@doctor.ReviewCount)</td>
+                    <td>
+                        <img src="@doctor.ImageUrl" alt="Zdjęcie: @doctor.FirstName @doctor.LastName" width="60" height="60" style="object-fit:cover;border-radius:50%" />
+                        <label class="btn btn-sm btn-outline-primary doctor-photo-upload">
+                            Zmień zdjęcie
+                            <InputFile OnChange="e => OnImageSelected(e, doctor.Id)" accept="image/jpeg,image/png" disabled="@(uploading || !IsInteractive)" aria-label="@($"Zmień zdjęcie: {doctor.FirstName} {doctor.LastName}")" />
+                        </label>
+                    </td>
+                    <td><a class="btn btn-outline-success" href="@($"admin/doctors/{doctor.Id}/schedule")">Dodaj grafik</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <nav aria-label="Strony lekarzy" class="d-flex align-items-center gap-3">
+        <button class="btn btn-outline-primary" disabled="@(search.Page <= 1)" @onclick="() => LoadAsync(-1)">Poprzednia</button>
+        <span>Strona @search.Page z @(page.TotalPages) · Wyniki: @(page.TotalCount)</span>
+        <button class="btn btn-outline-primary" disabled="@(search.Page >= page.TotalPages)" @onclick="() => LoadAsync(1)">Następna</button>
+    </nav>
 }
-@if (!string.IsNullOrWhiteSpace(_successMessage))
-{
-    <div class="alert alert-success mt-3">@_successMessage</div>
-}
+
+</fieldset>
 
 @code {
-    private List<DoctorDto> _doctorList = new();
-    private string _errorMessage;
-    private string _successMessage;
+    private SearchDoctorsDto search = new();
+    private PagedResult<DoctorDto>? page;
+    private bool loading;
+    private bool uploading;
+    private string? error;
+    private string? success;
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync() => LoadAsync(0);
+    private Task NewSearchAsync() { search.Page = 1; return LoadAsync(0); }
+    private async Task LoadAsync(int delta)
     {
-        _doctorList = (await DoctorService.GetAllAsync()).Value?.ToList() ?? new List<DoctorDto>();
-    }
-
-    private void OpenListPrescription(int id)
-    {
-        Navigation.NavigateTo($"/admin/doctors/prescriptions/{id}");
-    }
-
-    private void OpenListNotes(int id)
-    {
-        Navigation.NavigateTo($"/admin/doctors/notes/{id}");
-    }
-
-    private async Task OnImageSelected(InputFileChangeEventArgs e, int doctorId)
-    {
-        _errorMessage = null;
-        _successMessage = null;
-
-        var file = e.File;
-        var extension = Path.GetExtension(file.Name).ToLowerInvariant();
-
-        if (extension != ".jpg" && extension != ".jpeg" && extension != ".png")
-        {
-            _errorMessage = "Dozwolone formaty: JPG, PNG";
-            return;
-        }
-
+        if (loading) return;
+        loading = true; search.Page += delta; error = null;
         try
         {
-            using var stream = file.OpenReadStream(10 * 1024 * 1024); // max 10MB
-            var imageUrl = await Uploader.SaveDoctorImageAsync(stream, file.Name);
-            if (imageUrl == null)
-            {
-                _errorMessage = "Nie udało się zapisać pliku.";
-                return;
-            }
-
-            var result = await DoctorService.SetDoctorImageUrlAsync(doctorId, imageUrl);
-            if (!result)
-            {
-                _errorMessage = "Nie udało się zapisać linku do zdjęcia w bazie.";
-                return;
-            }
-
-            _successMessage = "Zdjęcie zaktualizowano pomyślnie.";
-            await RefreshDoctorsList();
+            var result = await DoctorService.SearchDoctorsAsync(search);
+            if (result.IsSuccess) page = result.Value; else error = result.Error;
         }
-        catch (Exception ex)
+        finally { loading = false; }
+    }
+
+    private async Task OnImageSelected(InputFileChangeEventArgs args, int doctorId)
+    {
+        if (uploading) return;
+        uploading = true; error = null; success = null;
+        try
         {
-            _errorMessage = "Błąd podczas przesyłania pliku: " + ex.Message;
+            using var stream = args.File.OpenReadStream(10 * 1024 * 1024);
+            var result = await Uploader.ReplaceAsync(doctorId, stream, args.File.Name);
+            if (result.IsFailure) { error = result.Error; return; }
+            success = "Zdjęcie zaktualizowano.";
+            await LoadAsync(0);
         }
-    }
-
-    private async Task RefreshDoctorsList()
-    {
-        _doctorList = (await DoctorService.GetAllAsync()).Value?.ToList() ?? new List<DoctorDto>();
-    }
-
-    private void OpenCreateSchedule(int doctorId)
-    {
-        Navigation.NavigateTo($"/admin/doctors/{doctorId}/schedule");
+        catch (IOException) { error = "Nie udało się zapisać zdjęcia. Sprawdź rozmiar pliku i spróbuj ponownie."; }
+        finally { uploading = false; }
     }
 }

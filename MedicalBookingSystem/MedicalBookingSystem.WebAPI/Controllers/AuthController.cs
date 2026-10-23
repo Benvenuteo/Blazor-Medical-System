@@ -1,80 +1,56 @@
-﻿using AutoMapper;
+using MedicalBookingSystem.SharedKernel.Dto.Accounts;
+using MedicalBookingSystem.SharedKernel.Security;
 using FluentValidation;
-using MedicalBookingSystem.Domain.Contracts;
-using MedicalBookingSystem.Domain.Models;
+using MedicalBookingSystem.Application.Security;
+using MedicalBookingSystem.Application.Services;
 using MedicalBookingSystem.SharedKernel.Dto;
 using MedicalBookingSystem.WebAPI.JWT;
-using Microsoft.AspNet.Identity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+
+namespace MedicalBookingSystem.WebAPI.Controllers;
 
 [Route("api/auth")]
 [ApiController]
-public class AuthController : ControllerBase
+[EnableRateLimiting("authentication")]
+public sealed class AuthController(PatientAuthenticationService patients, IValidator<LoginDto> loginValidator,
+    JwtService jwt, StaffAuthenticationService staff, StaffPasswordService passwords, SessionManagementService sessions) : ControllerBase
 {
-    private readonly IUnitOfWork _uow;
-    private readonly IPasswordHasher _passwordHasher;
-    private readonly IValidator<RegisterPatientDto> _registerValidator;
-    private readonly IValidator<LoginDto> _loginValidator;
-    private readonly IMapper _mapper;
-    private readonly JwtService _jwtService;
-
-    public AuthController(
-        IUnitOfWork uow,
-        IPasswordHasher passwordHasher,
-        IValidator<RegisterPatientDto> registerValidator,
-        IValidator<LoginDto> loginValidator,
-        IMapper mapper,
-        JwtService jwtService)
+    [AllowAnonymous, HttpPost("register")]
+    public async Task<IActionResult> Register(RegisterPatientDto dto)
     {
-        _uow = uow;
-        _passwordHasher = passwordHasher;
-        _registerValidator = registerValidator;
-        _loginValidator = loginValidator;
-        _mapper = mapper;
-        _jwtService = jwtService;
+        var result = await patients.RegisterAsync(dto);
+        return result.IsSuccess ? Ok(new AuthenticationResponseDto(jwt.GenerateToken(result.Value.Principal), result.Value.Patient)) : this.FailureResponse(result);
     }
 
-    [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterPatientDto dto)
+    [AllowAnonymous, HttpPost("login")]
+    public async Task<IActionResult> Login(LoginDto dto)
     {
-        var validationResult = await _registerValidator.ValidateAsync(dto);
-        if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
-
-        var existing = await _uow.Patients.GetByEmailAsync(dto.Email);
-        if (existing != null)
-            return BadRequest("Użytkownik z podanym adresem e-mail już istnieje.");
-
-        var patient = _mapper.Map<Patient>(dto);
-        patient.PasswordHash = _passwordHasher.HashPassword(dto.Password);
-
-        await _uow.Patients.AddAsync(patient);
-        await _uow.SaveChangesAsync();
-
-        var patientDto = _mapper.Map<PatientDto>(patient);
-        var token = _jwtService.GenerateToken(patient);
-
-        return Ok(new { token, patient = patientDto });
+        var result = await patients.LoginAsync(dto);
+        return result.IsSuccess ? Ok(new AuthenticationResponseDto(jwt.GenerateToken(result.Value.Principal), result.Value.Patient)) : this.FailureResponse(result);
     }
 
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginDto dto)
+    [AllowAnonymous, HttpPost("staff/login")]
+    public async Task<IActionResult> StaffLogin(LoginDto dto)
     {
-        var validationResult = await _loginValidator.ValidateAsync(dto);
-        if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors.Select(e => e.ErrorMessage));
+        var validation = await loginValidator.ValidateAsync(dto);
+        if (!validation.IsValid) return Problem(statusCode: 400, detail: string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
+        var principal = await staff.AuthenticateAsync(dto);
+        return principal is null ? Problem(statusCode: 401, detail: "Nieprawidłowy email lub hasło.") : Ok(new TokenResponseDto(jwt.GenerateToken(principal)));
+    }
 
-        var patient = await _uow.Patients.GetByEmailAsync(dto.Email);
-        if (patient == null)
-            return Unauthorized("Nieprawidłowy email lub hasło");
+    [Authorize(Roles = Roles.Staff), HttpPost("staff/change-password")]
+    public async Task<IActionResult> ChangeStaffPassword(ChangeStaffPasswordDto dto)
+    {
+        var result = await passwords.ChangeAsync(User, dto);
+        return result.IsSuccess ? NoContent() : this.FailureResponse(result);
+    }
 
-        var result = _passwordHasher.VerifyHashedPassword(patient.PasswordHash, dto.Password);
-        if (result == PasswordVerificationResult.Failed)
-            return Unauthorized("Nieprawidłowy email lub hasło");
-
-        var patientDto = _mapper.Map<PatientDto>(patient);
-        var token = _jwtService.GenerateToken(patient);
-
-        return Ok(new { token, patient = patientDto });
+    [Authorize, HttpPost("logout-all")]
+    public async Task<IActionResult> LogoutAll()
+    {
+        var result = await sessions.RevokeAllAsync(User);
+        return result.IsSuccess ? NoContent() : this.FailureResponse(result);
     }
 }
