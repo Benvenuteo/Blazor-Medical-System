@@ -21,6 +21,7 @@
 @if (loading) { <p>Ładowanie lekarzy...</p> }
 else if (page is not null)
 {
+    <div class="table-responsive" tabindex="0" role="region" aria-label="Lista lekarzy">
     <table class="table align-middle">
         <thead><tr><th>Lekarz</th><th>Numer PWZ</th><th>Region</th><th>Ocena</th><th>Zdjęcie</th><th>Grafik</th></tr></thead>
         <tbody>
@@ -41,6 +42,7 @@ else if (page is not null)
             }
         </tbody>
     </table>
+    </div>
     <nav aria-label="Strony lekarzy" class="d-flex align-items-center gap-3">
         <button class="btn btn-outline-primary" disabled="@(search.Page <= 1)" @onclick="() => LoadAsync(-1)">Poprzednia</button>
         <span>Strona @search.Page z @(page.TotalPages) · Wyniki: @(page.TotalCount)</span>

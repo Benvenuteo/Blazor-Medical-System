@@ -10,13 +10,14 @@
 <EditForm Model="@searchDto" OnValidSubmit="NewSearch">
     <div class="mb-3">
         <label for="specialization">Specjalizacja</label>
-        <InputSelect id="specialization" class="form-control" @bind-Value="searchDto.SpecializationId">
+        <InputSelect id="specialization" aria-describedby="selected-specialization" class="form-select" @bind-Value="searchDto.SpecializationId">
             <option value="">-- wybierz --</option>
             @foreach (var spec in specializations)
             {
                 <option value="@spec.Id">@spec.Name</option>
             }
         </InputSelect>
+        <div id="selected-specialization" class="form-text selected-value">@(specializations.FirstOrDefault(s => s.Id == searchDto.SpecializationId)?.Name)</div>
     </div>
 
     <div class="mb-3">
@@ -31,7 +32,7 @@
 
     <div class="mb-3">
         <label for="sort">Sortuj według</label>
-        <InputSelect id="sort" class="form-control" @bind-Value="searchDto.SortBy">
+        <InputSelect id="sort" class="form-select" @bind-Value="searchDto.SortBy">
             <option value="">-- wybierz --</option>
             <option value="rating">Ocena</option>
             <option value="availability">Najbliższy termin</option>
@@ -152,6 +153,8 @@ else if (doctors != null && doctors.Any())
         <div class="card mt-4">
             <div class="card-body">
                 <h5>Dodaj opinię o lekarzu</h5>
+                @if (reviewError is not null) { <p class="alert alert-danger" role="alert">@reviewError</p> }
+                <fieldset disabled="@savingReview">
                 <EditForm Model="@newReview" OnValidSubmit="SubmitReview">
                     <div class="mb-3">
                         <label for="rating">Ocena (1-5)</label>
@@ -164,6 +167,7 @@ else if (doctors != null && doctors.Any())
                     <button type="submit" class="btn btn-primary">Wyślij opinię</button>
                     <button type="button" class="btn btn-secondary ms-2" @onclick="CancelReview">Anuluj</button>
                 </EditForm>
+                </fieldset>
             </div>
         </div>
     }
@@ -180,6 +184,9 @@ else if (doctors != null)
     private PagedResult<DoctorDto>? page;
     private bool isLoading = false;
     private string? errorMessage;
+    private string? reviewError;
+    private bool savingReview;
+    private int searchRequest;
 
     private HashSet<int> expandedDoctorIds = new();
     private HashSet<int> loadingReviews = new();
@@ -190,6 +197,8 @@ else if (doctors != null)
 
     private void ShowReviewForm(int doctorId)
     {
+        if (savingReview) return;
+        reviewError = null;
         selectedDoctorId = doctorId;
         newReview = new CreateReviewDto { DoctorId = doctorId };
         showReviewForm = true;
@@ -201,9 +210,12 @@ else if (doctors != null)
     }
     private async Task SubmitReview()
     {
+        if (savingReview) return;
+        savingReview = true;
+        reviewError = null;
         try
         {
-            var response = await Http.PostAsJsonAsync("api/reviews", newReview);
+            using var response = await Http.PostAsJsonAsync("api/reviews", newReview);
 
             if (response.IsSuccessStatusCode)
             {
@@ -216,13 +228,14 @@ else if (doctors != null)
             else
             {
                 var serverError = await ApiErrors.ReadAsync(response);
-                errorMessage = $"Błąd dodawania opinii: {serverError}";
+                reviewError = $"Błąd dodawania opinii: {serverError}";
             }
         }
         catch (Exception ex)
         {
-            errorMessage = "Błąd: " + ex.Message;
+            reviewError = "Błąd: " + ex.Message;
         }
+        finally { savingReview = false; }
     }
     protected override async Task OnInitializedAsync()
     {
@@ -242,6 +255,7 @@ else if (doctors != null)
 
     private async Task SearchDoctors()
     {
+        var request = ++searchRequest;
         isLoading = true;
         errorMessage = null;
         doctors = null;
@@ -263,16 +277,18 @@ else if (doctors != null)
                 queryParams.Add($"SortBy={Uri.EscapeDataString(searchDto.SortBy)}");
 
             var queryString = string.Join("&", queryParams);
-            page = await Http.GetFromJsonAsync<PagedResult<DoctorDto>>($"api/doctors?{queryString}");
+            var result = await Http.GetFromJsonAsync<PagedResult<DoctorDto>>($"api/doctors?{queryString}");
+            if (request != searchRequest) return;
+            page = result;
             doctors = page?.Items.ToList() ?? [];
         }
         catch (Exception ex)
         {
-            errorMessage = "Nie udało się pobrać lekarzy: " + ex.Message;
+            if (request == searchRequest) errorMessage = "Nie udało się pobrać lekarzy: " + ex.Message;
         }
         finally
         {
-            isLoading = false;
+            if (request == searchRequest) isLoading = false;
         }
     }
 

@@ -9,15 +9,19 @@
 <p>Wizyty trwają 30 minut. Wszystkie terminy podano w czasie placówki.</p>
 @if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
 <label for="doctor">Lekarz</label>
-<select id="doctor" disabled="@saving" class="form-select mb-3" value="@selectedDoctorId" @onchange="DoctorChanged">
+<select id="doctor" aria-describedby="selected-doctor" disabled="@(saving || loadingDoctors)" class="form-select mb-3" value="@selectedDoctorId" @onchange="DoctorChanged">
     <option value="0">Wybierz lekarza</option>
     @foreach (var doctor in doctors) { <option value="@doctor.Id">@doctor.FirstName @doctor.LastName</option> }
 </select>
+<div id="selected-doctor" class="form-text selected-value">
+    @if (doctors.FirstOrDefault(d => d.Id == selectedDoctorId) is { } selectedDoctor)
+    { <span>@selectedDoctor.FirstName @selectedDoctor.LastName</span> }
+</div>
 @if (page is not null)
 {
     <nav aria-label="Wybór lekarza" class="d-flex gap-2 mb-3">
-        <button class="btn btn-outline-primary" disabled="@(saving || doctorPage <= 1)" @onclick="() => LoadDoctorsAsync(-1)">Poprzedni lekarze</button>
-        <button class="btn btn-outline-primary" disabled="@(saving || doctorPage >= page.TotalPages)" @onclick="() => LoadDoctorsAsync(1)">Następni lekarze</button>
+        <button class="btn btn-outline-primary" disabled="@(saving || loadingDoctors || doctorPage <= 1)" @onclick="() => LoadDoctorsAsync(-1)">Poprzedni lekarze</button>
+        <button class="btn btn-outline-primary" disabled="@(saving || loadingDoctors || doctorPage >= page.TotalPages)" @onclick="() => LoadDoctorsAsync(1)">Następni lekarze</button>
     </nav>
 }
 @if (loading) { <p>Ładowanie terminów...</p> }
@@ -49,6 +53,7 @@ else if (selectedDoctorId > 0)
     private string? error;
     private bool loading;
     private bool saving;
+    private bool loadingDoctors;
 
     protected override async Task OnInitializedAsync()
     {
@@ -66,18 +71,26 @@ else if (selectedDoctorId > 0)
 
     private async Task LoadDoctorsAsync(int delta)
     {
-        doctorPage += delta;
+        if (loadingDoctors || saving) return;
+        loadingDoctors = true;
+        error = null;
+        var nextPage = doctorPage + delta;
+        selectedDoctorId = 0; selectedStart = string.Empty; slots = [];
+        loading = false;
         try
         {
-            page = await Http.GetFromJsonAsync<PagedResult<DoctorDto>>($"api/doctors?Page={doctorPage}&PageSize=10");
+            page = await Http.GetFromJsonAsync<PagedResult<DoctorDto>>($"api/doctors?Page={nextPage}&PageSize=10");
+            doctorPage = nextPage;
             doctors = page?.Items.ToList() ?? [];
             selectedDoctorId = 0; selectedStart = string.Empty; slots = [];
         }
         catch (HttpRequestException) { error = "Nie udało się pobrać lekarzy."; }
+        finally { loadingDoctors = false; }
     }
 
     private async Task DoctorChanged(ChangeEventArgs args)
     {
+        if (loadingDoctors || saving) return;
         if (!int.TryParse(args.Value?.ToString(), out selectedDoctorId)) selectedDoctorId = 0;
         selectedStart = string.Empty;
         error = null;

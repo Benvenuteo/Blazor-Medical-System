@@ -51,3 +51,27 @@ test('staff login, paged account and audit screens satisfy automated accessibili
   await checkAccessibility(page);
   expect(errors).toEqual([]);
 });
+
+test('selected specialization remains readable with long labels and enlarged text', async ({ page }, info) => {
+  const name = 'Endokrynologia, diabetologia oraz choroby metaboliczne dzieci i młodzieży';
+  await patientLogin(page);
+  await page.route('**/api/doctors/specializations', route => route.fulfill({ json: [{ id: 1, name }] }));
+  await page.goto('/doctors/search');
+  await page.getByLabel('Specjalizacja', { exact: true }).selectOption('1');
+  for (const width of [360, 768, 1366]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const fontSize of ['16px', '32px']) {
+      await page.locator('html').evaluate((el, size) => { el.style.fontSize = size; }, fontSize);
+      const selected = page.locator('#selected-specialization');
+      await expect(selected).toHaveText(name);
+      await expect(selected).toBeVisible();
+      expect(await selected.evaluate(el => el.scrollWidth <= el.clientWidth + 1 && el.scrollHeight <= el.clientHeight + 1)).toBeTruthy();
+      const select = page.getByLabel('Specjalizacja', { exact: true });
+      expect(await select.evaluate(el => {
+        const style = getComputedStyle(el);
+        return el.clientHeight >= parseFloat(style.lineHeight) + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) - 1;
+      })).toBeTruthy();
+      await page.screenshot({ path: info.outputPath(`select-${width}-${fontSize}.png`), fullPage: true });
+    }
+  }
+});

@@ -9,6 +9,10 @@
 @inject IAppointmentService AppointmentService
 @inject IMedicalRecordService MedicalRecordService
 @inject UserAccess Access
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+<NavigationLock ConfirmExternalNavigation="HasDrafts" OnBeforeInternalNavigation="ConfirmNavigationAsync" />
 
 <h3>Notatki do odbytych wizyt</h3>
 <fieldset disabled="@(!IsInteractive || saving)">
@@ -26,7 +30,7 @@ else
     {
         <section class="border rounded p-3 mb-3" @key="appointment.Id">
             <p>@appointment.Date.ToString("dd.MM.yyyy HH:mm") — <b>Pacjent ID:</b> @appointment.PatientId</p>
-            <label>Notatka<textarea class="form-control mb-2" @bind="drafts[appointment.Id].Content" maxlength="2000"></textarea></label>
+            <label>Notatka<textarea class="form-control mb-2" @bind:event="oninput" @bind="drafts[appointment.Id].Content" maxlength="2000"></textarea></label>
             <div><button class="btn btn-primary" disabled="@saving" @onclick="() => SaveAsync(appointment.Id)">Zapisz notatkę</button></div>
         </section>
     }
@@ -36,6 +40,12 @@ else
 </fieldset>
 
 @code {
+    private bool HasDrafts => drafts.Values.Any(d => !string.IsNullOrWhiteSpace(d.Content));
+    private async Task ConfirmNavigationAsync(Microsoft.AspNetCore.Components.Routing.LocationChangingContext context)
+    {
+        if (HasDrafts && !await JS.InvokeAsync<bool>("confirm", "Masz niezapisane zmiany. Czy opuścić stronę?"))
+            context.PreventNavigation();
+    }
     private AppointmentListQueryDto query = new();
     private PagedResult<AppointmentDto>? page;
     private DateTime? from, to;
@@ -58,9 +68,9 @@ else
         query.From = from?.Date; query.To = to?.Date.AddDays(1).AddTicks(-1); query.MissingDocument = "Note";
         var result = await Lists.DoctorAppointmentsAsync(doctorId, true, query);
         if (!result.IsSuccess) { error = result.Error; return; }
-        page = result.Value; appointments = page.Items.ToList(); drafts.Clear();
+        page = result.Value; appointments = page.Items.ToList(); error = null;
         foreach (var appointment in appointments)
-            drafts[appointment.Id] = new CreateNoteDto { AppointmentId = appointment.Id };
+            drafts.TryAdd(appointment.Id, new CreateNoteDto { AppointmentId = appointment.Id });
     }
 
     private async Task SaveAsync(int id)
@@ -75,6 +85,7 @@ else
             {
                 if (appointments?.Count == 1 && query.Page > 1) query.Page--;
                 await ReloadAsync();
+                if (appointments?.All(a => a.Id != id) == true) drafts.Remove(id);
             }
         }
         finally { saving = false; }

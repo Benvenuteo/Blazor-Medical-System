@@ -59,10 +59,14 @@
     <label for="new-role">Rola</label><InputSelect id="new-role" @bind-Value="create.Role" class="form-select mb-2"><option value="Doctor">Lekarz</option><option value="Admin">Administrator</option></InputSelect>
     @if (create.Role == Roles.Doctor)
     {
-        <label for="new-doctor">Lekarz bez konta</label><InputSelect id="new-doctor" @bind-Value="create.DoctorId" class="form-select mb-2">
+        <label for="new-doctor">Lekarz bez konta</label><InputSelect id="new-doctor" aria-describedby="selected-account-doctor" @bind-Value="create.DoctorId" class="form-select mb-2">
         <option value="">Wybierz lekarza</option>
         @if (doctors is not null) { @foreach (var doctor in doctors.Items) { <option value="@doctor.Id">@doctor.DisplayName (@doctor.LicenseNumber)</option> } }
         </InputSelect>
+        <div id="selected-account-doctor" class="form-text selected-value">
+            @if (doctors?.Items.FirstOrDefault(d => d.Id == create.DoctorId) is { } selectedDoctor)
+            { <span>@selectedDoctor.DisplayName (@selectedDoctor.LicenseNumber)</span> }
+        </div>
     }
     <label for="initial-password">Hasło tymczasowe</label><InputText id="initial-password" type="password" autocomplete="new-password" @bind-Value="create.InitialPassword" class="form-control mb-2" />
     <button type="submit" class="btn btn-success">Utwórz konto</button>

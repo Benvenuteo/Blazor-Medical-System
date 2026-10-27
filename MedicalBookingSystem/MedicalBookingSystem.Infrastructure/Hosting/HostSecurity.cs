@@ -54,6 +54,12 @@ public static class HostSecurity
                     .PersistKeysToFileSystem(new DirectoryInfo(full)).ProtectKeysWithCertificate(certificate);
             }
         }
+        else if (environment.IsDevelopment() && configuration["DataProtection:KeysPath"] is { Length: > 0 } developmentKeys)
+        {
+            // Allow isolated local/E2E hosts without sharing keys with the user profile.
+            services.AddDataProtection().PersistKeysToFileSystem(
+                new DirectoryInfo(Path.GetFullPath(developmentKeys, environment.ContentRootPath)));
+        }
         return services;
     }
 

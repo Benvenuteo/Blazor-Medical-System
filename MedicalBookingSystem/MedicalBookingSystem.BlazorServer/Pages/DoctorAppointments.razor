@@ -64,6 +64,7 @@ else
         {
             var result = await Service.CompleteAppointmentAsync(id);
             error = result.Error;
+            if (result.IsSuccess && appointments?.Count == 1 && query.Page > 1) query.Page--;
             await ReloadAsync();
         }
         finally { saving = false; }

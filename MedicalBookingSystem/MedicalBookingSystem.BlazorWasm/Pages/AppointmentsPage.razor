@@ -10,6 +10,7 @@
 @inject IDialogService DialogService
 
 <h3 class="mt-4">Moje wizyty</h3>
+<p>Zmiana lub odwołanie wymaga co najmniej 24 godzin do wizyty.</p>
 
 @if (isLoading)
 {
@@ -69,6 +70,9 @@ else
 
 }
 
+@if (detailsLoading) { <p role="status">Ładowanie szczegółów wizyty...</p> }
+@if (detailsError is not null) { <p class="alert alert-danger" role="alert">@detailsError</p> }
+
 <Pagination Page="currentPage" TotalPages="@(page?.TotalPages ?? 0)" TotalCount="@(page?.TotalCount ?? 0)" Busy="isLoading" PageChanged="LoadPageAsync" />
 
 @code {
@@ -76,6 +80,7 @@ else
     private int currentPage = 1;
     private async Task LoadPageAsync(int nextPage)
     {
+        detailsRequest++; detailsLoading = false; detailsError = null;
         currentPage = nextPage; selectedAppointment = null; errorMessage = null; isLoading = true;
         await OnInitializedAsync();
     }
@@ -84,6 +89,9 @@ else
     private bool isLoading = true;
     private string? errorMessage;
     private AppointmentDetailsDto? selectedAppointment;
+    private int detailsRequest;
+    private bool detailsLoading;
+    private string? detailsError;
 
     private async Task ShowDeleteConfirmation(int appointmentId)
     {
@@ -144,7 +152,7 @@ else
             }
             else
             {
-                Snackbar.Add("Nie udało się odwołać wizyty.", Severity.Error);
+                Snackbar.Add(await ApiErrors.ReadAsync(result), Severity.Error);
             }
         }
         catch (Exception ex)
@@ -155,24 +163,26 @@ else
 
     private async Task ShowDetails(int appointmentId)
     {
+        var request = ++detailsRequest;
+        detailsLoading = true; detailsError = null; selectedAppointment = null;
         try
         {
-            var response = await Http.GetAsync($"api/appointments/{appointmentId}");
-
+            using var response = await Http.GetAsync($"api/appointments/{appointmentId}");
             if (response.IsSuccessStatusCode)
             {
-                selectedAppointment = await response.Content.ReadFromJsonAsync<AppointmentDetailsDto>();
+                var details = await response.Content.ReadFromJsonAsync<AppointmentDetailsDto>();
+                if (request == detailsRequest) selectedAppointment = details;
             }
             else
             {
-                selectedAppointment = null;
-                Console.WriteLine($"Nie udało się pobrać szczegółów wizyty: {response.StatusCode}");
+                var message = await ApiErrors.ReadAsync(response);
+                if (request == detailsRequest) detailsError = message;
             }
         }
-        catch (Exception ex)
+        catch (HttpRequestException)
         {
-            Console.WriteLine("Błąd podczas pobierania szczegółów: " + ex.Message);
+            if (request == detailsRequest) detailsError = "Nie udało się pobrać szczegółów wizyty. Spróbuj ponownie.";
         }
+        finally { if (request == detailsRequest) detailsLoading = false; }
     }
-
 }

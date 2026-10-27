@@ -27,6 +27,25 @@ public sealed class DoctorReviewsTests : BunitContext
         component.WaitForAssertion(() => Assert.Contains(expectedMessage, component.Markup));
     }
 
+    [Fact]
+    public void RejectedReview_KeepsFormAndDraftVisible()
+    {
+        Services.AddSingleton(new HttpClient(new DoctorApiHandler(false)) { BaseAddress = new Uri("http://localhost") });
+        var component = Render<Doctors>();
+        component.Find("form").Submit();
+        component.WaitForAssertion(() => Assert.Contains("Dodaj opinię", component.Markup));
+        component.FindAll("button").Single(b => b.TextContent == "Dodaj opinię").Click();
+        component.Find("#rating").Change("5");
+        component.Find("#comment").Change("Treść do poprawienia");
+        component.FindAll("form").Last().Submit();
+        component.WaitForAssertion(() =>
+        {
+            Assert.Contains("Błąd dodawania opinii", component.Find("[role=alert]").TextContent);
+            Assert.Contains("Treść do poprawienia", component.FindComponent<Microsoft.AspNetCore.Components.Forms.InputTextArea>().Instance.Value);
+            Assert.Contains("Anna", component.Find("table").TextContent);
+        });
+    }
+
     private sealed class DoctorApiHandler(bool failReviews) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -34,7 +53,7 @@ public sealed class DoctorReviewsTests : BunitContext
             var path = request.RequestUri!.AbsolutePath;
             var response = path switch
             {
-                "/api/doctors/specializations" => new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(new MedicalBookingSystem.SharedKernel.PagedResult<object>([], 0, 1, 10)) },
+                "/api/doctors/specializations" => new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(Array.Empty<object>()) },
                 "/api/doctors" => new HttpResponseMessage(HttpStatusCode.OK)
                 {
                     Content = JsonContent.Create(new { items = new[] { new { id = 1, firstName = "Anna", lastName = "Testowa", averageRating = 0, reviewCount = 0 } }, totalCount = 1, page = 1, pageSize = 10 })
