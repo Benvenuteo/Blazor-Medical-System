@@ -2,6 +2,7 @@
 @page "/admin/doctors/{DoctorId:int}/schedule"
 @attribute [Authorize(Roles = Roles.Staff)]
 @inject UserAccess Access
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider Authentication
 @using MedicalBookingSystem.SharedKernel.Dto
 @inject IDoctorService DoctorService
 @inject NavigationManager Navigation
@@ -103,8 +104,9 @@
         finally { _saving = false; }
     }
 
-    private void NavigateBack()
+    private async Task NavigateBack()
     {
-        Navigation.NavigateTo("/admin/doctors");
+        var user = (await Authentication.GetAuthenticationStateAsync()).User;
+        Navigation.NavigateTo(user.IsInRole(Roles.Admin) ? "/admin/doctors" : "/doctor/appointments");
     }
 }

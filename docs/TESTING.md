@@ -97,3 +97,19 @@ Nowe regresje pokrywają atomowość dokumentacji/audytu, brak wydania treści p
 Kopie są tworzone przy otwartym połączeniu WAL z zatwierdzonymi zmianami. Test odtwarza dokumenty, audyt i zdjęcie oraz sprawdza nowe znaczniki sesji. Pozostałe przypadki odrzucają uszkodzoną bazę/zdjęcie, brak pliku, obce ścieżki, nieujęte pliki i próbę nadpisania istniejącego katalogu. Testy hostingu sprawdzają listę zaufanych proxy, wymagania konfiguracji Production oraz odczyt zaszyfrowanego klucza po restarcie providera.
 
 Przypadki jakości interfejsu uruchamiają axe z tagami WCAG 2/2.1/2.2 A/AA na logowaniu, panelu pacjenta, dokumentach, katalogu oraz kontach i audycie administratora. Widok 390×844 sprawdza menu i brak przewijania całej strony w poziomie. Tabele mają własne przewijanie i dostęp klawiaturą. To automatyczna kontrola wskazanych ekranów, bez deklaracji pełnej zgodności WCAG.
+
+
+### UI regression coverage
+
+Component tests cover responses arriving out of order in doctor search and appointment details,
+and a rejected review retaining its form and entered text. Browser workflows enter two drafts
+before saving one and verify that the other note/prescription remains unchanged.
+The quality suite checks long selected specialization labels at 360, 768 and 1366 pixels with
+normal and doubled root font sizes. The full selected value wraps below the native select;
+this is deliberate because native single-select controls do not wrap their selected option.
+
+Integration hosts use ephemeral Data Protection keys so test cookies do not depend on the
+machine profile. E2E hosts use separate key directories inside their temporary fixture folder.
+Development hosts can opt into this with `DataProtection:KeysPath`; production continues to
+require persistent keys and a certificate. Draft documentation stays in component memory only
+and is discarded when leaving the page after confirming the navigation warning.

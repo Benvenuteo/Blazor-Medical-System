@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using MedicalBookingSystem.BlazorServer;
 using MedicalBookingSystem.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
@@ -23,6 +24,8 @@ internal sealed class StaffPanelFactory(SqliteConnection connection) : WebApplic
         }));
         builder.ConfigureServices(services =>
         {
+            // Keep test cookies independent of the developer profile and other test hosts.
+            services.AddDataProtection().UseEphemeralDataProtectionProvider();
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
             services.AddDbContextFactory<ApplicationDbContext>(options => options.UseSqlite(connection), ServiceLifetime.Scoped);

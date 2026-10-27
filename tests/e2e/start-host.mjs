@@ -13,6 +13,7 @@ const env = {
   ...process.env, ASPNETCORE_ENVIRONMENT: 'Development',
   ConnectionStrings__MedicalBookingSystem: `Data Source=${join(state, 'medical.db')};Pooling=False;Default Timeout=10`,
   JwtSettings__SecretKey: 'browser-tests-only-random-independent-signing-key-at-least-32-bytes',
+  DataProtection__KeysPath: join(state, 'keys', kind),
   Database__InitializeOnStartup: 'true', Seed__Enabled: 'true',
   Seed__PatientPassword: 'DemoPatient2026!', Seed__StaffPassword: 'DemoStaff2026!',
   Media__PublicBaseUrl: 'http://localhost:5187', Media__StoragePath: join(state, 'photos'),

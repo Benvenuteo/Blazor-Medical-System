@@ -62,3 +62,9 @@ a, .btn-link {
     .blazor-error-boundary::after {
         content: "An error has occurred."
     }
+
+/* Allow navigation and search controls to wrap on narrow screens. */
+nav.d-flex, form.d-flex { flex-wrap: wrap; }
+form.d-flex > .form-control { flex: 1 1 12rem; min-width: 0; }
+.selected-value { overflow-wrap: anywhere; white-space: normal; }
+.selected-value:empty { display: none; }

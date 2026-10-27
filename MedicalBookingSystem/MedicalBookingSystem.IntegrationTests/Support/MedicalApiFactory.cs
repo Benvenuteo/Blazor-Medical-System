@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using MedicalBookingSystem.Infrastructure;
@@ -40,6 +41,8 @@ internal sealed class MedicalApiFactory : WebApplicationFactory<MedicalBookingSy
         }));
         builder.ConfigureServices(services =>
         {
+            // Keep test cookies independent of the developer profile and other test hosts.
+            services.AddDataProtection().UseEphemeralDataProtectionProvider();
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
             services.AddDbContextFactory<ApplicationDbContext>(options =>
