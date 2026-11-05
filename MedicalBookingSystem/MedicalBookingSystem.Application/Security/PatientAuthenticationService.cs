@@ -15,7 +15,8 @@ namespace MedicalBookingSystem.Application.Security;
 public sealed record AuthenticatedPatient(PatientDto Patient, ClaimsPrincipal Principal);
 
 public sealed class PatientAuthenticationService(IUnitOfWorkFactory units, IPasswordHasher<Patient> hasher, ClinicClock clock,
-    IValidator<RegisterPatientDto> registerValidator, IValidator<LoginDto> loginValidator, AccountRecoveryService recovery)
+    IValidator<RegisterPatientDto> registerValidator, IValidator<LoginDto> loginValidator, AccountRecoveryService recovery,
+    SessionGuard guard)
 {
     public async Task<Result<AuthenticatedPatient>> LoginAsync(LoginDto dto)
     {
@@ -78,8 +79,41 @@ public sealed class PatientAuthenticationService(IUnitOfWorkFactory units, IPass
         catch (PersistenceConflictException) { }
     }
 
-    /// <summary>Builds the signed-in session for any patient sign-in method (password, Google, profile completion).</summary>
-    public AuthenticatedPatient CreateSession(Patient patient) => new(patient.ToDto(), AccountClaims.Create(patient.Id,
-        $"{patient.FirstName} {patient.LastName}", patient.Email, Roles.Patient, new DateTimeOffset(clock.UtcNow).AddHours(1),
-        securityStamp: patient.SecurityStamp, demoAccount: patient.IsDemo, profileIncomplete: patient.ProfileIncomplete));
+    /// <summary>One access token lives an hour; the app renews it while open, up to this limit since sign-in.</summary>
+    public static readonly TimeSpan TokenLifetime = TimeSpan.FromHours(1);
+    public static readonly TimeSpan MaxSessionLength = TimeSpan.FromHours(12);
+
+    /// <summary>Builds the signed-in session for any patient sign-in method (password, Google, profile completion, renewal).</summary>
+    public AuthenticatedPatient CreateSession(Patient patient, DateTimeOffset? sessionStarted = null)
+    {
+        var now = new DateTimeOffset(clock.UtcNow);
+        var started = sessionStarted ?? now;
+        // The token never outlives the session limit.
+        var expires = now + TokenLifetime < started + MaxSessionLength ? now + TokenLifetime : started + MaxSessionLength;
+        return new(patient.ToDto(), AccountClaims.Create(patient.Id, $"{patient.FirstName} {patient.LastName}", patient.Email,
+            Roles.Patient, expires, securityStamp: patient.SecurityStamp, demoAccount: patient.IsDemo,
+            profileIncomplete: patient.ProfileIncomplete, sessionStarted: started));
+    }
+
+    /// <summary>
+    /// Exchanges a still-valid token for a fresh one. The database session check runs first, so a changed password,
+    /// "log out everywhere" or a deleted account stop renewal; the original sign-in time caps the session length.
+    /// </summary>
+    public async Task<Result<AuthenticatedPatient>> RefreshAsync(ClaimsPrincipal user)
+    {
+        await guard.RequireAsync(user, allowIncompleteProfile: true);
+        if (!AccountClaims.TryReadIdentity(user, out var identity) || identity.Role != Roles.Patient) throw new AccessDeniedException(true);
+        if (!long.TryParse(user.FindFirst(AccountClaims.SessionStarted)?.Value, System.Globalization.NumberStyles.None,
+                System.Globalization.CultureInfo.InvariantCulture, out var startedSeconds))
+            return Result.Failure<AuthenticatedPatient>("Sesja wymaga ponownego logowania.", ErrorType.Unauthorized);
+        var started = DateTimeOffset.FromUnixTimeSeconds(startedSeconds);
+        var now = new DateTimeOffset(clock.UtcNow);
+        if (started > now || now - started >= MaxSessionLength - TimeSpan.FromMinutes(1))
+            return Result.Failure<AuthenticatedPatient>("Sesja wygasła. Zaloguj się ponownie.", ErrorType.Unauthorized);
+        using var unit = units.Create();
+        var patient = await unit.Patients.GetByIdAsync(identity.Id);
+        return patient is null
+            ? Result.Failure<AuthenticatedPatient>("Sesja wymaga ponownego logowania.", ErrorType.Unauthorized)
+            : Result.Success(CreateSession(patient, started));
+    }
 }

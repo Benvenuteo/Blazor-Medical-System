@@ -117,6 +117,14 @@ public sealed class AuthController(PatientAuthenticationService patients, IValid
         return result.IsSuccess ? Ok(new AuthenticationResponseDto(jwt.GenerateToken(result.Value.Principal), result.Value.Patient)) : this.FailureResponse(result);
     }
 
+    /// <summary>Renews the patient token while the session is valid (max 12 hours from sign-in).</summary>
+    [Authorize(Roles = Roles.Patient), HttpPost("refresh")]
+    public async Task<IActionResult> Refresh()
+    {
+        var result = await patients.RefreshAsync(User);
+        return result.IsSuccess ? Ok(new AuthenticationResponseDto(jwt.GenerateToken(result.Value.Principal), result.Value.Patient)) : this.FailureResponse(result);
+    }
+
     [Authorize, HttpPost("logout-all")]
     public async Task<IActionResult> LogoutAll()
     {
