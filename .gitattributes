@@ -1,0 +1,6 @@
+# Files executed or parsed inside Linux containers must keep LF line endings on every checkout.
+*.sh text eol=lf
+deploy/docker/Caddyfile text eol=lf
+deploy/docker/Dockerfile text eol=lf
+deploy/docker-compose.yml text eol=lf
+deploy/.env.example text eol=lf

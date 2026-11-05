@@ -1,0 +1,106 @@
+# Demo deployment: API, staff panel and the patient app behind Caddy on one machine.
+# API and panel share one SQLite file, so they must run on the same host and volume.
+#   cp deploy/.env.example deploy/.env   # fill in host names and secrets
+#   sh deploy/scripts/create-secrets.sh  # Data Protection certificate for the panel
+#   docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build
+name: medical-booking
+
+x-dotnet: &dotnet
+  restart: unless-stopped
+  environment: &dotnet-env
+    ASPNETCORE_ENVIRONMENT: Production
+    ConnectionStrings__MedicalBookingSystem: "Data Source=/data/db/medical.db;Pooling=False;Default Timeout=10"
+    Clinic__TimeZone: Europe/Warsaw
+    Proxy__KnownProxies__0: 172.28.0.10
+  logging:
+    driver: json-file
+    options: { max-size: 10m, max-file: "3" }
+
+services:
+  api:
+    <<: *dotnet
+    image: ${IMAGE_REGISTRY:-medical-booking}/api:${IMAGE_TAG:-local}
+    build: { context: .., dockerfile: deploy/docker/Dockerfile, target: api }
+    environment:
+      <<: *dotnet-env
+      AllowedHosts: ${API_HOST:?Set API_HOST}
+      JwtSettings__SecretKey: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY}
+      Cors__AllowedOrigins__0: https://${PATIENT_HOST:?Set PATIENT_HOST}
+      # The API applies migrations before it reports ready; the panel waits for that.
+      Database__InitializeOnStartup: "true"
+      Seed__Enabled: ${DEMO_DATA:-true}
+      Seed__PatientPassword: ${SEED_PATIENT_PASSWORD:-}
+      Seed__StaffPassword: ${SEED_STAFF_PASSWORD:-}
+    volumes:
+      - db:/data/db
+    networks:
+      internal: { ipv4_address: 172.28.0.20 }
+
+  staff:
+    <<: *dotnet
+    image: ${IMAGE_REGISTRY:-medical-booking}/staff:${IMAGE_TAG:-local}
+    build: { context: .., dockerfile: deploy/docker/Dockerfile, target: staff }
+    depends_on:
+      api: { condition: service_healthy }
+    environment:
+      <<: *dotnet-env
+      AllowedHosts: ${STAFF_HOST:?Set STAFF_HOST}
+      Media__PublicBaseUrl: https://${STAFF_HOST}
+      Media__StoragePath: /data/photos
+      DataProtection__KeysPath: /data/keys
+      DataProtection__CertificatePath: /run/secrets/dataprotection.pfx
+      DataProtection__CertificatePassword: ${DATAPROTECTION_CERT_PASSWORD:?Set DATAPROTECTION_CERT_PASSWORD}
+    volumes:
+      - db:/data/db
+      - photos:/data/photos
+      - keys:/data/keys
+      - ./secrets/dataprotection.pfx:/run/secrets/dataprotection.pfx:ro
+    networks:
+      internal: { ipv4_address: 172.28.0.30 }
+
+  web:
+    image: ${IMAGE_REGISTRY:-medical-booking}/web:${IMAGE_TAG:-local}
+    build: { context: .., dockerfile: deploy/docker/Dockerfile, target: web }
+    restart: unless-stopped
+    depends_on:
+      api: { condition: service_healthy }
+      staff: { condition: service_started }
+    environment:
+      PATIENT_HOST: ${PATIENT_HOST}
+      API_HOST: ${API_HOST}
+      STAFF_HOST: ${STAFF_HOST}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      internal: { ipv4_address: 172.28.0.10 }
+
+  # On-demand tool, not started by `up`:
+  #   docker compose -f deploy/docker-compose.yml --env-file deploy/.env run --rm maintenance backup /data/db/medical.db /data/photos /backups/medical-$(date +%F)
+  maintenance:
+    image: ${IMAGE_REGISTRY:-medical-booking}/maintenance:${IMAGE_TAG:-local}
+    build: { context: .., dockerfile: deploy/docker/Dockerfile, target: maintenance }
+    profiles: [tools]
+    volumes:
+      - db:/data/db
+      - photos:/data/photos
+      - ${BACKUP_DIR:-./backups}:/backups
+    networks: [internal]
+
+volumes:
+  db:
+  photos:
+  keys:
+  caddy-data:
+  caddy-config:
+
+networks:
+  internal:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24

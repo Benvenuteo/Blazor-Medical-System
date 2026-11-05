@@ -86,3 +86,8 @@ data-protection/
 *.p12
 *.key
 *.pem
+
+# Deployment secrets
+deploy/.env
+deploy/secrets/
+deploy/backups/

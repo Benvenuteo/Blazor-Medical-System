@@ -1,0 +1,45 @@
+# Site definitions. web-entrypoint.sh prepends the global options (ACME email, when set) and
+# writes the result to /etc/caddy/Caddyfile.
+# Caddy obtains and renews Let's Encrypt certificates for the three host names automatically.
+# *.localhost names get certificates from Caddy's local CA, which is enough for a local smoke test.
+
+(hsts) {
+	header Strict-Transport-Security "max-age=31536000"
+}
+
+# Patient app: static Blazor WebAssembly files with an SPA fallback.
+{$PATIENT_HOST} {
+	import hsts
+	root * /srv/patient
+	encode zstd gzip
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy no-referrer
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://{$API_HOST}; img-src 'self' data: https:; font-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+	}
+	# Settings and the boot manifest change per deployment; framework files are content-hashed.
+	@settings path /appsettings.json /_framework/blazor.boot.json /index.html /
+	header @settings Cache-Control "no-cache"
+	try_files {path} /index.html
+	file_server {
+		precompressed br gzip
+	}
+}
+
+# API and staff panel: the applications set their own security headers and trust this proxy
+# by its fixed address on the internal network (Proxy__KnownProxies).
+{$API_HOST} {
+	import hsts
+	encode zstd gzip
+	reverse_proxy api:8080
+}
+
+{$STAFF_HOST} {
+	import hsts
+	encode zstd gzip
+	request_body {
+		max_size 11MB
+	}
+	reverse_proxy staff:8080
+}

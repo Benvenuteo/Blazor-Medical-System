@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/.idea/
+**/node_modules/
+**/*.user
+**/data/
+**/logs/
+.git/
+.github/
+TestResults/
+tests/
+docs/
+deploy/.env
+deploy/secrets/
+MedicalBookingSystem/*Tests/
