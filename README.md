@@ -3,7 +3,7 @@
 [![Build and test](https://github.com/Benvenuteo/Blazor-Medical-System/actions/workflows/ci.yml/badge.svg)](https://github.com/Benvenuteo/Blazor-Medical-System/actions/workflows/ci.yml)
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)
 ![Blazor](https://img.shields.io/badge/Blazor-WebAssembly%20%2B%20Server-5C2D91)
-![Tests](https://img.shields.io/badge/testy-369%20.NET%20%2B%20E2E-2EA44F)
+![Tests](https://img.shields.io/badge/testy-381%20.NET%20%2B%20E2E-2EA44F)
 
 System rezerwacji wizyt lekarskich: pacjent znajduje lekarza na mapie w wybranym promieniu, rezerwuje realny termin z grafiku i dostaje potwierdzenie z plikiem do kalendarza; lekarz prowadzi kolejkę wizyt i dokumentację; administrator zarządza placówkami, lekarzami i kontami personelu.
 
@@ -28,9 +28,11 @@ Projekt pokazuje kompletną aplikację .NET 10 — od reguł domenowych i wspó�
 
 **Pacjent (Blazor WebAssembly)**
 - Wyszukiwanie lekarzy po specjalizacji, dacie i **lokalizacji**: adres lub lokalizacja przeglądarki, promień 10–100 km, widok listy lub **mapy** (Leaflet + OpenStreetMap), sortowanie po odległości, ocenie lub najbliższym terminie.
-- Rezerwacja realnego 30-minutowego slotu z grafiku, zmiana terminu i odwołanie (≥ 24 h wcześniej); przy wizycie widać placówkę i link „Nawiguj”.
+- Rezerwacja realnego 30-minutowego slotu z **kalendarza tygodniowego**, w placówce albo jako **teleporada** (pokój Jitsi Meet), zmiana terminu i odwołanie (≥ 24 h wcześniej); przy wizycie placówka z linkiem „Nawiguj” albo „Dołącz do rozmowy”.
+- **Lista oczekujących**: powiadomienie mailem, gdy u lekarza zwolni się wcześniejszy termin.
 - Potwierdzenie rezerwacji i przypomnienie dzień wcześniej mailem, z wydarzeniem **.ics**; „Do kalendarza” z listy wizyt.
-- Historia z notatkami i receptami lekarza, opinie tylko po odbytej wizycie.
+- Historia z notatkami i receptami lekarza, **wydruk / PDF dokumentacji wizyty**, opinie tylko po odbytej wizycie.
+- Aplikacja do **zainstalowania na telefonie (PWA)**, sesja odnawiana w tle do 12 godzin.
 - Konto: rejestracja z potwierdzeniem emaila, **logowanie przez Google**, reset hasła linkiem, wylogowanie wszystkich sesji.
 
 **Lekarz i administrator (Blazor Server)**
@@ -77,8 +79,8 @@ Uprawnienia są sprawdzane w warstwie aplikacji, więc bezpośrednie wywołanie 
 ## Testy
 
 - **139 jednostkowych** — reguły slotów, walidatory, mapowania, odległości, format iCalendar.
-- **213 integracyjnych** — prawdziwe API i SQLite: uprawnienia, współbieżność, migracje, sesje, Google, reset hasła, wyszukiwanie w promieniu, kopie zapasowe.
-- **17 komponentowych** (bUnit) — kolejność odpowiedzi, formularze, komunikaty błędów.
+- **221 integracyjnych** — prawdziwe API i SQLite: uprawnienia, współbieżność, migracje, sesje i ich odnawianie, Google, reset hasła, wyszukiwanie w promieniu, lista oczekujących, teleporady, kopie zapasowe.
+- **21 komponentowych** (bUnit) — kolejność odpowiedzi, formularze, kalendarz tygodniowy, wydruk dokumentacji, komunikaty błędów.
 - **Playwright** — pełne scenariusze pacjent–lekarz–administrator w przeglądarce, mapa z geolokalizacją, kontrole dostępności axe w Chromium, Firefoksie i widoku mobilnym.
 - **Kontenery** — build obrazów (także ARM64), start stosu w Compose, test przez Caddy, backup i weryfikacja.
 

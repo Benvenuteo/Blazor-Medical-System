@@ -160,7 +160,7 @@ Stan wyjściowy: commit `e596cef`. Projekt jest dojrzały jak na portfolio — w
 
 ## Status (listopad 2026)
 
-Zrobione: A1–A2, A0 (potwierdzenie emaila bez blokady logowania), A4–A9, A12, B (Google), C (placówki, wyszukiwanie w promieniu, mapa Leaflet/OSM), E (kontenery, Caddy, tryb demo), D1 (potwierdzenia, przypomnienia, .ics). Zrobione później: A3 (odnawianie tokenu do 12 h od logowania, bez ciasteczek między domenami), A10 (biblioteka `MedicalBookingSystem.UI.Shared`), CD (`deploy.yml`). Do zrobienia: D2–D9 i ewentualnie BFF z tokenem poza `localStorage`.
+Zrobione: A1–A2, A0 (potwierdzenie emaila bez blokady logowania), A4–A9, A12, B (Google), C (placówki, wyszukiwanie w promieniu, mapa Leaflet/OSM), E (kontenery, Caddy, tryb demo), D1 (potwierdzenia, przypomnienia, .ics). Zrobione później: A3 (odnawianie tokenu do 12 h od logowania, bez ciasteczek między domenami), A10 (biblioteka `MedicalBookingSystem.UI.Shared`), CD (`deploy.yml`). Backlog (gałąź `feat/backlog`): D2 lista oczekujących, D3 kalendarz tygodniowy, D6 teleporada (Jitsi Meet), D7 wydruk/PDF dokumentacji, D8 PWA. Nie zrobione świadomie: D4 profile rodzinne i D5 typy wizyt o różnej długości (zmieniają właściciela wizyty i stały 30-minutowy slot, na którym opierają się indeksy, triggery i zapytanie katalogu — osobny projekt), D9 wersja angielska (wszystkie teksty UI i komunikaty usług), BFF z tokenem poza `localStorage`.
 
 ## Kolejność realizacji
 
