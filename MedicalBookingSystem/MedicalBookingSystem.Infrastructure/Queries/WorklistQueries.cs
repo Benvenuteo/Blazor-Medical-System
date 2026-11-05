@@ -16,7 +16,11 @@ public sealed class WorklistQueries(IDbContextFactory<ApplicationDbContext> cont
     {
         Id = a.Id, Date = a.Date, PatientId = a.PatientId, DoctorId = a.DoctorId,
         DoctorName = a.Doctor.FirstName + " " + a.Doctor.LastName, Status = a.Status.ToString(),
-        HasNote = a.Note != null, HasPrescription = a.Prescription != null
+        HasNote = a.Note != null, HasPrescription = a.Prescription != null,
+        ClinicName = a.Clinic == null ? null : a.Clinic.Name,
+        ClinicAddress = a.Clinic == null ? null : a.Clinic.Street + ", " + a.Clinic.PostalCode + " " + a.Clinic.City,
+        ClinicLatitude = a.Clinic == null ? null : a.Clinic.Latitude,
+        ClinicLongitude = a.Clinic == null ? null : a.Clinic.Longitude
     };
 
     public async Task<PagedResult<AppointmentDto>> AppointmentsAsync(int ownerId, bool doctor, bool completed, AppointmentListQueryDto query)

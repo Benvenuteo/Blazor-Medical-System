@@ -10,6 +10,9 @@ namespace MedicalBookingSystem.Domain.Models
         public AppointmentStatus Status { get; set; } = AppointmentStatus.Scheduled;
         /// <summary>Set once the day-before reminder is queued, so it is never sent twice.</summary>
         public DateTime? ReminderQueuedAtUtc { get; set; }
+        /// <summary>Copied from the schedule when booked, so later schedule edits do not rewrite history.</summary>
+        public int? ClinicId { get; set; }
+        public Clinic? Clinic { get; set; }
 
         public Patient Patient { get; set; } = null!;
         public Doctor Doctor { get; set; } = null!;

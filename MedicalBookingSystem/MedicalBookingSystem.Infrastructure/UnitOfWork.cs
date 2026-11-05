@@ -28,6 +28,8 @@ namespace MedicalBookingSystem.Infrastructure
             EmailOutbox = new EntityRepository<EmailMessage>(context);
             AccountTokens = new EntityRepository<AccountToken>(context);
             ExternalLogins = new EntityRepository<PatientExternalLogin>(context);
+            Clinics = new EntityRepository<Clinic>(context);
+            DoctorClinics = new EntityRepository<DoctorClinic>(context);
         }
 
         public IClinicalAuditWriter ClinicalAudit { get; }
@@ -43,6 +45,8 @@ namespace MedicalBookingSystem.Infrastructure
         public IRepository<EmailMessage> EmailOutbox { get; }
         public IRepository<AccountToken> AccountTokens { get; }
         public IRepository<PatientExternalLogin> ExternalLogins { get; }
+        public IRepository<Clinic> Clinics { get; }
+        public IRepository<DoctorClinic> DoctorClinics { get; }
 
         public async Task<int> SaveChangesAsync()
         {
@@ -61,6 +65,7 @@ namespace MedicalBookingSystem.Infrastructure
                     : exception.Entries.Any(e => e.Entity is Review) ? PersistenceConflictKind.DuplicateReview
                     : exception.Entries.Any(e => e.Entity is Note or Prescription) ? PersistenceConflictKind.DuplicateDocument
                     : exception.Entries.Any(e => e.Entity is PatientExternalLogin) ? PersistenceConflictKind.DuplicateExternalLogin
+                    : exception.Entries.Any(e => e.Entity is Clinic or DoctorClinic) ? PersistenceConflictKind.DuplicateClinic
                     : exception.Entries.Any(e => e.Entity is Patient or StaffAccount) ? PersistenceConflictKind.DuplicateAccount
                     : (PersistenceConflictKind?)null;
                 if (kind is null) throw;

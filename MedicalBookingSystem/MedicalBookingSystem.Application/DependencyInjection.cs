@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<IMedicalRecordService, MedicalRecordService>();
         services.AddScoped<IPatientService, PatientService>();
         services.AddScoped<IReviewService, ReviewService>();
+        services.AddScoped<ClinicService>();
         return services;
     }
 }

@@ -47,6 +47,8 @@ internal sealed class MedicalApiFactory : WebApplicationFactory<MedicalBookingSy
             services.AddDataProtection().UseEphemeralDataProtectionProvider();
             services.RemoveAll<MedicalBookingSystem.Application.Security.IExternalTokenValidator>();
             services.AddSingleton<MedicalBookingSystem.Application.Security.IExternalTokenValidator>(ExternalTokens);
+            services.RemoveAll<MedicalBookingSystem.Application.Services.IGeocodingService>();
+            services.AddSingleton<MedicalBookingSystem.Application.Services.IGeocodingService, FakeGeocodingService>();
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
             services.AddDbContextFactory<ApplicationDbContext>(options =>

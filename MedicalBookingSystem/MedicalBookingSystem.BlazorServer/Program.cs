@@ -50,6 +50,7 @@ var connectionString = MedicalBookingSystem.Infrastructure.DependencyInjection.R
     builder.Environment.ContentRootPath);
 builder.Services.AddInfrastructureServices(connectionString);
 builder.Services.AddDatabaseHealthCheck();
+MedicalBookingSystem.Infrastructure.Geocoding.NominatimGeocodingService.Register(builder.Services, builder.Configuration);
 builder.Services.AddMudServices();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<DoctorImageUploader>();

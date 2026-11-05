@@ -74,7 +74,8 @@ public static class DtoMappings
         DoctorId = schedule.DoctorId,
         StartTime = schedule.StartTime,
         EndTime = schedule.EndTime,
-        IsAvailable = schedule.IsAvailable
+        IsAvailable = schedule.IsAvailable,
+        ClinicId = schedule.ClinicId
     };
 
     public static AppointmentDto ToDto(this Appointment appointment) => new()
@@ -86,7 +87,11 @@ public static class DtoMappings
         DoctorId = appointment.DoctorId,
         Date = appointment.Date,
         Status = appointment.Status.ToString(),
-        DoctorName = appointment.Doctor is null ? string.Empty : $"{appointment.Doctor.FirstName} {appointment.Doctor.LastName}"
+        DoctorName = appointment.Doctor is null ? string.Empty : $"{appointment.Doctor.FirstName} {appointment.Doctor.LastName}",
+        ClinicName = appointment.Clinic?.Name,
+        ClinicAddress = appointment.Clinic?.Address,
+        ClinicLatitude = appointment.Clinic?.Latitude,
+        ClinicLongitude = appointment.Clinic?.Longitude
     };
 
     public static AppointmentDetailsDto ToDetailsDto(this Appointment appointment) => new()

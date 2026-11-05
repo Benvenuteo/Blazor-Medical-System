@@ -13,5 +13,8 @@ namespace MedicalBookingSystem.Domain.Contracts
         void Update(DoctorSchedule schedule);
         void Remove(DoctorSchedule schedule);
         Task<bool> IsTimeSlotAvailableAsync(int doctorId, DateTime date, int? excludedAppointmentId = null);
+        /// <summary>Clinic of the shift that covers a visit starting at <paramref name="start"/>.</summary>
+        Task<int?> FindClinicAtAsync(int doctorId, DateTime start);
+        Task<bool> AnyInClinicAsync(int clinicId, int? doctorId = null);
     }
 }

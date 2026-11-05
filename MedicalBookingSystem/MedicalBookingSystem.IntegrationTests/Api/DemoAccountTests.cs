@@ -103,11 +103,18 @@ public sealed class DemoAccountTests
         Assert.Equal(2, await db.StaffAccounts.CountAsync(a => a.IsDemo));
         Assert.Equal(0, addedAgain);
         var horizon = clock.Today.AddDays(DataSeeder.ScheduleHorizonDays);
-        var days = (await db.DoctorSchedules.Select(s => s.StartTime).ToListAsync()).Select(d => d.Date).ToList();
-        Assert.Equal(days.Count, days.Distinct().Count());
-        for (var day = clock.Today.AddDays(1); day <= horizon; day = day.AddDays(1))
-            if (day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday))
-                Assert.Contains(day, days);
+        var shifts = await db.DoctorSchedules.Select(s => new { s.DoctorId, s.StartTime, s.ClinicId }).ToListAsync();
+        Assert.Equal(5, shifts.Select(s => s.DoctorId).Distinct().Count());
+        Assert.All(shifts, s => Assert.NotNull(s.ClinicId));
+        foreach (var doctor in shifts.GroupBy(s => s.DoctorId))
+        {
+            var days = doctor.Select(s => s.StartTime.Date).ToList();
+            Assert.Equal(days.Count, days.Distinct().Count());
+            for (var day = clock.Today.AddDays(1); day <= horizon; day = day.AddDays(1))
+                if (day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday))
+                    Assert.Contains(day, days);
+        }
+        Assert.Equal(5, await db.Clinics.CountAsync());
     }
 
     [Fact]

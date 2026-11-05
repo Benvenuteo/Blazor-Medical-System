@@ -15,5 +15,6 @@ namespace MedicalBookingSystem.Domain.Models
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
         public ICollection<DoctorSchedule> Schedules { get; set; } = new List<DoctorSchedule>();
         public ICollection<DoctorSpecialization> DoctorSpecializations { get; set; } = new List<DoctorSpecialization>();
+        public ICollection<DoctorClinic> DoctorClinics { get; set; } = new List<DoctorClinic>();
     }
 }

@@ -21,6 +21,8 @@ namespace MedicalBookingSystem.Infrastructure
         public DbSet<EmailMessage> EmailOutbox { get; set; }
         public DbSet<AccountToken> AccountTokens { get; set; }
         public DbSet<PatientExternalLogin> PatientExternalLogins { get; set; }
+        public DbSet<Clinic> Clinics { get; set; }
+        public DbSet<DoctorClinic> DoctorClinics { get; set; }
         public DbSet<DoctorSpecialization> DoctorSpecializations { get; set; }
 
         private void StampAccountVersions()
@@ -90,6 +92,27 @@ namespace MedicalBookingSystem.Infrastructure
                 entity.Property(m => m.LastError).HasMaxLength(1000);
                 entity.HasIndex(m => new { m.SentAtUtc, m.NextAttemptAtUtc });
             });
+            modelBuilder.Entity<Clinic>(entity =>
+            {
+                entity.Property(c => c.Name).IsRequired().HasMaxLength(150).UseCollation("NOCASE");
+                entity.HasIndex(c => c.Name).IsUnique();
+                entity.Property(c => c.Street).IsRequired().HasMaxLength(200);
+                entity.Property(c => c.City).IsRequired().HasMaxLength(100);
+                entity.Property(c => c.PostalCode).HasMaxLength(10);
+                entity.Property(c => c.Phone).HasMaxLength(20);
+                entity.Ignore(c => c.Address);
+                // Supports the bounding-box pre-filter of the radius search.
+                entity.HasIndex(c => new { c.Latitude, c.Longitude });
+            });
+            modelBuilder.Entity<DoctorClinic>(entity =>
+            {
+                entity.HasKey(dc => new { dc.DoctorId, dc.ClinicId });
+                entity.HasOne(dc => dc.Doctor).WithMany(d => d.DoctorClinics).HasForeignKey(dc => dc.DoctorId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(dc => dc.Clinic).WithMany(c => c.DoctorClinics).HasForeignKey(dc => dc.ClinicId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(dc => dc.ClinicId);
+            });
+            modelBuilder.Entity<DoctorSchedule>().HasOne(s => s.Clinic).WithMany().HasForeignKey(s => s.ClinicId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Appointment>().HasOne(a => a.Clinic).WithMany().HasForeignKey(a => a.ClinicId).OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<PatientExternalLogin>(entity =>
             {
                 entity.Property(l => l.Provider).IsRequired().HasMaxLength(30);

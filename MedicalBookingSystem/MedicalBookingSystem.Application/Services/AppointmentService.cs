@@ -27,7 +27,8 @@ public sealed class AppointmentService(
             return Result.Failure<AppointmentDto>("Termin jest zajęty albo nie mieści się w grafiku. Wybierz inny termin.", ErrorType.Conflict);
         if (await PatientHasConflictAsync(unitOfWork, patientId, dto.Date))
             return Result.Failure<AppointmentDto>("W tym czasie masz już inną wizytę.", ErrorType.Conflict);
-        var appointment = new Appointment { PatientId = patientId, DoctorId = dto.DoctorId, Date = dto.Date };
+        var appointment = new Appointment { PatientId = patientId, DoctorId = dto.DoctorId, Date = dto.Date,
+            ClinicId = await unitOfWork.DoctorSchedules.FindClinicAtAsync(dto.DoctorId, dto.Date) };
         await unitOfWork.Appointments.AddAsync(appointment);
         try { await unitOfWork.SaveChangesAsync(); }
         catch (PersistenceConflictException)
@@ -66,6 +67,7 @@ public sealed class AppointmentService(
             await PatientHasConflictAsync(unitOfWork, appointment.PatientId, dto.NewDate, appointment.Id))
             return Result.Failure("Wybrany termin jest zajęty albo nie mieści się w grafiku.", ErrorType.Conflict);
         appointment.Date = dto.NewDate;
+        appointment.ClinicId = await unitOfWork.DoctorSchedules.FindClinicAtAsync(appointment.DoctorId, dto.NewDate);
         return await SaveChangeAsync(unitOfWork);
     }
 
