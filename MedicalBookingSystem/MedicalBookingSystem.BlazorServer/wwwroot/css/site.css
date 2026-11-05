@@ -102,3 +102,6 @@ form.d-flex > .form-control { flex: 1 1 12rem; min-width: 0; }
 
 /* Public demo notice, visible on every panel page. */
 .demo-banner { background: #e7f1ff; color: #0b3d75; border-bottom: 1px solid #b6d4fe; padding: .4rem 1.5rem; font-size: .875rem; }
+
+/* Clinic location picker (Leaflet). */
+.clinic-map { height: 380px; border-radius: .5rem; border: 1px solid #dee2e6; }

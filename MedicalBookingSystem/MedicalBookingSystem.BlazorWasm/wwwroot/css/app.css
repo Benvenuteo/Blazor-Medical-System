@@ -73,3 +73,7 @@ form.d-flex > .form-control { flex: 1 1 12rem; min-width: 0; }
 .auth-divider { display: flex; align-items: center; gap: .75rem; color: #6c757d; margin: 1.25rem 0 1rem; max-width: 420px; }
 .auth-divider::before, .auth-divider::after { content: ""; flex: 1; border-top: 1px solid #dee2e6; }
 .google-signin { min-height: 44px; }
+
+/* Doctor search map (Leaflet). */
+.doctor-map { height: 480px; border-radius: .5rem; border: 1px solid #dee2e6; }
+@media (max-width: 576px) { .doctor-map { height: 360px; } }

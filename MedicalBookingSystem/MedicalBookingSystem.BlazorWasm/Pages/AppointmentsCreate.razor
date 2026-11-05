@@ -35,9 +35,13 @@ else if (selectedDoctorId > 0)
             <option value="">Wybierz termin</option>
             @foreach (var slot in slots)
             {
-                <option value="@slot.StartTime.ToString("s")">@slot.StartTime.ToString("dd.MM.yyyy HH:mm") – @slot.EndTime.ToString("HH:mm")</option>
+                <option value="@slot.StartTime.ToString("s")">@slot.StartTime.ToString("dd.MM.yyyy HH:mm") – @slot.EndTime.ToString("HH:mm")@(slot.ClinicName is null ? "" : $" · {slot.ClinicName}")</option>
             }
         </select>
+        @if (slots.FirstOrDefault(s => s.StartTime.ToString("s") == selectedStart) is { ClinicName: not null } chosen)
+        {
+            <p class="form-text" role="status">Miejsce wizyty: <strong>@chosen.ClinicName</strong>, @chosen.ClinicAddress</p>
+        }
         <button class="btn btn-primary" disabled="@(saving || string.IsNullOrEmpty(selectedStart))" @onclick="BookAsync">Zarezerwuj</button>
     }
 }

@@ -1,0 +1,23 @@
+@if (!string.IsNullOrEmpty(Name))
+{
+    <div class="small text-muted">
+        @Name<br />@Address
+        @if (Latitude is double lat && Longitude is double lng)
+        {
+            <br /><a href="@DirectionsUrl(lat, lng)" target="_blank" rel="noopener noreferrer">Nawiguj<span class="visually-hidden"> do placówki @Name (otwiera nową kartę)</span></a>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string? Name { get; set; }
+    [Parameter] public string? Address { get; set; }
+    [Parameter] public double? Latitude { get; set; }
+    [Parameter] public double? Longitude { get; set; }
+
+    // A plain link: opens the maps app on phones, no API key or script needed.
+    private static string DirectionsUrl(double latitude, double longitude) =>
+        "https://www.google.com/maps/dir/?api=1&destination=" +
+        latitude.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture) + "," +
+        longitude.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture);
+}

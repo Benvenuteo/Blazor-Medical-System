@@ -5,6 +5,7 @@
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider Authentication
 @using MedicalBookingSystem.SharedKernel.Dto
 @inject IDoctorService DoctorService
+@inject ClinicService Clinics
 @inject NavigationManager Navigation
 @inject MedicalBookingSystem.Application.Time.ClinicClock Clock
 
@@ -14,6 +15,17 @@
 <EditForm Model="_dto" OnValidSubmit="HandleValidSubmit">
     <DataAnnotationsValidator />
     <ValidationSummary />
+
+    @if (_clinics.Count > 0)
+    {
+        <div class="mb-3">
+            <label for="clinic" class="form-label">Placówka</label>
+            <select id="clinic" class="form-select" @bind="_clinicId">
+                <option value="0">Wybierz placówkę</option>
+                @foreach (var clinic in _clinics) { <option value="@clinic.Id">@clinic.Name — @clinic.City</option> }
+            </select>
+        </div>
+    }
 
     <div class="mb-3">
         <label for="start-date" class="form-label">Data rozpoczęcia</label>
@@ -59,6 +71,9 @@
     private bool _saving;
     private string? _success;
 
+    private List<ClinicDto> _clinics = [];
+    private int _clinicId;
+
     private DateTime startDate = DateTime.Today;
     private TimeOnly startTime = new(8, 0);
 
@@ -69,7 +84,13 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        try { await Access.RequireScheduleManagementAsync(DoctorId); }
+        try
+        {
+            await Access.RequireScheduleManagementAsync(DoctorId);
+            var clinics = await Clinics.ForDoctorAsync(DoctorId);
+            _clinics = clinics.IsSuccess ? clinics.Value.ToList() : [];
+            if (_clinics.Count == 1) _clinicId = _clinics[0].Id;
+        }
         catch (AccessDeniedException) { Navigation.NavigateTo("/Account/Denied", forceLoad: true); }
     }
 
@@ -82,6 +103,7 @@
             _error = _success = null;
 
             _dto.DoctorId = DoctorId;
+            _dto.ClinicId = _clinicId > 0 ? _clinicId : null;
             _dto.StartTime = DateTime.SpecifyKind(startDate.Date + startTime.ToTimeSpan(), DateTimeKind.Unspecified);
             _dto.EndTime = DateTime.SpecifyKind(endDate.Date + endTime.ToTimeSpan(), DateTimeKind.Unspecified);
 
