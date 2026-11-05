@@ -30,6 +30,7 @@ else if (selectedDoctorId > 0)
     @if (slots.Count == 0) { <p>Brak dostępnych terminów.</p> }
     else
     {
+        <SlotWeekPicker Slots="slots" SelectedStart="@selectedStart" SelectedStartChanged="v => selectedStart = v" Disabled="saving" />
         <label for="slot">Wolny termin</label>
         <select id="slot" disabled="@saving" class="form-select mb-3" @bind="selectedStart">
             <option value="">Wybierz termin</option>

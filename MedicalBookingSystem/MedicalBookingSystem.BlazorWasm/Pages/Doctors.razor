@@ -83,8 +83,8 @@ else if (!string.IsNullOrEmpty(errorMessage))
 else if (doctors != null && doctors.Any())
 {
     <div class="btn-group mt-3" role="group" aria-label="Widok wyników">
-        <button type="button" class="btn @(showMap ? "btn-outline-primary" : "btn-primary")" aria-pressed="@(!showMap)" @onclick="() => SetView(false)">Lista</button>
-        <button type="button" class="btn @(showMap ? "btn-primary" : "btn-outline-primary")" aria-pressed="@showMap" @onclick="() => SetView(true)">Mapa</button>
+        <button type="button" class="btn @(showMap ? "btn-outline-primary" : "btn-primary")" aria-pressed="@(showMap ? "false" : "true")" @onclick="() => SetView(false)">Lista</button>
+        <button type="button" class="btn @(showMap ? "btn-primary" : "btn-outline-primary")" aria-pressed="@(showMap ? "true" : "false")" @onclick="() => SetView(true)">Mapa</button>
     </div>
     @if (showMap)
     {

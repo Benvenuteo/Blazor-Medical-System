@@ -1,0 +1,64 @@
+@using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
+
+@* Week view of free slots. The select list next to it stays as a keyboard- and screen-reader-friendly alternative. *@
+<section class="slot-week" aria-label="Kalendarz wolnych terminów">
+    <div class="d-flex align-items-center gap-2 mb-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(Disabled || weekStart <= FirstWeek)" @onclick="() => Move(-1)">‹ Poprzedni tydzień</button>
+        <strong class="mx-2" aria-live="polite">@weekStart.ToString("dd.MM") – @weekStart.AddDays(6).ToString("dd.MM.yyyy")</strong>
+        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(Disabled || weekStart >= LastWeek)" @onclick="() => Move(1)">Następny tydzień ›</button>
+    </div>
+    <div class="slot-week-grid">
+        @for (var offset = 0; offset < 7; offset++)
+        {
+            var day = weekStart.AddDays(offset);
+            var daySlots = Slots.Where(s => s.StartTime.Date == day).OrderBy(s => s.StartTime).ToList();
+            <div class="slot-day @(daySlots.Count == 0 ? "slot-day-empty" : "")">
+                <div class="slot-day-name">@DayNames[offset] <span>@day.ToString("dd.MM")</span></div>
+                @if (daySlots.Count == 0) { <span class="small text-muted">brak</span> }
+                @foreach (var slot in daySlots)
+                {
+                    var value = slot.StartTime.ToString("s");
+                    var selected = value == SelectedStart;
+                    <button type="button" class="btn btn-sm @(selected ? "btn-primary" : "btn-outline-primary")" aria-pressed="@(selected ? "true" : "false")"
+                            disabled="@Disabled" title="@slot.ClinicName" @onclick="() => SelectedStartChanged.InvokeAsync(value)">
+                        @slot.StartTime.ToString("HH:mm")<span class="visually-hidden">, @DayNames[offset] @day.ToString("dd.MM")</span>
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    // Culture data may not be loaded in WebAssembly, so Polish day names are spelled out.
+    private static readonly string[] DayNames = ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"];
+
+    [Parameter, EditorRequired] public IReadOnlyList<AvailableSlotDto> Slots { get; set; } = [];
+    [Parameter] public string SelectedStart { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> SelectedStartChanged { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+
+    private DateTime weekStart;
+    private IReadOnlyList<AvailableSlotDto>? shownSlots;
+
+    private DateTime FirstWeek => Monday(Slots.Count == 0 ? DateTime.Today : Slots.Min(s => s.StartTime));
+    private DateTime LastWeek => Monday(Slots.Count == 0 ? DateTime.Today : Slots.Max(s => s.StartTime));
+
+    protected override void OnParametersSet()
+    {
+        // A new doctor (new slot list) starts at the week of the first free slot; the same list keeps the visible week.
+        if (!ReferenceEquals(shownSlots, Slots))
+        {
+            shownSlots = Slots;
+            weekStart = FirstWeek;
+        }
+    }
+
+    private void Move(int weeks)
+    {
+        var next = weekStart.AddDays(7 * weeks);
+        if (next >= FirstWeek && next <= LastWeek) weekStart = next;
+    }
+
+    private static DateTime Monday(DateTime value) => value.Date.AddDays(-(((int)value.DayOfWeek + 6) % 7));
+}

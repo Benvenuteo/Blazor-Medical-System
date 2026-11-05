@@ -103,3 +103,12 @@ form.d-flex > .form-control { flex: 1 1 12rem; min-width: 0; }
 
 /* Demo notice in the app bar: dark text on white for contrast. */
 .demo-chip { background: #fff; color: #0b3d75; border-radius: 999px; padding: .15rem .65rem; font-size: .8rem; font-weight: 600; white-space: nowrap; }
+
+/* Week view of free slots. */
+.slot-week { margin-bottom: 1rem; }
+.slot-week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .5rem; }
+.slot-day { display: flex; flex-direction: column; gap: .35rem; background: #fff; border: 1px solid #e3e7ed; border-radius: .5rem; padding: .5rem; min-width: 0; }
+.slot-day-empty { opacity: .65; }
+.slot-day-name { font-weight: 600; font-size: .9rem; }
+.slot-day-name span { font-weight: 400; color: #555; margin-left: .25rem; }
+@media (max-width: 768px) { .slot-week-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
