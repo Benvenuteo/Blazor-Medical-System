@@ -40,7 +40,7 @@ Aby przełączyć hosty:
 1. Zatrzymaj zapisy: wyłącz API i panel personelu.
 2. Wskaż obu hostom odtworzony `medical.db`, a panelowi odtworzony `photos/`. Zachowaj dotychczasowy publiczny adres mediów; adresy zdjęć są zapisane w bazie.
 3. Nałóż brakujące migracje, jeśli odtwarzasz wcześniejszą wspieraną wersję.
-4. Uruchom API i panel, sprawdź `/health/live`, nowe logowanie, odczyt wizyty i zdjęcia. Poprzednią bazę zachowaj do zakończenia weryfikacji.
+4. Uruchom API i panel, sprawdź `/health/live` i `/health/ready` (API i panel; `503` oznacza niedostępną bazę albo nienałożone migracje), nowe logowanie, odczyt wizyty i zdjęcia. Poprzednią bazę zachowaj do zakończenia weryfikacji.
 
 Klucza JWT, certyfikatu i kluczy Data Protection nie ma w pakiecie. Zarządza nimi konfiguracja hostingu. Zmiana klucza JWT również wymaga ponownego logowania. Test odtwarzania w CI zachowuje otwarte połączenie WAL, odtwarza dokumenty, audyt i zdjęcie oraz sprawdza unieważnienie sesji. Nie wyznaczamy produkcyjnego RPO/RTO na podstawie małej bazy testowej.
 

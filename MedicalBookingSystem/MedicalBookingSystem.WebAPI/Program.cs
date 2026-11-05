@@ -28,6 +28,7 @@ var connectionString = MedicalBookingSystem.Infrastructure.DependencyInjection.R
     builder.Configuration.GetConnectionString("MedicalBookingSystem") ?? "Data Source=data/medical.db",
     builder.Environment.ContentRootPath);
 builder.Services.AddInfrastructureServices(connectionString);
+builder.Services.AddDatabaseHealthCheck();
 builder.Services.Configure<DemoDataOptions>(builder.Configuration.GetSection("Seed"));
 
 builder.Services.AddControllers().AddJsonOptions(options =>
@@ -129,7 +130,7 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapGet("/health/live", () => Results.Ok(new { status = "healthy" })).AllowAnonymous();
+app.MapHealthEndpoints();
 
 if (builder.Configuration.GetValue<bool>("Database:InitializeOnStartup"))
 {

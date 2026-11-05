@@ -29,18 +29,6 @@ public sealed class MappingTests
     }
 
     [Fact]
-    public void Rating_WhenLastReviewIsRemoved_ResetsToZero()
-    {
-        var doctor = new Doctor { Reviews = [new Review { Rating = 5 }] };
-        doctor.UpdateAverageRating();
-
-        doctor.Reviews.Clear();
-        doctor.UpdateAverageRating();
-
-        Assert.Equal(0, doctor.AverageRating);
-    }
-
-    [Fact]
     public void AppointmentDetails_PreservesMedicalDocumentDiscriminators()
     {
         var appointment = new Appointment

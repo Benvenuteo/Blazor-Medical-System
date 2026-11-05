@@ -1,0 +1,69 @@
+@using MedicalBookingSystem.SharedKernel.Dto.ReviewsDto
+@inject HttpClient Http
+
+<div class="card mt-4">
+    <div class="card-body">
+        <h5>Oceń lekarza: @DoctorName</h5>
+        @if (error is not null) { <p class="alert alert-danger" role="alert">@error</p> }
+        <fieldset disabled="@saving">
+            <EditForm Model="@review" OnValidSubmit="SubmitAsync">
+                <DataAnnotationsValidator />
+                <div class="mb-3">
+                    <label for="rating">Ocena (1-5)</label>
+                    <InputNumber id="rating" class="form-control" @bind-Value="review.Rating" min="1" max="5" />
+                    <ValidationMessage For="@(() => review.Rating)" />
+                </div>
+                <div class="mb-3">
+                    <label for="comment">Komentarz</label>
+                    <InputTextArea id="comment" class="form-control" @bind-Value="review.Comment" />
+                    <ValidationMessage For="@(() => review.Comment)" />
+                </div>
+                <button type="submit" class="btn btn-primary">Wyślij opinię</button>
+                <button type="button" class="btn btn-secondary ms-2" @onclick="OnCancel">Anuluj</button>
+            </EditForm>
+        </fieldset>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public int DoctorId { get; set; }
+    [Parameter, EditorRequired] public string DoctorName { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnSaved { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private CreateReviewDto review = new();
+    private string? error;
+    private bool saving;
+
+    protected override void OnParametersSet()
+    {
+        // A different doctor starts a fresh draft; the same doctor keeps what the patient already typed.
+        if (review.DoctorId != DoctorId)
+        {
+            review = new CreateReviewDto { DoctorId = DoctorId };
+            error = null;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (saving) return;
+        saving = true;
+        error = null;
+        try
+        {
+            using var response = await Http.PostAsJsonAsync("api/reviews", review);
+            if (response.IsSuccessStatusCode)
+            {
+                await OnSaved.InvokeAsync();
+                return;
+            }
+            error = $"Błąd dodawania opinii: {await ApiErrors.ReadAsync(response)}";
+        }
+        catch (Exception ex)
+        {
+            error = ApiErrors.Describe(ex, "Błąd dodawania opinii");
+        }
+        finally { saving = false; }
+    }
+}

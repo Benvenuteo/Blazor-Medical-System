@@ -108,9 +108,6 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<decimal>("AverageRating")
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Bio")
                         .IsRequired()
                         .HasColumnType("text");

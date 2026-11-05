@@ -49,6 +49,7 @@ var connectionString = MedicalBookingSystem.Infrastructure.DependencyInjection.R
     builder.Configuration.GetConnectionString("MedicalBookingSystem") ?? "Data Source=data/medical.db",
     builder.Environment.ContentRootPath);
 builder.Services.AddInfrastructureServices(connectionString);
+builder.Services.AddDatabaseHealthCheck();
 builder.Services.AddMudServices();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<DoctorImageUploader>();
@@ -64,11 +65,15 @@ builder.Services.AddHostedService<DoctorPhotoCleanup>();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddPolicy("authentication", context => RateLimitPartition.GetFixedWindowLimiter(
-        context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
-        }));
+    // Only credential submissions are limited. Rendering the login form (including redirects back to it
+    // after logout or a password change) must not use up the attempts available to the same address.
+    options.AddPolicy("authentication", context => HttpMethods.IsPost(context.Request.Method)
+        ? RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
+            })
+        : RateLimitPartition.GetNoLimiter("form"));
 });
 
 var app = builder.Build();
@@ -106,6 +111,7 @@ app.Use(async (context, next) =>
     await next(context);
 });
 app.UseAuthorization();
+app.MapHealthEndpoints();
 app.MapRazorPages();
 app.MapBlazorHub(options => options.CloseOnAuthenticationExpiration = true).RequireAuthorization();
 app.MapFallbackToPage("/_Host");

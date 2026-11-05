@@ -21,7 +21,7 @@ Daty wizyt i grafików to czas placówki (`Europe/Warsaw`) bez offsetu i sufiksu
 | Anulowanie | `Scheduled` | Właściciel, co najmniej 24 godziny do wizyty | `Cancelled` |
 | Zakończenie | `Scheduled` | Przypisany lekarz, termin wizyty skończył się | `Completed` |
 | Notatka/recepta | `Completed` | Przypisany lekarz, poprawna treść, brak tego dokumentu | Dokument |
-| Opinia | Co najmniej jedna odbyta wizyta | Pacjent po wizycie u tego lekarza, brak wcześniejszej opinii | Opinia |
+| Opinia | Co najmniej jedna odbyta wizyta | Pacjent po wizycie u tego lekarza, brak wcześniejszej opinii; formularz „Oceń lekarza” w historii odbytych wizyt | Opinia |
 
 `Completed` i `Cancelled` są stanami końcowymi. Edycja daty nie przyjmuje pola `Status`; zakończenie ma osobną operację dla lekarza. Jedna wizyta ma najwyżej jedną notatkę i jedną receptę. Pacjent może mieć jedną opinię dla danego lekarza.
 

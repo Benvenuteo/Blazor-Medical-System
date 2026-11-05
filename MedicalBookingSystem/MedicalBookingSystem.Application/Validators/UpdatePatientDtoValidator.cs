@@ -18,24 +18,18 @@ namespace MedicalBookingSystem.Application.Validators
                 .When(x => x.LastName is not null);
 
             RuleFor(x => x.PhoneNumber)
-                .Matches(@"^\+?[0-9\s-]{9,}$").WithMessage("Nieprawidłowy format numeru telefonu")
+                .PatientPhoneNumber()
                 .When(x => !string.IsNullOrEmpty(x.PhoneNumber));
 
             RuleFor(x => x.CurrentPassword)
-                .MaximumLength(128).WithMessage("Hasło może mieć najwyżej 128 znaków")
+                .MaximumLength(PatientRules.PasswordMaxLength).WithMessage($"Hasło może mieć najwyżej {PatientRules.PasswordMaxLength} znaków")
                 .NotEmpty().WithMessage("Aktualne hasło jest wymagane do zmiany danych")
                 .When(x => !string.IsNullOrEmpty(x.NewPassword));
 
             RuleFor(x => x.NewPassword)
-                .MaximumLength(128).WithMessage("Hasło może mieć najwyżej 128 znaków")
-                .MinimumLength(8).WithMessage("Nowe hasło musi mieć minimum 8 znaków")
-                .Matches("[A-Z]").WithMessage("Nowe hasło musi zawierać przynajmniej 1 wielką literę")
-                .Matches("[0-9]").WithMessage("Nowe hasło musi zawierać przynajmniej 1 cyfrę")
+                .NewPatientPassword()
                 .Equal(x => x.ConfirmNewPassword).WithMessage("Hasła nie są identyczne")
                 .When(x => !string.IsNullOrEmpty(x.NewPassword));
-
-            RuleFor(x => x.Address)
-                .MaximumLength(200).WithMessage("Adres nie może przekraczać 200 znaków");
         }
     }
 }

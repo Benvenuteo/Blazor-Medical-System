@@ -50,6 +50,7 @@ dotnet run --project MedicalBookingSystem/MedicalBookingSystem.BlazorServer
 | API i Swagger | http://localhost:5031/swagger |
 | Logowanie personelu | http://localhost:5187/Account/Login |
 | Kontrola działania API | http://localhost:5031/health/live |
+| Gotowość API (baza i migracje) | http://localhost:5031/health/ready |
 
 | Rola demo | Email | Hasło |
 | --- | --- | --- |

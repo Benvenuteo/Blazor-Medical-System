@@ -8,15 +8,6 @@ namespace MedicalBookingSystem.Infrastructure.Repositories
     {
         public ReviewRepository(ApplicationDbContext context) : base(context) { }
 
-
-
-        public async Task<double> GetAverageRatingAsync(int doctorId)
-        {
-            return await _dbSet
-                .Where(r => r.DoctorId == doctorId)
-                .AverageAsync(r => (double?)r.Rating) ?? 0.0;
-        }
-
         public async Task<IEnumerable<Review>> GetRecentReviewsAsync(int doctorId, int count)
         {
             return await _dbSet

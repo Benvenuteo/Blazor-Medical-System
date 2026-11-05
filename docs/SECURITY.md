@@ -14,7 +14,7 @@
 | Lista, tworzenie, edycja i reset kont personelu | Nie | Nie | Nie | Tak |
 | Zmiana własnego hasła i zakończenie własnych sesji | Nie | Tak | Tak | Tak |
 
-API domyślnie wymaga uwierzytelnienia. Wyjątki są jawne na operacjach logowania, rejestracji, publicznych odczytach katalogu i `/health/live`. Odmowa uwierzytelnienia zwraca 401, a niewłaściwa rola lub obcy zasób — 403. Brak zasobu zwraca 404. Kontrola w `UserAccess` obowiązuje również przy bezpośrednich wywołaniach usług z panelu Server.
+API domyślnie wymaga uwierzytelnienia. Wyjątki są jawne na operacjach logowania, rejestracji, publicznych odczytach katalogu oraz `/health/live` i `/health/ready`. Sonda gotowości zwraca tylko `Healthy`/`Unhealthy`, bez szczegółów błędu. Odmowa uwierzytelnienia zwraca 401, a niewłaściwa rola lub obcy zasób — 403. Brak zasobu zwraca 404. Kontrola w `UserAccess` obowiązuje również przy bezpośrednich wywołaniach usług z panelu Server.
 
 ## Tożsamość
 
@@ -41,7 +41,7 @@ Logowanie odbywa się przez Razor Pages pod `/Account/Login`. Cookie jest HttpOn
 
 Panel i hub SignalR wymagają roli personelu. Tożsamość wewnątrz obwodu Blazor pochodzi z `AuthenticationStateProvider`, a nie z bieżącego `HttpContext`. Hub zamyka połączenie po wygaśnięciu uwierzytelnienia. Stan uwierzytelnienia obwodu jest ponownie sprawdzany co 30 sekund. Niezależnie od tego każda chroniona operacja usługi sprawdza termin oraz aktualny stan konta w osobnym kontekście EF, bez pamięci podręcznej obwodu. Odebranie dostępu blokuje więc następną operację również przed odświeżeniem interfejsu. Lekarz korzysta z `/doctor/appointments`, `/doctor/notes` i `/doctor/prescriptions`, bez identyfikatora lekarza w adresie. Zakończenie wizyty wymaga przypisanego lekarza i upływu pełnych 30 minut jej terminu. Dokumentację można dodać po zakończeniu wizyty.
 
-Logowanie i rejestracja API mają wspólny limit 20 żądań na minutę z jednego adresu IP. Strona logowania personelu ma analogiczny limit w swoim procesie. Przekroczenie limitu zwraca 429.
+Logowanie i rejestracja API mają wspólny limit 20 żądań na minutę z jednego adresu IP. Strona logowania personelu ma analogiczny limit w swoim procesie; liczone są tylko wysłania formularza (POST), a samo wyświetlenie strony logowania nie zużywa limitu. Przekroczenie limitu zwraca 429.
 
 ## Konta, hasła i unieważnianie sesji
 

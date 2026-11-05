@@ -15,9 +15,11 @@ namespace MedicalBookingSystem.Application.Validators
 
             RuleFor(p => p.Password)
                 .NotEmpty().WithMessage("Hasło jest wymagane")
-                .MinimumLength(8).WithMessage("Hasło musi mieć minimum 8 znaków")
-                .Matches("[A-Z]").WithMessage("Hasło musi zawierać przynajmniej 1 wielką literę")
-                .Matches("[0-9]").WithMessage("Hasło musi zawierać przynajmniej 1 cyfrę");
+                .NewPatientPassword();
+
+            RuleFor(p => p.PhoneNumber)
+                .PatientPhoneNumber()
+                .When(p => !string.IsNullOrEmpty(p.PhoneNumber));
 
             RuleFor(p => p.FirstName)
                 .NotEmpty().WithMessage("Imię jest wymagane")

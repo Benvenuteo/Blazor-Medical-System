@@ -46,9 +46,10 @@ public sealed class RequestOrderingTests : BunitContext
             _ => second.Task
         })) { BaseAddress = new Uri("http://localhost") });
         var page = Render<AppointmentsHistory>();
-        page.WaitForAssertion(() => Assert.Equal(2, page.FindAll("tbody button").Count));
-        var older = page.FindAll("tbody button")[0].ClickAsync(new MouseEventArgs());
-        var newer = page.FindAll("tbody button")[1].ClickAsync(new MouseEventArgs());
+        var details = () => page.FindAll("tbody button").Where(button => button.TextContent == "Szczegóły").ToList();
+        page.WaitForAssertion(() => Assert.Equal(2, details().Count));
+        var older = details()[0].ClickAsync(new MouseEventArgs());
+        var newer = details()[1].ClickAsync(new MouseEventArgs());
         second.SetResult(Ok(new { id = 2, note = new { content = "Najnowsze szczegóły" } }));
         await newer;
         first.SetResult(Ok(new { id = 1, note = new { content = "Nieaktualne szczegóły" } }));

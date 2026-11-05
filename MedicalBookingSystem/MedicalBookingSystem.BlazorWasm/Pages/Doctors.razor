@@ -76,16 +76,21 @@ else if (doctors != null && doctors.Any())
                     <td>@doctor.LastName</td>
                     <td>@doctor.Region</td>
                     <td>
-                        @for (int i = 1; i <= 5; i++)
+                        @if (doctor.ReviewCount == 0)
                         {
-                            if (i <= doctor.AverageRating)
-                            {
-                                <span style="color:gold">★</span>
-                            }
-                            else
-                            {
-                                <span style="color:lightgray">☆</span>
-                            }
+                            <span class="text-muted">Brak ocen</span>
+                        }
+                        else
+                        {
+                            var fullStars = (int)Math.Round(doctor.AverageRating, MidpointRounding.AwayFromZero);
+                            <span aria-hidden="true">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <span style="color:@(i <= fullStars ? "goldenrod" : "lightgray")">★</span>
+                                }
+                            </span>
+                            <span class="ms-1">@FormatRating(doctor.AverageRating)</span>
+                            <span class="visually-hidden"> na 5</span>
                         }
                     </td>
                     <td>@doctor.ReviewCount</td>
@@ -96,7 +101,6 @@ else if (doctors != null && doctors.Any())
                             <button class="btn btn-sm btn-info" @onclick="() => ToggleReviews(doctor.Id)">
                                 @((expandedDoctorIds.Contains(doctor.Id)) ? "Ukryj opinie" : "Pokaż opinie")
                             </button>
-                            <button class="btn btn-sm btn-success" @onclick="() => ShowReviewForm(doctor.Id)">Dodaj opinię</button>
                         </div>
                     </td>
                 </tr>
@@ -148,29 +152,6 @@ else if (doctors != null && doctors.Any())
         <span>Strona @searchDto.Page z @(page?.TotalPages ?? 0) · Wyniki: @(page?.TotalCount ?? 0)</span>
         <button class="btn btn-outline-primary" disabled="@(isLoading || searchDto.Page >= (page?.TotalPages ?? 0))" @onclick="() => ChangePage(1)">Następna</button>
     </nav>
-    @if (showReviewForm)
-    {
-        <div class="card mt-4">
-            <div class="card-body">
-                <h5>Dodaj opinię o lekarzu</h5>
-                @if (reviewError is not null) { <p class="alert alert-danger" role="alert">@reviewError</p> }
-                <fieldset disabled="@savingReview">
-                <EditForm Model="@newReview" OnValidSubmit="SubmitReview">
-                    <div class="mb-3">
-                        <label for="rating">Ocena (1-5)</label>
-                        <InputNumber id="rating" class="form-control" @bind-Value="newReview.Rating" Min="1" Max="5" />
-                    </div>
-                    <div class="mb-3">
-                        <label for="comment">Komentarz</label>
-                        <InputTextArea id="comment" class="form-control" @bind-Value="newReview.Comment" />
-                    </div>
-                    <button type="submit" class="btn btn-primary">Wyślij opinię</button>
-                    <button type="button" class="btn btn-secondary ms-2" @onclick="CancelReview">Anuluj</button>
-                </EditForm>
-                </fieldset>
-            </div>
-        </div>
-    }
 }
 else if (doctors != null)
 {
@@ -184,59 +165,16 @@ else if (doctors != null)
     private PagedResult<DoctorDto>? page;
     private bool isLoading = false;
     private string? errorMessage;
-    private string? reviewError;
-    private bool savingReview;
     private int searchRequest;
+
+    // Polish decimal comma without depending on culture data being loaded in WebAssembly.
+    private static string FormatRating(decimal rating) =>
+        rating.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',');
 
     private HashSet<int> expandedDoctorIds = new();
     private HashSet<int> loadingReviews = new();
     private Dictionary<int, PagedResult<ReviewDto>?> reviewsByDoctor = new();
-    private bool showReviewForm = false;
-    private int selectedDoctorId;
-    private CreateReviewDto newReview = new();
 
-    private void ShowReviewForm(int doctorId)
-    {
-        if (savingReview) return;
-        reviewError = null;
-        selectedDoctorId = doctorId;
-        newReview = new CreateReviewDto { DoctorId = doctorId };
-        showReviewForm = true;
-    }
-    private void CancelReview()
-    {
-        showReviewForm = false;
-        newReview = new();
-    }
-    private async Task SubmitReview()
-    {
-        if (savingReview) return;
-        savingReview = true;
-        reviewError = null;
-        try
-        {
-            using var response = await Http.PostAsJsonAsync("api/reviews", newReview);
-
-            if (response.IsSuccessStatusCode)
-            {
-                showReviewForm = false;
-                await SearchDoctors();
-                reviewsByDoctor.Remove(selectedDoctorId);
-                expandedDoctorIds.Remove(selectedDoctorId);
-                await ToggleReviews(selectedDoctorId);
-            }
-            else
-            {
-                var serverError = await ApiErrors.ReadAsync(response);
-                reviewError = $"Błąd dodawania opinii: {serverError}";
-            }
-        }
-        catch (Exception ex)
-        {
-            reviewError = "Błąd: " + ex.Message;
-        }
-        finally { savingReview = false; }
-    }
     protected override async Task OnInitializedAsync()
     {
         try
@@ -245,7 +183,7 @@ else if (doctors != null)
         }
         catch (Exception ex)
         {
-            errorMessage = "Błąd podczas ładowania specjalizacji: " + ex.Message;
+            errorMessage = ApiErrors.Describe(ex, "Nie udało się wczytać specjalizacji");
         }
     }
 
@@ -284,7 +222,7 @@ else if (doctors != null)
         }
         catch (Exception ex)
         {
-            if (request == searchRequest) errorMessage = "Nie udało się pobrać lekarzy: " + ex.Message;
+            if (request == searchRequest) errorMessage = ApiErrors.Describe(ex, "Nie udało się pobrać lekarzy");
         }
         finally
         {

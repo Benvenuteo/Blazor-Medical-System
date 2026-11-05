@@ -77,7 +77,7 @@
         }
         catch (Exception ex)
         {
-            registerError = "Błąd rejestracji: " + ex.Message;
+            registerError = ApiErrors.Describe(ex, "Rejestracja nie powiodła się");
         }
     }
 
