@@ -122,7 +122,7 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = "Błąd podczas ładowania wizyt: " + ex.Message;
+            errorMessage = ApiErrors.Describe(ex, "Nie udało się wczytać wizyt");
         }
         finally
         {
@@ -157,7 +157,7 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Błąd: {ex.Message}", Severity.Error);
+            Snackbar.Add(ApiErrors.Describe(ex, "Nie udało się odwołać wizyty"), Severity.Error);
         }
     }
 

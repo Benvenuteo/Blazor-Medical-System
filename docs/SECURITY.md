@@ -14,7 +14,7 @@
 | Lista, tworzenie, edycja i reset kont personelu | Nie | Nie | Nie | Tak |
 | Zmiana własnego hasła i zakończenie własnych sesji | Nie | Tak | Tak | Tak |
 
-API domyślnie wymaga uwierzytelnienia. Wyjątki są jawne na operacjach logowania, rejestracji, publicznych odczytach katalogu i `/health/live`. Odmowa uwierzytelnienia zwraca 401, a niewłaściwa rola lub obcy zasób — 403. Brak zasobu zwraca 404. Kontrola w `UserAccess` obowiązuje również przy bezpośrednich wywołaniach usług z panelu Server.
+API domyślnie wymaga uwierzytelnienia. Wyjątki są jawne na operacjach logowania, rejestracji, publicznych odczytach katalogu oraz `/health/live` i `/health/ready`. Sonda gotowości zwraca tylko `Healthy`/`Unhealthy`, bez szczegółów błędu. Odmowa uwierzytelnienia zwraca 401, a niewłaściwa rola lub obcy zasób — 403. Brak zasobu zwraca 404. Kontrola w `UserAccess` obowiązuje również przy bezpośrednich wywołaniach usług z panelu Server.
 
 ## Tożsamość
 

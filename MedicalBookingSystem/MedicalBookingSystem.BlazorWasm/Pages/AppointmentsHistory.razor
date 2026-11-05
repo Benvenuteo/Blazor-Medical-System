@@ -40,12 +40,24 @@ else
                     <td>@appointment.DoctorName</td>
                     <td>
                         <button class="btn btn-primary btn-sm" @onclick="() => ShowDetails(appointment.Id)">Szczegóły</button>
+                        <button class="btn btn-success btn-sm ms-1" @onclick="() => StartReview(appointment)">Oceń lekarza</button>
                     </td>
                 </tr>
             }
         </tbody>
     </table></div>
 
+
+    @if (reviewSaved is not null)
+    {
+        <p class="alert alert-success mt-3" role="status">@reviewSaved</p>
+    }
+
+    @if (reviewedAppointment is not null)
+    {
+        <DoctorReviewForm DoctorId="reviewedAppointment.DoctorId" DoctorName="@reviewedAppointment.DoctorName"
+                          OnSaved="ReviewSavedAsync" OnCancel="() => reviewedAppointment = null" />
+    }
 
     @if (selectedAppointment != null)
     {
@@ -72,7 +84,7 @@ else
     private async Task LoadPageAsync(int nextPage)
     {
         detailsRequest++; detailsLoading = false; detailsError = null;
-        currentPage = nextPage; selectedAppointment = null; errorMessage = null; isLoading = true;
+        currentPage = nextPage; selectedAppointment = null; reviewedAppointment = null; reviewSaved = null; errorMessage = null; isLoading = true;
         await OnInitializedAsync();
     }
 
@@ -95,12 +107,28 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = "Błąd podczas ładowania wizyt: " + ex.Message;
+            errorMessage = ApiErrors.Describe(ex, "Nie udało się wczytać wizyt");
         }
         finally
         {
             isLoading = false;
         }
+    }
+
+    private AppointmentDto? reviewedAppointment;
+    private string? reviewSaved;
+
+    private void StartReview(AppointmentDto appointment)
+    {
+        reviewSaved = null;
+        reviewedAppointment = appointment;
+    }
+
+    private Task ReviewSavedAsync()
+    {
+        reviewSaved = $"Dziękujemy, opinia o lekarzu {reviewedAppointment?.DoctorName} została dodana.";
+        reviewedAppointment = null;
+        return Task.CompletedTask;
     }
 
     private async Task ShowDetails(int appointmentId)

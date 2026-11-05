@@ -49,6 +49,7 @@ var connectionString = MedicalBookingSystem.Infrastructure.DependencyInjection.R
     builder.Configuration.GetConnectionString("MedicalBookingSystem") ?? "Data Source=data/medical.db",
     builder.Environment.ContentRootPath);
 builder.Services.AddInfrastructureServices(connectionString);
+builder.Services.AddDatabaseHealthCheck();
 builder.Services.AddMudServices();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<DoctorImageUploader>();
@@ -106,6 +107,7 @@ app.Use(async (context, next) =>
     await next(context);
 });
 app.UseAuthorization();
+app.MapHealthEndpoints();
 app.MapRazorPages();
 app.MapBlazorHub(options => options.CloseOnAuthenticationExpiration = true).RequireAuthorization();
 app.MapFallbackToPage("/_Host");

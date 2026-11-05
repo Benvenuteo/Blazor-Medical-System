@@ -87,12 +87,14 @@ test('doctor completes a visit and documents it; patient reads records and posts
   await expect(patient.getByText('Demonstracyjna notatka zapisana w prawdziwej przeglądarce.', { exact: false })).toBeVisible();
   await expect(patient.getByText('Preparat demonstracyjny', { exact: false })).toBeVisible();
   await patient.screenshot({ path: info.outputPath('patient-records.png'), fullPage: true });
-  await patient.goto('/doctors/search');
-  await patient.getByRole('button', { name: 'Szukaj', exact: true }).click();
-  await patient.getByRole('button', { name: 'Dodaj opinię', exact: true }).click();
+  await patient.getByRole('button', { name: 'Oceń lekarza', exact: true }).first().click();
   await patient.getByLabel('Ocena (1-5)').fill('5');
   await patient.getByLabel('Komentarz', { exact: true }).fill('Opinia demonstracyjna z testu przeglądarkowego.');
   await patient.getByRole('button', { name: 'Wyślij opinię', exact: true }).click();
+  await expect(patient.getByRole('status').filter({ hasText: 'opinia o lekarzu' })).toBeVisible();
+  await patient.goto('/doctors/search');
+  await patient.getByRole('button', { name: 'Szukaj', exact: true }).click();
+  await patient.getByRole('button', { name: 'Pokaż opinie', exact: true }).first().click();
   await expect(patient.getByRole('listitem').filter({ hasText: 'Opinia demonstracyjna z testu przeglądarkowego.' })).toBeVisible();
   await expect(patient.getByRole('row').filter({ has: patient.getByRole('link', { name: 'Zarezerwuj wizytę', exact: true }) }).getByRole('cell').nth(5)).toHaveText('1');
   await patientContext.close();
