@@ -4,18 +4,28 @@
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)
 ![Blazor](https://img.shields.io/badge/Blazor-WebAssembly%20%2B%20Server-5C2D91)
 ![Tests](https://img.shields.io/badge/testy-381%20.NET%20%2B%20E2E-2EA44F)
+[![Demo](https://img.shields.io/badge/demo-online-0B5ED7)](https://kw-medical.duckdns.org)
+[![Deploy demo](https://github.com/Benvenuteo/Blazor-Medical-System/actions/workflows/deploy.yml/badge.svg)](https://github.com/Benvenuteo/Blazor-Medical-System/actions/workflows/deploy.yml)
 
 System rezerwacji wizyt lekarskich: pacjent znajduje lekarza na mapie w wybranym promieniu, rezerwuje realny termin z grafiku i dostaje potwierdzenie z plikiem do kalendarza; lekarz prowadzi kolejkę wizyt i dokumentację; administrator zarządza placówkami, lekarzami i kontami personelu.
 
 Projekt pokazuje kompletną aplikację .NET 10 — od reguł domenowych i współbieżności w bazie, przez bezpieczeństwo kont (JWT, cookies, Google, blokady, unieważnianie sesji), po testy E2E, dostępność i wdrożenie w kontenerach na ARM64.
 
-> **Demo:** po wdrożeniu (instrukcja: [DEPLOYMENT.md](docs/DEPLOYMENT.md)) aplikacja działa z publicznymi, fikcyjnymi kontami demo. Konta demo są chronione — można na nich rezerwować, dokumentować i oceniać, ale nie zmienić hasła ani ich zablokować.
+## Wypróbuj na żywo
 
-| Rola | Email | Hasło |
+| Aplikacja | Adres | Konto demo |
 | --- | --- | --- |
-| Pacjent | `patient@example.test` | `DemoPatient2026!` |
-| Lekarz | `doctor@example.test` | `DemoStaff2026!` |
-| Administrator | `admin@example.test` | `DemoStaff2026!` |
+| **Pacjent** (Blazor WebAssembly, PWA) | **https://kw-medical.duckdns.org** | `patient@example.test` · `DemoPatient2026!` — albo przycisk „Wypełnij dane demo” |
+| **Panel lekarza i administratora** (Blazor Server) | **https://kw-medical-staff.duckdns.org** | `doctor@example.test` lub `admin@example.test` · `DemoStaff2026!` |
+| API — stan | https://kw-medical-api.duckdns.org/health/ready | — |
+
+Dane są fikcyjne. Konta demo są chronione: można na nich rezerwować, dokumentować i oceniać, ale nie zmienić hasła, wylogować innych ani ich zablokować — demo zawsze działa dla następnej osoby. Działa na jednej darmowej maszynie ARM w Oracle Cloud (Docker Compose, Caddy, automatyczny HTTPS), a każda zmiana na `main` po zielonym CI publikuje nowe obrazy.
+
+**W 2 minuty:**
+1. Pacjent → **Lekarze** → „Użyj mojej lokalizacji” albo wpisz „Kraków” i „Ustaw adres”, promień 30 km → **Szukaj** → **Mapa**.
+2. Pinezka → **Zarezerwuj wizytę** → wybierz godzinę w kalendarzu tygodniowym (w placówce albo teleporada) → po rezerwacji „Do kalendarza” pobiera plik `.ics`.
+3. **Odbyte wizyty** → „Drukuj / PDF” dokumentacji i „Oceń lekarza”.
+4. Panel jako lekarz → **Moje wizyty** (oznacz jako odbytą, notatki, recepty); jako administrator → **Placówki** (pinezka na mapie) i **Konta personelu**.
 
 ![Katalog lekarzy pacjenta](docs/screenshots/patient-directory.png)
 
