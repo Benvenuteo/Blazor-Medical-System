@@ -22,6 +22,7 @@ COPY MedicalBookingSystem/MedicalBookingSystem.WebAPI/*.csproj MedicalBookingSys
 COPY MedicalBookingSystem/MedicalBookingSystem.BlazorServer/*.csproj MedicalBookingSystem/MedicalBookingSystem.BlazorServer/
 COPY MedicalBookingSystem/MedicalBookingSystem.BlazorWasm/*.csproj MedicalBookingSystem/MedicalBookingSystem.BlazorWasm/
 COPY MedicalBookingSystem/MedicalBookingSystem.Maintenance/*.csproj MedicalBookingSystem/MedicalBookingSystem.Maintenance/
+COPY MedicalBookingSystem/MedicalBookingSystem.UI.Shared/*.csproj MedicalBookingSystem/MedicalBookingSystem.UI.Shared/
 RUN dotnet restore MedicalBookingSystem/MedicalBookingSystem.WebAPI -a $TARGETARCH \
  && dotnet restore MedicalBookingSystem/MedicalBookingSystem.BlazorServer -a $TARGETARCH \
  && dotnet restore MedicalBookingSystem/MedicalBookingSystem.Maintenance -a $TARGETARCH \
