@@ -4,14 +4,16 @@
 # The SDK stage runs on the build machine's architecture and cross-publishes for TARGETARCH,
 # so `docker buildx build --platform linux/arm64` on an x64 runner needs no emulation for .NET.
 
-ARG DOTNET_SDK=mcr.microsoft.com/dotnet/sdk:10.0.114
+# MCR publishes the SDK under the floating 10.0 tag (patch-level SDK tags are not all available).
+# global.json is not copied: inside the image the SDK image itself is the pinned toolchain.
+ARG DOTNET_SDK=mcr.microsoft.com/dotnet/sdk:10.0
 ARG DOTNET_RUNTIME=mcr.microsoft.com/dotnet/aspnet:10.0
 ARG CADDY=caddy:2.10-alpine
 
 FROM --platform=$BUILDPLATFORM ${DOTNET_SDK} AS restore
 ARG TARGETARCH
 WORKDIR /src
-COPY global.json Directory.Build.props Directory.Packages.props ./
+COPY Directory.Build.props Directory.Packages.props ./
 COPY MedicalBookingSystem/MedicalBookingSystem.Domain/*.csproj MedicalBookingSystem/MedicalBookingSystem.Domain/
 COPY MedicalBookingSystem/MedicalBookingSystem.SharedKernel/*.csproj MedicalBookingSystem/MedicalBookingSystem.SharedKernel/
 COPY MedicalBookingSystem/MedicalBookingSystem.Application/*.csproj MedicalBookingSystem/MedicalBookingSystem.Application/
