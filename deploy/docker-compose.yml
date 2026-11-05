@@ -46,6 +46,8 @@ services:
       <<: *dotnet-env
       AllowedHosts: ${STAFF_HOST:?Set STAFF_HOST}
       Media__PublicBaseUrl: https://${STAFF_HOST}
+      Demo__Enabled: ${DEMO_DATA:-true}
+      Demo__StaffPassword: ${SEED_STAFF_PASSWORD:-}
       Media__StoragePath: /data/photos
       DataProtection__KeysPath: /data/keys
       DataProtection__CertificatePath: /run/secrets/dataprotection.pfx
@@ -70,6 +72,8 @@ services:
       API_HOST: ${API_HOST}
       STAFF_HOST: ${STAFF_HOST}
       ACME_EMAIL: ${ACME_EMAIL:-}
+      DEMO_DATA: ${DEMO_DATA:-true}
+      SEED_PATIENT_PASSWORD: ${SEED_PATIENT_PASSWORD:-}
     ports:
       - "80:80"
       - "443:443"

@@ -37,7 +37,7 @@ public sealed class AuthController(PatientAuthenticationService patients, IValid
         var validation = await loginValidator.ValidateAsync(dto);
         if (!validation.IsValid) return Problem(statusCode: 400, detail: string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
         var principal = await staff.AuthenticateAsync(dto);
-        return principal is null ? Problem(statusCode: 401, detail: "Nieprawidłowy email lub hasło.") : Ok(new TokenResponseDto(jwt.GenerateToken(principal)));
+        return principal is null ? Problem(statusCode: 401, detail: LoginThrottle.FailureMessage) : Ok(new TokenResponseDto(jwt.GenerateToken(principal)));
     }
 
     [Authorize(Roles = Roles.Staff), HttpPost("staff/change-password")]

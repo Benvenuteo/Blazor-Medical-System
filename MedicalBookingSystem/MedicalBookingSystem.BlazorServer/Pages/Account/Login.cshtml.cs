@@ -26,7 +26,7 @@ public sealed class LoginModel(StaffAuthenticationService authentication) : Page
         var user = await authentication.AuthenticateAsync(new LoginDto { Email = Email, Password = Password });
         if (user is null)
         {
-            Error = "Nieprawidłowy email lub hasło.";
+            Error = LoginThrottle.FailureMessage;
             return Page();
         }
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, user,

@@ -28,8 +28,13 @@
             <NavLink class="nav-link px-3" href="/doctor/notes">Moje notatki</NavLink>
             <NavLink class="nav-link px-3" href="/doctor/prescriptions">Moje recepty</NavLink>
         </AuthorizeView>
-        <a class="nav-link px-3" href="/Account/ChangePassword">Zmień hasło</a>
-        <a class="nav-link px-3" href="/Account/LogoutAll">Wyloguj wszystkie sesje</a>
+        <AuthorizeView>
+            @if (!AccountClaims.IsDemo(context.User))
+            {
+                <a class="nav-link px-3" href="/Account/ChangePassword">Zmień hasło</a>
+                <a class="nav-link px-3" href="/Account/LogoutAll">Wyloguj wszystkie sesje</a>
+            }
+        </AuthorizeView>
         <a class="nav-link px-3" href="/Account/Logout">Wyloguj</a>
     </nav>
 </div>

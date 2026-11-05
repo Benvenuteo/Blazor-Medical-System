@@ -1,3 +1,4 @@
+using MedicalBookingSystem.Application.Security;
 using MedicalBookingSystem.Application.Time;
 using MedicalBookingSystem.Domain.Models;
 using Microsoft.AspNetCore.Identity;
@@ -22,7 +23,7 @@ public sealed class DataSeeder(
             throw new InvalidOperationException("Set Seed__PatientPassword and Seed__StaffPassword before enabling demonstration data.");
 
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-        var doctor = await context.Doctors.SingleOrDefaultAsync(d => d.LicenseNumber == "DEMO-001", cancellationToken);
+        var doctor = await context.Doctors.SingleOrDefaultAsync(d => d.LicenseNumber == DemoDoctorLicense, cancellationToken);
         if (doctor is null && !await context.Doctors.AnyAsync(cancellationToken))
         {
             var specialization = new Specialization { Name = "Kardiologia", Description = "Przykładowa specjalizacja" };
@@ -42,8 +43,8 @@ public sealed class DataSeeder(
             }
             var patient = new Patient
             {
-                FirstName = "Jan", LastName = "Demonstracyjny", Email = "patient@example.test",
-                PhoneNumber = "+48500000000", DateOfBirth = new DateTime(1990, 1, 1)
+                FirstName = "Jan", LastName = "Demonstracyjny", Email = DemoAccounts.PatientEmail,
+                PhoneNumber = "+48500000000", DateOfBirth = new DateTime(1990, 1, 1), IsDemo = true
             };
             patient.PasswordHash = passwordHasher.HashPassword(patient, options.Value.PatientPassword);
             context.Doctors.Add(doctor);
@@ -66,11 +67,11 @@ public sealed class DataSeeder(
         {
             var doctorAccount = new StaffAccount
             {
-                Email = "doctor@example.test", DisplayName = "Anna Demonstracyjna", Role = StaffRole.Doctor, DoctorId = doctor.Id
+                Email = DemoAccounts.DoctorEmail, DisplayName = "Anna Demonstracyjna", Role = StaffRole.Doctor, DoctorId = doctor.Id, IsDemo = true
             };
             var adminAccount = new StaffAccount
             {
-                Email = "admin@example.test", DisplayName = "Administrator demonstracyjny", Role = StaffRole.Admin
+                Email = DemoAccounts.AdminEmail, DisplayName = "Administrator demonstracyjny", Role = StaffRole.Admin, IsDemo = true
             };
             foreach (var account in new[] { doctorAccount, adminAccount })
             {
@@ -79,8 +80,44 @@ public sealed class DataSeeder(
             }
             await context.SaveChangesAsync(cancellationToken);
         }
+        // Demo databases created before the flag existed: protect the well-known public accounts.
+        await context.Patients.Where(p => p.Email == DemoAccounts.PatientEmail && !p.IsDemo)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.IsDemo, true), cancellationToken);
+        await context.StaffAccounts.Where(a => DemoAccounts.StaffEmails.Contains(a.Email) && !a.IsDemo)
+            .ExecuteUpdateAsync(s => s.SetProperty(a => a.IsDemo, true), cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+        await TopUpScheduleAsync(cancellationToken);
     }
+
+    /// <summary>
+    /// Keeps the public demo bookable: adds working days (9:00–16:00) for the demo doctor up to
+    /// <see cref="ScheduleHorizonDays"/> ahead. Existing schedules and visits are never changed.
+    /// </summary>
+    public async Task<int> TopUpScheduleAsync(CancellationToken cancellationToken = default)
+    {
+        if (!options.Value.Enabled) return 0;
+        var doctor = await context.Doctors.SingleOrDefaultAsync(d => d.LicenseNumber == DemoDoctorLicense, cancellationToken);
+        if (doctor is null) return 0;
+        var from = clock.Today.AddDays(1);
+        var to = clock.Today.AddDays(ScheduleHorizonDays);
+        var covered = (await context.DoctorSchedules.Where(s => s.DoctorId == doctor.Id && s.StartTime >= from && s.StartTime < to.AddDays(1))
+            .Select(s => s.StartTime).ToListAsync(cancellationToken)).Select(s => s.Date).ToHashSet();
+        var added = 0;
+        for (var day = from; day <= to; day = day.AddDays(1))
+        {
+            if (day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday || covered.Contains(day)) continue;
+            context.DoctorSchedules.Add(new DoctorSchedule
+            {
+                DoctorId = doctor.Id, StartTime = day.AddHours(9), EndTime = day.AddHours(16), IsAvailable = true
+            });
+            added++;
+        }
+        if (added > 0) await context.SaveChangesAsync(cancellationToken);
+        return added;
+    }
+
+    public const string DemoDoctorLicense = "DEMO-001";
+    public const int ScheduleHorizonDays = 28;
 }
 
 public sealed class DemoDataOptions

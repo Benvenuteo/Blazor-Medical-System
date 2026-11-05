@@ -29,6 +29,7 @@ public sealed class PatientService(IUnitOfWorkFactory units, IPasswordHasher<Pat
         using var unit = units.Create();
         var patient = await unit.Patients.GetByIdAsync(id);
         if (patient is null) return Result.Failure("Pacjent nie został znaleziony.", ErrorType.NotFound);
+        if (patient.IsDemo) return DemoAccounts.Refused();
         // Verify credentials before changing any tracked state.
         if (!string.IsNullOrEmpty(dto.NewPassword))
         {

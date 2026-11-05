@@ -1,5 +1,6 @@
 @inherits LayoutComponentBase
 @using MudBlazor
+@inject IConfiguration Configuration
 
 <MudThemeProvider />
 <MudPopoverProvider />
@@ -10,6 +11,11 @@
     <MudAppBar Color="Color.Primary">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="ToggleDrawer" aria-label="Otwórz menu nawigacji" />
         <MudText Typo="Typo.h6">Medical Booking System</MudText>
+        @if (Configuration.GetValue<bool>("Demo:Enabled"))
+        {
+            <MudSpacer />
+            <MudChip T="string" Size="Size.Small" Color="Color.Info" title="Dane są fikcyjne, konta demo są chronione przed zmianą">DEMO · dane fikcyjne</MudChip>
+        }
     </MudAppBar>
 
     <MudDrawer Style="background: linear-gradient(180deg, #092447, #183f69); color: white;" Anchor="Anchor.Left" @bind-Open="drawerOpen" Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md" ClipMode="DrawerClipMode.Always">

@@ -30,6 +30,8 @@ var connectionString = MedicalBookingSystem.Infrastructure.DependencyInjection.R
 builder.Services.AddInfrastructureServices(connectionString);
 builder.Services.AddDatabaseHealthCheck();
 builder.Services.Configure<DemoDataOptions>(builder.Configuration.GetSection("Seed"));
+if (builder.Configuration.GetValue<bool>("Seed:Enabled"))
+    builder.Services.AddHostedService<DemoScheduleTopUpService>();
 
 builder.Services.AddControllers().AddJsonOptions(options =>
 {

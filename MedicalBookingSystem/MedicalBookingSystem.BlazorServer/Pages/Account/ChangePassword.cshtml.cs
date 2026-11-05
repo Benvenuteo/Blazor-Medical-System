@@ -14,6 +14,7 @@ public sealed class ChangePasswordModel(StaffPasswordService passwords) : PageMo
 {
     [BindProperty] public ChangeStaffPasswordDto Input { get; set; } = new();
     public string? Error { get; private set; }
+    public bool IsDemo => AccountClaims.IsDemo(User);
     public void OnGet() { }
     public async Task<IActionResult> OnPostAsync()
     {

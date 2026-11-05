@@ -23,8 +23,26 @@ public sealed class PatientAuthenticationService(IUnitOfWorkFactory units, IPass
         if (!validation.IsValid) return Result.Failure<AuthenticatedPatient>(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
         using var unit = units.Create();
         var patient = await unit.Patients.GetByEmailAsync(dto.Email.Trim().ToLowerInvariant());
-        if (patient is null || hasher.VerifyHashedPassword(patient, patient.PasswordHash, dto.Password) == PasswordVerificationResult.Failed)
-            return Result.Failure<AuthenticatedPatient>("Nieprawidłowy email lub hasło.", ErrorType.Unauthorized);
+        var now = clock.UtcNow;
+        // Every path computes exactly one password hash, so response time does not reveal whether the email exists.
+        if (patient is null || LoginThrottle.IsLockedOut(patient.LockoutEndUtc, patient.IsDemo, now))
+        {
+            hasher.VerifyHashedPassword(TimingDummy, DummyHash(), dto.Password);
+            return Result.Failure<AuthenticatedPatient>(LoginThrottle.FailureMessage, ErrorType.Unauthorized);
+        }
+        var failed = hasher.VerifyHashedPassword(patient, patient.PasswordHash, dto.Password) == PasswordVerificationResult.Failed;
+        if (failed || patient.FailedLoginCount != 0 || patient.LockoutEndUtc is not null)
+        {
+            // The email lookup is read-only; counters are updated on a tracked copy of the account.
+            var tracked = await unit.Patients.GetByIdAsync(patient.Id);
+            if (tracked is not null)
+            {
+                (tracked.FailedLoginCount, tracked.LockoutEndUtc) = failed
+                    ? LoginThrottle.RegisterFailure(tracked.FailedLoginCount, tracked.IsDemo, now) : (0, null);
+                await SaveCountersAsync(unit);
+            }
+        }
+        if (failed) return Result.Failure<AuthenticatedPatient>(LoginThrottle.FailureMessage, ErrorType.Unauthorized);
         return Result.Success(CreateSession(patient));
     }
 
@@ -47,6 +65,17 @@ public sealed class PatientAuthenticationService(IUnitOfWorkFactory units, IPass
     }
 
 
+    private static readonly Patient TimingDummy = new();
+    private static string? dummyHash;
+    private string DummyHash() => dummyHash ??= hasher.HashPassword(TimingDummy, Guid.NewGuid().ToString("N"));
+
+    /// <summary>Counters are best effort: a concurrent update of the same account must not fail the login response.</summary>
+    private static async Task SaveCountersAsync(IUnitOfWork unit)
+    {
+        try { await unit.SaveChangesAsync(); }
+        catch (PersistenceConflictException) { }
+    }
+
     private AuthenticatedPatient CreateSession(Patient patient) => new(patient.ToDto(), AccountClaims.Create(patient.Id,
-        $"{patient.FirstName} {patient.LastName}", patient.Email, Roles.Patient, new DateTimeOffset(clock.UtcNow).AddHours(1), securityStamp: patient.SecurityStamp));
+        $"{patient.FirstName} {patient.LastName}", patient.Email, Roles.Patient, new DateTimeOffset(clock.UtcNow).AddHours(1), securityStamp: patient.SecurityStamp, demoAccount: patient.IsDemo));
 }

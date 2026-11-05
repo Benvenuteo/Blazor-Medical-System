@@ -14,5 +14,9 @@ public sealed class StaffAccount
     public bool IsActive { get; set; } = true;
     public bool MustChangePassword { get; set; }
     public int? DoctorId { get; set; }
+    /// <summary>Public demonstration account: its credentials, profile and sessions cannot be changed.</summary>
+    public bool IsDemo { get; set; }
+    public int FailedLoginCount { get; set; }
+    public DateTime? LockoutEndUtc { get; set; }
     public Doctor? Doctor { get; set; }
 }

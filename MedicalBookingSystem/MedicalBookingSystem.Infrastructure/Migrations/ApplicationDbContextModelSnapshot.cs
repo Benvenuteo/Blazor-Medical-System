@@ -230,14 +230,23 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         .HasColumnType("TEXT")
                         .UseCollation("NOCASE");
 
+                    b.Property<int>("FailedLoginCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsDemo")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LockoutEndUtc")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PasswordHash")
@@ -377,8 +386,17 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         .HasColumnType("TEXT")
                         .UseCollation("NOCASE");
 
+                    b.Property<int>("FailedLoginCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDemo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LockoutEndUtc")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("MustChangePassword")
                         .HasColumnType("INTEGER");

@@ -3,12 +3,21 @@
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @inject PatientAuthenticationStateProvider Authentication
+@inject IConfiguration Configuration
 
 
 <h3>Logowanie</h3>
 @if (SessionEnded)
 {
     <p role="status">Sesje zakończone. Zaloguj się ponownie.</p>
+}
+
+@if (demoEnabled)
+{
+    <aside class="alert alert-info d-flex flex-wrap align-items-center gap-2" aria-label="Konto demonstracyjne">
+        <span><strong>Wersja demonstracyjna</strong> — zaloguj się kontem <code>@demoEmail</code> (dane są fikcyjne).</span>
+        <button type="button" class="btn btn-sm btn-outline-primary" @onclick="FillDemo">Wypełnij dane demo</button>
+    </aside>
 }
 
 <EditForm Model="loginDto" OnSubmit="HandleLogin">
@@ -35,6 +44,22 @@
     private LoginDto loginDto = new();
     private string? error;
     private bool saving;
+    private bool demoEnabled;
+    private string? demoEmail, demoPassword;
+
+    protected override void OnInitialized()
+    {
+        demoEnabled = Configuration.GetValue<bool>("Demo:Enabled");
+        demoEmail = Configuration["Demo:PatientEmail"];
+        demoPassword = Configuration["Demo:PatientPassword"];
+        demoEnabled &= !string.IsNullOrEmpty(demoEmail) && !string.IsNullOrEmpty(demoPassword);
+    }
+
+    private void FillDemo()
+    {
+        loginDto.Email = demoEmail!;
+        loginDto.Password = demoPassword!;
+    }
 
     private void Register(){
         Navigation.NavigateTo($"/register");
