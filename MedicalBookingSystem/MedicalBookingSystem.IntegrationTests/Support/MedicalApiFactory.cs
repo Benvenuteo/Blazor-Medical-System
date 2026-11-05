@@ -28,6 +28,8 @@ internal sealed class MedicalApiFactory : WebApplicationFactory<MedicalBookingSy
         _interceptor = interceptor;
         if (connectionString is null) { _connection = new("Data Source=:memory:"); _connection.Open(); }
     }
+    /// <summary>Replaces Google in every API test host; tests issue tokens through it.</summary>
+    internal FakeExternalTokenValidator ExternalTokens { get; } = new();
     internal SqliteConnection Connection => _connection ?? throw new InvalidOperationException("This factory uses independent file connections.");
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -43,6 +45,8 @@ internal sealed class MedicalApiFactory : WebApplicationFactory<MedicalBookingSy
         {
             // Keep test cookies independent of the developer profile and other test hosts.
             services.AddDataProtection().UseEphemeralDataProtectionProvider();
+            services.RemoveAll<MedicalBookingSystem.Application.Security.IExternalTokenValidator>();
+            services.AddSingleton<MedicalBookingSystem.Application.Security.IExternalTokenValidator>(ExternalTokens);
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
             services.AddDbContextFactory<ApplicationDbContext>(options =>

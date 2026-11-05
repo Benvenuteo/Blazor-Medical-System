@@ -15,7 +15,7 @@ public sealed class PatientService(IUnitOfWorkFactory units, IPasswordHasher<Pat
 {
     public async Task<Result<PatientDto>> GetPatientProfileAsync(int id)
     {
-        await access.RequirePatientAsync(id);
+        await access.RequirePatientAsync(id, allowIncompleteProfile: true);
         using var unit = units.Create();
         var patient = await unit.Patients.GetByIdAsync(id);
         return patient is null ? Result.Failure<PatientDto>("Pacjent nie został znaleziony.", ErrorType.NotFound) : Result.Success(patient.ToDto());
@@ -33,6 +33,8 @@ public sealed class PatientService(IUnitOfWorkFactory units, IPasswordHasher<Pat
         // Verify credentials before changing any tracked state.
         if (!string.IsNullOrEmpty(dto.NewPassword))
         {
+            if (patient.PasswordHash is null)
+                return Result.Failure("To konto loguje się przez Google i nie ma hasła. Aby je ustawić, użyj opcji „Nie pamiętasz hasła?” na stronie logowania.");
             if (string.IsNullOrEmpty(dto.CurrentPassword) ||
                 hasher.VerifyHashedPassword(patient, patient.PasswordHash, dto.CurrentPassword) == PasswordVerificationResult.Failed)
                 return Result.Failure("Aktualne hasło jest nieprawidłowe.");

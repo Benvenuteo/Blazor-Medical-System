@@ -28,7 +28,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()
         {
-            var patientId = await _access.PatientIdAsync();
+            var patientId = await _access.PatientIdAsync(allowIncompleteProfile: true);
             var result = await _patientService.GetPatientProfileAsync(patientId);
             if (result.IsSuccess)
                 return Ok(result.Value);

@@ -25,7 +25,8 @@ public sealed class PatientAuthenticationService(IUnitOfWorkFactory units, IPass
         var patient = await unit.Patients.GetByEmailAsync(dto.Email.Trim().ToLowerInvariant());
         var now = clock.UtcNow;
         // Every path computes exactly one password hash, so response time does not reveal whether the email exists.
-        if (patient is null || LoginThrottle.IsLockedOut(patient.LockoutEndUtc, patient.IsDemo, now))
+        // Accounts created through Google have no password until the owner sets one via the reset link.
+        if (patient?.PasswordHash is null || LoginThrottle.IsLockedOut(patient.LockoutEndUtc, patient.IsDemo, now))
         {
             hasher.VerifyHashedPassword(TimingDummy, DummyHash(), dto.Password);
             return Result.Failure<AuthenticatedPatient>(LoginThrottle.FailureMessage, ErrorType.Unauthorized);
@@ -77,6 +78,8 @@ public sealed class PatientAuthenticationService(IUnitOfWorkFactory units, IPass
         catch (PersistenceConflictException) { }
     }
 
-    private AuthenticatedPatient CreateSession(Patient patient) => new(patient.ToDto(), AccountClaims.Create(patient.Id,
-        $"{patient.FirstName} {patient.LastName}", patient.Email, Roles.Patient, new DateTimeOffset(clock.UtcNow).AddHours(1), securityStamp: patient.SecurityStamp, demoAccount: patient.IsDemo));
+    /// <summary>Builds the signed-in session for any patient sign-in method (password, Google, profile completion).</summary>
+    public AuthenticatedPatient CreateSession(Patient patient) => new(patient.ToDto(), AccountClaims.Create(patient.Id,
+        $"{patient.FirstName} {patient.LastName}", patient.Email, Roles.Patient, new DateTimeOffset(clock.UtcNow).AddHours(1),
+        securityStamp: patient.SecurityStamp, demoAccount: patient.IsDemo, profileIncomplete: patient.ProfileIncomplete));
 }

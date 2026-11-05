@@ -1,6 +1,8 @@
 @inherits LayoutComponentBase
 @using MudBlazor
 @inject IConfiguration Configuration
+@inject AuthenticationStateProvider AuthenticationState
+@inject NavigationManager Navigation
 
 <MudThemeProvider />
 <MudPopoverProvider />
@@ -28,5 +30,15 @@
 </MudLayout>
 @code {
     private bool drawerOpen = true;
+
+    // Accounts created through Google must provide birth date and phone first; the API enforces it,
+    // the layout only sends the patient straight to the right page.
+    protected override async Task OnParametersSetAsync()
+    {
+        var user = (await AuthenticationState.GetAuthenticationStateAsync()).User;
+        if (user.HasClaim(AccountClaims.ProfileIncomplete, "true") &&
+            !Navigation.ToBaseRelativePath(Navigation.Uri).StartsWith("complete-profile", StringComparison.OrdinalIgnoreCase))
+            Navigation.NavigateTo("/complete-profile", replace: true);
+    }
     private void ToggleDrawer() => drawerOpen = !drawerOpen;
 }

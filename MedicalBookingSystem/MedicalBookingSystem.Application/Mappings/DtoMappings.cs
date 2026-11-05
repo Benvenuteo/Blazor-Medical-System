@@ -17,6 +17,8 @@ public static class DtoMappings
         Email = patient.Email,
         PhoneNumber = patient.PhoneNumber,
         EmailConfirmed = patient.EmailConfirmed,
+        ProfileIncomplete = patient.ProfileIncomplete,
+        HasPassword = patient.PasswordHash is not null,
         DateOfBirth = patient.DateOfBirth
     };
 

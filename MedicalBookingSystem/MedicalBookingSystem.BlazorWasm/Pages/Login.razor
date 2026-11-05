@@ -40,6 +40,12 @@
     <div class="alert alert-danger mt-2">@error</div>
 }
 
+@if (!string.IsNullOrWhiteSpace(Configuration["Google:ClientId"]))
+{
+    <div class="auth-divider" role="separator"><span>lub</span></div>
+    <GoogleSignInButton />
+}
+
 @code {
     [SupplyParameterFromQuery(Name = "sessionEnded")] public bool SessionEnded { get; set; }
     private LoginDto loginDto = new();

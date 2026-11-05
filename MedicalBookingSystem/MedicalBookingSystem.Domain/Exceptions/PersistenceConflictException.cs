@@ -1,6 +1,6 @@
 namespace MedicalBookingSystem.Domain.Exceptions;
 
-public enum PersistenceConflictKind { ConcurrentChange, AppointmentSlot, ScheduleOverlap, DuplicateReview, DuplicateDocument, DuplicateAccount, LastAdministrator }
+public enum PersistenceConflictKind { ConcurrentChange, AppointmentSlot, ScheduleOverlap, DuplicateReview, DuplicateDocument, DuplicateAccount, LastAdministrator, DuplicateExternalLogin }
 
 /// <summary>A storage-enforced business conflict, independent of the database provider.</summary>
 public sealed class PersistenceConflictException(PersistenceConflictKind kind, Exception innerException)

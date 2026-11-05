@@ -27,6 +27,7 @@ namespace MedicalBookingSystem.Infrastructure
             Specializations = new SpecializationRepository(context);
             EmailOutbox = new EntityRepository<EmailMessage>(context);
             AccountTokens = new EntityRepository<AccountToken>(context);
+            ExternalLogins = new EntityRepository<PatientExternalLogin>(context);
         }
 
         public IClinicalAuditWriter ClinicalAudit { get; }
@@ -41,6 +42,7 @@ namespace MedicalBookingSystem.Infrastructure
         public ISpecializationRepository Specializations { get; }
         public IRepository<EmailMessage> EmailOutbox { get; }
         public IRepository<AccountToken> AccountTokens { get; }
+        public IRepository<PatientExternalLogin> ExternalLogins { get; }
 
         public async Task<int> SaveChangesAsync()
         {
@@ -58,6 +60,7 @@ namespace MedicalBookingSystem.Infrastructure
                     : exception.Entries.Any(e => e.Entity is DoctorSchedule) ? PersistenceConflictKind.ScheduleOverlap
                     : exception.Entries.Any(e => e.Entity is Review) ? PersistenceConflictKind.DuplicateReview
                     : exception.Entries.Any(e => e.Entity is Note or Prescription) ? PersistenceConflictKind.DuplicateDocument
+                    : exception.Entries.Any(e => e.Entity is PatientExternalLogin) ? PersistenceConflictKind.DuplicateExternalLogin
                     : exception.Entries.Any(e => e.Entity is Patient or StaffAccount) ? PersistenceConflictKind.DuplicateAccount
                     : (PersistenceConflictKind?)null;
                 if (kind is null) throw;

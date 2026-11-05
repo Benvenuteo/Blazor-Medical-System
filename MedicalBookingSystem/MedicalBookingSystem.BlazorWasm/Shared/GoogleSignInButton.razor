@@ -1,0 +1,64 @@
+@using MedicalBookingSystem.SharedKernel.Dto
+@implements IDisposable
+@inject IJSRuntime JS
+@inject IConfiguration Configuration
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject PatientAuthenticationStateProvider Authentication
+
+@if (enabled)
+{
+    <div class="google-signin">
+        <div @ref="host" aria-label="Zaloguj przez Google"></div>
+        @if (busy) { <p role="status" class="small mt-2">Logowanie przez Google...</p> }
+        @if (error is not null) { <p class="alert alert-warning mt-2 mb-0" role="alert">@error</p> }
+    </div>
+}
+
+@code {
+    /// <summary>When set, the component only returns the credential (linking); otherwise it signs the patient in.</summary>
+    [Parameter] public EventCallback<GoogleSignInDto> OnCredential { get; set; }
+
+    private ElementReference host;
+    private DotNetObjectReference<GoogleSignInButton>? self;
+    // One nonce per page view; Google embeds it in the ID token and the API checks it.
+    private readonly string nonce = Guid.NewGuid().ToString("N");
+    private string? clientId, error;
+    private bool enabled, busy;
+
+    protected override void OnInitialized()
+    {
+        clientId = Configuration["Google:ClientId"];
+        enabled = !string.IsNullOrWhiteSpace(clientId);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || !enabled) return;
+        self = DotNetObjectReference.Create(this);
+        try { await JS.InvokeVoidAsync("medicalGoogle.render", host, clientId, nonce, self); }
+        catch (JSException) { error = "Nie udało się wczytać logowania Google. Sprawdź połączenie lub zaloguj się hasłem."; StateHasChanged(); }
+    }
+
+    [JSInvokable]
+    public async Task ReceiveCredential(string credential)
+    {
+        var dto = new GoogleSignInDto { IdToken = credential, Nonce = nonce };
+        error = null;
+        if (OnCredential.HasDelegate) { await OnCredential.InvokeAsync(dto); return; }
+        busy = true; StateHasChanged();
+        try
+        {
+            using var response = await Http.PostAsJsonAsync("api/auth/google", dto);
+            if (!response.IsSuccessStatusCode) { error = await ApiErrors.ReadAsync(response); return; }
+            var result = await response.Content.ReadFromJsonAsync<AuthenticationResponseDto>();
+            if (string.IsNullOrWhiteSpace(result?.Token)) { error = "Serwer zwrócił nieprawidłową odpowiedź logowania."; return; }
+            await Authentication.SignInAsync(result.Token);
+            Navigation.NavigateTo(result.Patient.ProfileIncomplete ? "/complete-profile" : "/dashboard");
+        }
+        catch (Exception exception) { error = ApiErrors.Describe(exception, "Logowanie Google nie powiodło się"); }
+        finally { busy = false; StateHasChanged(); }
+    }
+
+    public void Dispose() => self?.Dispose();
+}

@@ -20,6 +20,7 @@ namespace MedicalBookingSystem.Infrastructure
         public DbSet<DoctorSchedule> DoctorSchedules { get; set; }
         public DbSet<EmailMessage> EmailOutbox { get; set; }
         public DbSet<AccountToken> AccountTokens { get; set; }
+        public DbSet<PatientExternalLogin> PatientExternalLogins { get; set; }
         public DbSet<DoctorSpecialization> DoctorSpecializations { get; set; }
 
         private void StampAccountVersions()
@@ -89,6 +90,15 @@ namespace MedicalBookingSystem.Infrastructure
                 entity.Property(m => m.LastError).HasMaxLength(1000);
                 entity.HasIndex(m => new { m.SentAtUtc, m.NextAttemptAtUtc });
             });
+            modelBuilder.Entity<PatientExternalLogin>(entity =>
+            {
+                entity.Property(l => l.Provider).IsRequired().HasMaxLength(30);
+                entity.Property(l => l.Subject).IsRequired().HasMaxLength(255);
+                entity.Property(l => l.Email).IsRequired().HasMaxLength(255);
+                entity.HasIndex(l => new { l.Provider, l.Subject }).IsUnique();
+                entity.HasIndex(l => new { l.PatientId, l.Provider }).IsUnique();
+                entity.HasOne(l => l.Patient).WithMany().HasForeignKey(l => l.PatientId).OnDelete(DeleteBehavior.Cascade);
+            });
             modelBuilder.Entity<AccountToken>(entity =>
             {
                 entity.Property(t => t.Purpose).HasConversion<string>().HasMaxLength(30);
@@ -107,8 +117,9 @@ namespace MedicalBookingSystem.Infrastructure
                 entity.HasIndex(p => p.Email).IsUnique();
                 entity.Property(p => p.FirstName).IsRequired().HasMaxLength(100);
                 entity.Property(p => p.LastName).IsRequired().HasMaxLength(100);
-                entity.Property(p => p.PasswordHash).IsRequired();
-                entity.Property(p => p.DateOfBirth).IsRequired();
+                // Optional since external sign-up; ProfileIncomplete gates the missing birth date.
+                entity.Property(p => p.PasswordHash);
+                entity.Property(p => p.DateOfBirth);
             });
 
             // Konfiguracja encji Doctor

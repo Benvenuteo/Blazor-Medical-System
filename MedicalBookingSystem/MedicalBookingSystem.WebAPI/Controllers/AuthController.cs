@@ -16,7 +16,7 @@ namespace MedicalBookingSystem.WebAPI.Controllers;
 [EnableRateLimiting("authentication")]
 public sealed class AuthController(PatientAuthenticationService patients, IValidator<LoginDto> loginValidator,
     JwtService jwt, StaffAuthenticationService staff, StaffPasswordService passwords, SessionManagementService sessions,
-    AccountRecoveryService recovery) : ControllerBase
+    AccountRecoveryService recovery, ExternalAuthenticationService external) : ControllerBase
 {
     [AllowAnonymous, HttpPost("register")]
     public async Task<IActionResult> Register(RegisterPatientDto dto)
@@ -75,6 +75,46 @@ public sealed class AuthController(PatientAuthenticationService patients, IValid
     {
         var result = await recovery.ResendConfirmationAsync(await access.PatientIdAsync());
         return result.IsSuccess ? Accepted() : this.FailureResponse(result);
+    }
+
+    [AllowAnonymous, HttpPost("google")]
+    public async Task<IActionResult> GoogleSignIn(GoogleSignInDto dto)
+    {
+        var result = await external.SignInWithGoogleAsync(dto);
+        if (result.IsSuccess) return Ok(new AuthenticationResponseDto(jwt.GenerateToken(result.Value.Principal), result.Value.Patient));
+        if (result.Error == ExternalLoginErrors.AccountExists)
+            return Problem(statusCode: 409, title: ExternalLoginErrors.AccountExists,
+                detail: "Konto z tym adresem email już istnieje. Zaloguj się hasłem i połącz konto Google w ustawieniach bezpieczeństwa.");
+        return this.FailureResponse(result);
+    }
+
+    [Authorize(Roles = Roles.Patient), HttpGet("google/status")]
+    public async Task<IActionResult> GoogleStatus()
+    {
+        var result = await external.StatusAsync();
+        return result.IsSuccess ? Ok(result.Value) : this.FailureResponse(result);
+    }
+
+    [Authorize(Roles = Roles.Patient), HttpPost("google/link")]
+    public async Task<IActionResult> LinkGoogle(LinkGoogleDto dto)
+    {
+        var result = await external.LinkGoogleAsync(dto);
+        return result.IsSuccess ? NoContent() : this.FailureResponse(result);
+    }
+
+    [Authorize(Roles = Roles.Patient), HttpDelete("google/link")]
+    public async Task<IActionResult> UnlinkGoogle()
+    {
+        var result = await external.UnlinkGoogleAsync();
+        return result.IsSuccess ? NoContent() : this.FailureResponse(result);
+    }
+
+    /// <summary>Completes a Google sign-up and returns a new token without the profile flag.</summary>
+    [Authorize(Roles = Roles.Patient), HttpPut("profile/complete")]
+    public async Task<IActionResult> CompleteProfile(CompleteProfileDto dto)
+    {
+        var result = await external.CompleteProfileAsync(dto);
+        return result.IsSuccess ? Ok(new AuthenticationResponseDto(jwt.GenerateToken(result.Value.Principal), result.Value.Patient)) : this.FailureResponse(result);
     }
 
     [Authorize, HttpPost("logout-all")]

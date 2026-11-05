@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<StaffAuthenticationService>();
         services.AddScoped<PatientAuthenticationService>();
         services.AddScoped<AccountRecoveryService>();
+        services.AddScoped<ExternalAuthenticationService>();
         services.AddOptions<Notifications.NotificationOptions>();
         services.AddScoped<ISessionValidator, AccountSessionValidator>();
         services.AddScoped<SessionGuard>();

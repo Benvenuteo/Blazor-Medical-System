@@ -10,7 +10,7 @@ public sealed class SessionManagementService(IUnitOfWorkFactory units, SessionGu
 {
     public async Task<Result> RevokeAllAsync(ClaimsPrincipal principal)
     {
-        await guard.RequireAsync(principal, allowPasswordChange: true);
+        await guard.RequireAsync(principal, allowPasswordChange: true, allowIncompleteProfile: true);
         if (!AccountClaims.TryReadIdentity(principal, out var identity)) throw new AccessDeniedException(false);
         using var unit = units.Create();
         if (identity.Role == Roles.Patient)

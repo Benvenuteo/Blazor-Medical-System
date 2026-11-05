@@ -20,6 +20,8 @@ public static class AccountClaims
     public const string ExpiresAt = "session_expires";
     /// <summary>Informational flag for the UI; the services check the account in the database.</summary>
     public const string DemoAccount = "demo_account";
+    /// <summary>Informational for the UI (redirect to profile completion); enforcement reads the database.</summary>
+    public const string ProfileIncomplete = "profile_incomplete";
 
     public static bool IsDemo(ClaimsPrincipal user) => user.HasClaim(DemoAccount, "true");
 
@@ -27,7 +29,7 @@ public static class AccountClaims
         int.TryParse(user.FindFirst(claimType)?.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var id) && id > 0 ? id : null;
 
     public static ClaimsPrincipal Create(int accountId, string name, string email, string role,
-        DateTimeOffset expires, int? doctorId = null, Guid? securityStamp = null, bool mustChangePassword = false, bool demoAccount = false)
+        DateTimeOffset expires, int? doctorId = null, Guid? securityStamp = null, bool mustChangePassword = false, bool demoAccount = false, bool profileIncomplete = false)
     {
         var claims = new List<Claim>
         {
@@ -42,6 +44,7 @@ public static class AccountClaims
             claims.Add(new(DoctorId, doctorId.Value.ToString(CultureInfo.InvariantCulture)));
         if (mustChangePassword) claims.Add(new(PasswordChangeRequired, "true"));
         if (demoAccount) claims.Add(new(DemoAccount, "true"));
+        if (profileIncomplete) claims.Add(new(ProfileIncomplete, "true"));
         return new(new ClaimsIdentity(claims, "MedicalAccount"));
     }
     /// <summary>Read exactly one account identity. Signed tokens still need the database session check.</summary>

@@ -19,6 +19,7 @@ cat > "$settings" <<EOF
 {
   "MedicalBookingSystemAPIUrl": "https://${API_HOST}",
   "MedicalBookingSystemServerUrl": "https://${STAFF_HOST}",
+  "Google": { "ClientId": "${GOOGLE_CLIENT_ID:-}" },
   "Demo": {
     "Enabled": ${demo},
     "PatientEmail": "patient@example.test",

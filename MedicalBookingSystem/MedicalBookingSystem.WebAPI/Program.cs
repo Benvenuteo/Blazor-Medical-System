@@ -29,6 +29,8 @@ var connectionString = MedicalBookingSystem.Infrastructure.DependencyInjection.R
     builder.Environment.ContentRootPath);
 builder.Services.AddInfrastructureServices(connectionString);
 builder.Services.AddDatabaseHealthCheck();
+builder.Services.Configure<GoogleAuthenticationOptions>(builder.Configuration.GetSection("Authentication:Google"));
+builder.Services.AddSingleton<IExternalTokenValidator, GoogleIdTokenValidator>();
 builder.Services.Configure<MedicalBookingSystem.Application.Notifications.NotificationOptions>(builder.Configuration.GetSection("Notifications"));
 MedicalBookingSystem.Infrastructure.Email.EmailDeliveryService.Register(builder.Services, builder.Configuration);
 builder.Services.Configure<DemoDataOptions>(builder.Configuration.GetSection("Seed"));

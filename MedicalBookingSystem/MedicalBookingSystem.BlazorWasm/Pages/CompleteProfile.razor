@@ -1,0 +1,67 @@
+@page "/complete-profile"
+@attribute [Authorize(Roles = Roles.Patient)]
+@using MedicalBookingSystem.SharedKernel.Dto
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject PatientAuthenticationStateProvider Authentication
+
+<PageTitle>Uzupełnij profil</PageTitle>
+<h1>Uzupełnij profil</h1>
+<p>Konto zostało utworzone przez Google. Przed pierwszą rezerwacją podaj dane, których placówka potrzebuje do umówienia wizyty.</p>
+
+@if (error is not null) { <p class="alert alert-danger" role="alert">@error</p> }
+@if (loading)
+{
+    <p role="status">Ładowanie profilu...</p>
+}
+else
+{
+    <fieldset disabled="@busy" style="max-width: 520px">
+        <EditForm Model="model" OnSubmit="SaveAsync">
+            <label for="first-name">Imię</label>
+            <InputText id="first-name" autocomplete="given-name" @bind-Value="model.FirstName" class="form-control mb-3" />
+            <label for="last-name">Nazwisko</label>
+            <InputText id="last-name" autocomplete="family-name" @bind-Value="model.LastName" class="form-control mb-3" />
+            <label for="birth-date">Data urodzenia</label>
+            <InputDate id="birth-date" @bind-Value="model.DateOfBirth" class="form-control mb-3" />
+            <label for="phone">Numer telefonu</label>
+            <InputText id="phone" type="tel" autocomplete="tel" @bind-Value="model.PhoneNumber" class="form-control mb-3" />
+            <button type="submit" class="btn btn-primary">Zapisz i przejdź dalej</button>
+        </EditForm>
+    </fieldset>
+}
+
+@code {
+    private readonly CompleteProfileDto model = new();
+    private bool loading = true, busy;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var profile = await Http.GetFromJsonAsync<PatientDto>("api/patients/profile");
+            if (profile is { ProfileIncomplete: false }) { Navigation.NavigateTo("/dashboard", replace: true); return; }
+            model.FirstName = profile?.FirstName ?? string.Empty;
+            model.LastName = profile?.LastName == "-" ? string.Empty : profile?.LastName ?? string.Empty;
+        }
+        catch (Exception exception) { error = ApiErrors.Describe(exception, "Nie udało się wczytać profilu"); }
+        finally { loading = false; }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (busy) return;
+        busy = true; error = null;
+        try
+        {
+            using var response = await Http.PutAsJsonAsync("api/auth/profile/complete", model);
+            if (!response.IsSuccessStatusCode) { error = await ApiErrors.ReadAsync(response); return; }
+            var result = await response.Content.ReadFromJsonAsync<AuthenticationResponseDto>();
+            await Authentication.SignInAsync(result!.Token);
+            Navigation.NavigateTo("/dashboard", replace: true);
+        }
+        catch (Exception exception) { error = ApiErrors.Describe(exception, "Nie udało się zapisać profilu"); }
+        finally { busy = false; }
+    }
+}
