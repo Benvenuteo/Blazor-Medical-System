@@ -74,16 +74,23 @@ jobs:
       - name: Install browser tests
         working-directory: tests/e2e
         run: npm ci
+      - name: Make apt robust against slow mirrors and package locks
+        # Without this, apt either fails at once on a held dpkg lock or waits forever on a stalled mirror.
+        run: |
+          {
+            echo 'Acquire::Retries "5";'
+            echo 'Acquire::http::Timeout "30";'
+            echo 'Acquire::https::Timeout "30";'
+            echo 'DPkg::Lock::Timeout "600";'
+          } | sudo tee /etc/apt/apt.conf.d/99ci-robust > /dev/null
+      - name: Install browser system dependencies
+        working-directory: tests/e2e
+        timeout-minutes: 12
+        run: npx playwright install-deps chromium firefox
       - name: Install Chromium and Firefox
         working-directory: tests/e2e
-        timeout-minutes: 16
-        # Downloads occasionally hang on the runner; retry with a per-attempt limit instead of losing the whole job.
-        run: |
-          for attempt in 1 2 3; do
-            timeout 300 npx playwright install --with-deps chromium firefox && exit 0
-            echo "::warning::Browser installation attempt $attempt failed or timed out; retrying."
-          done
-          exit 1
+        timeout-minutes: 8
+        run: npx playwright install chromium firefox
       - name: Run real browser workflows
         working-directory: tests/e2e
         run: npm test
