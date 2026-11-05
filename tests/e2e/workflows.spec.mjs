@@ -118,10 +118,11 @@ test('admin rejects fake photos and publishes a decoded image', async ({ page },
   await expect(photo).toHaveAttribute('src', /http:\/\/localhost:5187\/media\/doctors\/[a-f0-9]{32}\.png$/);
   await expect.poll(() => photo.evaluate(img => img.complete && img.naturalWidth > 0)).toBeTruthy();
   await page.screenshot({ path: info.outputPath('admin-directory.png'), fullPage: true });
-  await page.getByRole('link', { name: 'Dodaj grafik', exact: true }).click();
+  await page.getByRole('row').filter({ hasText: 'Anna Demonstracyjna' }).getByRole('link', { name: 'Dodaj grafik', exact: true }).click();
   const startDate = page.getByLabel('Data rozpoczęcia', { exact: true });
   await expect(startDate).toBeEnabled();
-  const day = new Date(Date.now() + 21 * 86_400_000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Warsaw' });
+  // Beyond the 28 days the demo top-up fills with 9:00-16:00 shifts, so the new shift cannot overlap one.
+  const day = new Date(Date.now() + 42 * 86_400_000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Warsaw' });
   await startDate.fill(day);
   await page.getByLabel('Data zakończenia', { exact: true }).fill(day);
   await page.getByLabel('Godzina rozpoczęcia', { exact: true }).fill('09:00');
