@@ -13,7 +13,8 @@ namespace MedicalBookingSystem.Application.Services;
 
 public sealed class AppointmentService(
     IUnitOfWorkFactory units, ClinicClock clock, UserAccess access,
-    IValidator<CreateAppointmentDto> createValidator, IValidator<UpdateAppointmentDto> updateValidator) : IAppointmentService
+    IValidator<CreateAppointmentDto> createValidator, IValidator<UpdateAppointmentDto> updateValidator,
+    MedicalBookingSystem.Application.Notifications.IVisitNotifications? notifications = null) : IAppointmentService
 {
     public async Task<Result<AppointmentDto>> CreateAppointmentAsync(CreateAppointmentDto dto, int patientId)
     {
@@ -34,6 +35,18 @@ public sealed class AppointmentService(
         catch (PersistenceConflictException)
         {
             return Result.Failure<AppointmentDto>("Termin został już zajęty. Odśwież dostępne terminy.", ErrorType.Conflict);
+        }
+        if (notifications is not null)
+        {
+            // The booking is already committed. The confirmation needs the new id for its calendar file, so it is
+            // saved separately and is best effort: a busy database must not turn a stored booking into an error
+            // (the day-before reminder still follows).
+            try
+            {
+                await notifications.QueueBookingConfirmationAsync(unitOfWork, appointment);
+                await unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException) { }
         }
         return Result.Success(appointment.ToDto());
     }

@@ -1,5 +1,23 @@
 @inherits LayoutComponentBase
 
-<div class="container mt-5">
-    @Body
+@* Public pages (login, registration, password recovery): a short product introduction next to the form. *@
+<div class="auth-shell">
+    <aside class="auth-hero" aria-label="O aplikacji">
+        <div class="auth-hero-inner">
+            <p class="auth-brand"><span class="auth-logo" aria-hidden="true">+</span> Medical Booking System</p>
+            <p class="auth-title">Wizyta u lekarza w kilka minut</p>
+            <ul class="auth-features">
+                <li><strong>Lekarze w okolicy</strong> — mapa placówek w wybranym promieniu i najbliższe wolne terminy.</li>
+                <li><strong>Rezerwacja bez kolizji</strong> — realne sloty z grafiku, zmiana i odwołanie wizyty online.</li>
+                <li><strong>Dokumentacja i opinie</strong> — notatki i recepty po wizycie, oceny potwierdzonych pacjentów.</li>
+                <li><strong>Bezpieczne konto</strong> — logowanie hasłem lub kontem Google, reset hasła mailem.</li>
+            </ul>
+            <p class="auth-stack">.NET 10 · ASP.NET Core · Blazor WebAssembly i Server · EF Core · SQLite</p>
+        </div>
+    </aside>
+    <main class="auth-main">
+        <div class="auth-card">
+            @Body
+        </div>
+    </main>
 </div>

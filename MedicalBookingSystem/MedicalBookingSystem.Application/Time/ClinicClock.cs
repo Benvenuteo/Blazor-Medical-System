@@ -11,6 +11,9 @@ public sealed class ClinicClock(TimeProvider timeProvider, TimeZoneInfo timeZone
     public DateTime Today => Now.Date;
     public DateTime MinimumBookingTime => TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow().AddHours(24), timeZone).DateTime;
 
+    /// <summary>Converts a clinic-local time (appointments, schedules) to UTC.</summary>
+    public DateTime ToUtc(DateTime local) => TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(local, DateTimeKind.Unspecified), timeZone);
+
     public bool IsUnambiguousLocalTime(DateTime value) =>
         !timeZone.IsInvalidTime(DateTime.SpecifyKind(value, DateTimeKind.Unspecified)) &&
         !timeZone.IsAmbiguousTime(DateTime.SpecifyKind(value, DateTimeKind.Unspecified));

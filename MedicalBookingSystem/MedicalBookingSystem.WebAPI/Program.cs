@@ -34,6 +34,7 @@ builder.Services.Configure<GoogleAuthenticationOptions>(builder.Configuration.Ge
 builder.Services.AddSingleton<IExternalTokenValidator, GoogleIdTokenValidator>();
 builder.Services.Configure<MedicalBookingSystem.Application.Notifications.NotificationOptions>(builder.Configuration.GetSection("Notifications"));
 MedicalBookingSystem.Infrastructure.Email.EmailDeliveryService.Register(builder.Services, builder.Configuration);
+builder.Services.AddHostedService<MedicalBookingSystem.Infrastructure.Email.VisitReminderService>();
 builder.Services.Configure<DemoDataOptions>(builder.Configuration.GetSection("Seed"));
 if (builder.Configuration.GetValue<bool>("Seed:Enabled"))
     builder.Services.AddHostedService<DemoScheduleTopUpService>();

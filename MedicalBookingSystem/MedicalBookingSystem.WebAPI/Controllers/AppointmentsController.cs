@@ -83,6 +83,16 @@ namespace MedicalBookingSystem.WebAPI.Controllers
             return this.FailureResponse(result);
         }
 
+        /// <summary>iCalendar file of a scheduled visit (add to Google, Outlook or Apple Calendar).</summary>
+        [HttpGet("{id:int}/calendar")]
+        public async Task<IActionResult> GetCalendarFile(int id, [FromServices] MedicalBookingSystem.Application.Notifications.VisitNotificationService notifications)
+        {
+            var result = await notifications.CalendarFileAsync(id);
+            return result.IsSuccess
+                ? File(System.Text.Encoding.UTF8.GetBytes(result.Value.Content), result.Value.ContentType, result.Value.FileName)
+                : this.FailureResponse(result);
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetAppointment(int id)
         {
