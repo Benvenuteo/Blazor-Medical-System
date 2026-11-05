@@ -13,6 +13,7 @@ namespace MedicalBookingSystem.Domain.Models
         public DateTime DateOfBirth { get; set; }
         /// <summary>Public demonstration account: its credentials, profile and sessions cannot be changed.</summary>
         public bool IsDemo { get; set; }
+        public bool EmailConfirmed { get; set; }
         public int FailedLoginCount { get; set; }
         public DateTime? LockoutEndUtc { get; set; }
 

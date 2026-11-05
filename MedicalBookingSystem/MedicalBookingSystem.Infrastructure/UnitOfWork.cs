@@ -25,6 +25,8 @@ namespace MedicalBookingSystem.Infrastructure
             Prescriptions = new PrescriptionRepository(context);
             Notes = new NoteRepository(context);
             Specializations = new SpecializationRepository(context);
+            EmailOutbox = new EntityRepository<EmailMessage>(context);
+            AccountTokens = new EntityRepository<AccountToken>(context);
         }
 
         public IClinicalAuditWriter ClinicalAudit { get; }
@@ -37,6 +39,8 @@ namespace MedicalBookingSystem.Infrastructure
         public IPrescriptionRepository Prescriptions { get; }
         public INoteRepository Notes { get; }
         public ISpecializationRepository Specializations { get; }
+        public IRepository<EmailMessage> EmailOutbox { get; }
+        public IRepository<AccountToken> AccountTokens { get; }
 
         public async Task<int> SaveChangesAsync()
         {

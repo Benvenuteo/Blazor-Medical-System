@@ -15,7 +15,8 @@ namespace MedicalBookingSystem.WebAPI.Controllers;
 [ApiController]
 [EnableRateLimiting("authentication")]
 public sealed class AuthController(PatientAuthenticationService patients, IValidator<LoginDto> loginValidator,
-    JwtService jwt, StaffAuthenticationService staff, StaffPasswordService passwords, SessionManagementService sessions) : ControllerBase
+    JwtService jwt, StaffAuthenticationService staff, StaffPasswordService passwords, SessionManagementService sessions,
+    AccountRecoveryService recovery) : ControllerBase
 {
     [AllowAnonymous, HttpPost("register")]
     public async Task<IActionResult> Register(RegisterPatientDto dto)
@@ -45,6 +46,35 @@ public sealed class AuthController(PatientAuthenticationService patients, IValid
     {
         var result = await passwords.ChangeAsync(User, dto);
         return result.IsSuccess ? NoContent() : this.FailureResponse(result);
+    }
+
+    /// <summary>Always 202 for a valid address, whether or not an account exists, so the endpoint cannot reveal accounts.</summary>
+    [AllowAnonymous, HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordDto dto)
+    {
+        var result = await recovery.RequestPasswordResetAsync(dto);
+        return result.IsSuccess ? Accepted() : this.FailureResponse(result);
+    }
+
+    [AllowAnonymous, HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordDto dto)
+    {
+        var result = await recovery.ResetPasswordAsync(dto);
+        return result.IsSuccess ? NoContent() : this.FailureResponse(result);
+    }
+
+    [AllowAnonymous, HttpPost("confirm-email")]
+    public async Task<IActionResult> ConfirmEmail(ConfirmEmailDto dto)
+    {
+        var result = await recovery.ConfirmEmailAsync(dto);
+        return result.IsSuccess ? NoContent() : this.FailureResponse(result);
+    }
+
+    [Authorize(Roles = Roles.Patient), HttpPost("resend-confirmation")]
+    public async Task<IActionResult> ResendConfirmation([FromServices] UserAccess access)
+    {
+        var result = await recovery.ResendConfirmationAsync(await access.PatientIdAsync());
+        return result.IsSuccess ? Accepted() : this.FailureResponse(result);
     }
 
     [Authorize, HttpPost("logout-all")]

@@ -12,6 +12,8 @@ namespace MedicalBookingSystem.Domain.Contracts
         IPrescriptionRepository Prescriptions { get; }
         INoteRepository Notes { get; }
         ISpecializationRepository Specializations { get; }
+        IRepository<MedicalBookingSystem.Domain.Models.EmailMessage> EmailOutbox { get; }
+        IRepository<MedicalBookingSystem.Domain.Models.AccountToken> AccountTokens { get; }
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
         Task CommitTransactionAsync();

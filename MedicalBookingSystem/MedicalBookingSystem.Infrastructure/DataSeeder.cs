@@ -44,7 +44,7 @@ public sealed class DataSeeder(
             var patient = new Patient
             {
                 FirstName = "Jan", LastName = "Demonstracyjny", Email = DemoAccounts.PatientEmail,
-                PhoneNumber = "+48500000000", DateOfBirth = new DateTime(1990, 1, 1), IsDemo = true
+                PhoneNumber = "+48500000000", DateOfBirth = new DateTime(1990, 1, 1), IsDemo = true, EmailConfirmed = true
             };
             patient.PasswordHash = passwordHasher.HashPassword(patient, options.Value.PatientPassword);
             context.Doctors.Add(doctor);

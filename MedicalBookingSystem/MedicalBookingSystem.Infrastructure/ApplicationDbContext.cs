@@ -18,6 +18,8 @@ namespace MedicalBookingSystem.Infrastructure
         public DbSet<Note> Notes { get; set; }
         public DbSet<Specialization> Specializations { get; set; }
         public DbSet<DoctorSchedule> DoctorSchedules { get; set; }
+        public DbSet<EmailMessage> EmailOutbox { get; set; }
+        public DbSet<AccountToken> AccountTokens { get; set; }
         public DbSet<DoctorSpecialization> DoctorSpecializations { get; set; }
 
         private void StampAccountVersions()
@@ -75,6 +77,25 @@ namespace MedicalBookingSystem.Infrastructure
                 entity.Property(a => a.Role).HasConversion<string>().HasMaxLength(20);
                 entity.HasIndex(a => a.DoctorId).IsUnique();
                 entity.HasOne(a => a.Doctor).WithMany().HasForeignKey(a => a.DoctorId).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<EmailMessage>(entity =>
+            {
+                entity.ToTable("EmailOutbox");
+                entity.Property(m => m.To).IsRequired().HasMaxLength(255);
+                entity.Property(m => m.Subject).IsRequired().HasMaxLength(200);
+                entity.Property(m => m.AttachmentName).HasMaxLength(100);
+                entity.Property(m => m.AttachmentContentType).HasMaxLength(100);
+                entity.Property(m => m.LastError).HasMaxLength(1000);
+                entity.HasIndex(m => new { m.SentAtUtc, m.NextAttemptAtUtc });
+            });
+            modelBuilder.Entity<AccountToken>(entity =>
+            {
+                entity.Property(t => t.Purpose).HasConversion<string>().HasMaxLength(30);
+                entity.Property(t => t.TokenHash).IsRequired().HasMaxLength(64);
+                entity.HasIndex(t => t.TokenHash).IsUnique();
+                entity.HasIndex(t => new { t.PatientId, t.Purpose });
+                entity.HasOne(t => t.Patient).WithMany().HasForeignKey(t => t.PatientId).OnDelete(DeleteBehavior.Cascade);
             });
 
             // Konfiguracja encji Patient

@@ -15,7 +15,7 @@ namespace MedicalBookingSystem.Application.Security;
 public sealed record AuthenticatedPatient(PatientDto Patient, ClaimsPrincipal Principal);
 
 public sealed class PatientAuthenticationService(IUnitOfWorkFactory units, IPasswordHasher<Patient> hasher, ClinicClock clock,
-    IValidator<RegisterPatientDto> registerValidator, IValidator<LoginDto> loginValidator)
+    IValidator<RegisterPatientDto> registerValidator, IValidator<LoginDto> loginValidator, AccountRecoveryService recovery)
 {
     public async Task<Result<AuthenticatedPatient>> LoginAsync(LoginDto dto)
     {
@@ -58,6 +58,7 @@ public sealed class PatientAuthenticationService(IUnitOfWorkFactory units, IPass
             PhoneNumber = dto.PhoneNumber, DateOfBirth = dto.DateOfBirth };
         patient.PasswordHash = hasher.HashPassword(patient, dto.Password);
         await unit.Patients.AddAsync(patient);
+        await recovery.QueueConfirmationAsync(unit, patient);
         try { await unit.SaveChangesAsync(); }
         catch (PersistenceConflictException ex) when (ex.Kind == PersistenceConflictKind.DuplicateAccount)
         { return Result.Failure<AuthenticatedPatient>("Email jest już zajęty.", ErrorType.Conflict); }

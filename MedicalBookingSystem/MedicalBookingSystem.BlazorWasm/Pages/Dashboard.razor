@@ -1,8 +1,18 @@
 @page "/dashboard"
 @attribute [Authorize(Roles = Roles.Patient)]
+@using MedicalBookingSystem.SharedKernel.Dto
+@inject HttpClient Http
 
 <h1>Panel pacjenta</h1>
 <p>Wyszukaj lekarza, wybierz wolny termin i sprawdź dokumentację swoich wizyt.</p>
+@if (profile is { EmailConfirmed: false })
+{
+    <div class="alert alert-warning d-flex flex-wrap align-items-center gap-2" role="status">
+        <span>Potwierdź adres <strong>@profile.Email</strong> — link wysłaliśmy po rejestracji. Potwierdzony adres pozwala odzyskać konto.</span>
+        <button class="btn btn-sm btn-outline-dark" disabled="@resending" @onclick="ResendAsync">Wyślij link ponownie</button>
+        @if (resendMessage is not null) { <span>@resendMessage</span> }
+    </div>
+}
 <div class="row g-3">
     <div class="col-md-4"><section class="card h-100"><div class="card-body">
         <h2 class="h5">Znajdź lekarza</h2><p>Filtruj po specjalizacji, regionie i dacie. Porównaj oceny oraz najbliższe wolne terminy.</p>
@@ -17,3 +27,27 @@
         <a class="btn btn-outline-primary" href="historyAppointments">Otwórz historię</a>
     </div></section></div>
 </div>
+
+@code {
+    private PatientDto? profile;
+    private bool resending;
+    private string? resendMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { profile = await Http.GetFromJsonAsync<PatientDto>("api/patients/profile"); }
+        catch (Exception exception) when (exception is HttpRequestException or System.Text.Json.JsonException) { /* The dashboard works without the notice. */ }
+    }
+
+    private async Task ResendAsync()
+    {
+        resending = true; resendMessage = null;
+        try
+        {
+            using var response = await Http.PostAsync("api/auth/resend-confirmation", null);
+            resendMessage = response.IsSuccessStatusCode ? "Wysłano. Sprawdź skrzynkę." : await ApiErrors.ReadAsync(response);
+        }
+        catch (Exception exception) { resendMessage = ApiErrors.Describe(exception, "Nie udało się wysłać linku"); }
+        finally { resending = false; }
+    }
+}

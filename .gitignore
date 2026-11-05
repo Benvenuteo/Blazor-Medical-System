@@ -91,3 +91,4 @@ data-protection/
 deploy/.env
 deploy/secrets/
 deploy/backups/
+**/data/mail/

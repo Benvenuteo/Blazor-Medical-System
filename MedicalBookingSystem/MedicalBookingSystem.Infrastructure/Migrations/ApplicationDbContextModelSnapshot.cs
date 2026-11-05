@@ -17,6 +17,44 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.13");
 
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.AccountToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UsedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("PatientId", "Purpose");
+
+                    b.ToTable("AccountTokens");
+                });
+
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Appointment", b =>
                 {
                     b.Property<int>("Id")
@@ -31,6 +69,9 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
 
                     b.Property<int>("PatientId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ReminderQueuedAtUtc")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -189,6 +230,64 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                     b.ToTable("DoctorSpecializations");
                 });
 
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.EmailMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AttachmentContent")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AttachmentContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AttachmentName")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("HtmlBody")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("NextAttemptAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("SentAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TextBody")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("To")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SentAtUtc", "NextAttemptAtUtc");
+
+                    b.ToTable("EmailOutbox", (string)null);
+                });
+
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Note", b =>
                 {
                     b.Property<int>("Id")
@@ -229,6 +328,9 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("TEXT")
                         .UseCollation("NOCASE");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("FailedLoginCount")
                         .HasColumnType("INTEGER");
@@ -429,6 +531,17 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         {
                             t.HasCheckConstraint("CK_StaffAccount_Role", "(Role = 'Doctor' AND DoctorId IS NOT NULL) OR (Role = 'Admin' AND DoctorId IS NULL)");
                         });
+                });
+
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.AccountToken", b =>
+                {
+                    b.HasOne("MedicalBookingSystem.Domain.Models.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
                 });
 
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Appointment", b =>

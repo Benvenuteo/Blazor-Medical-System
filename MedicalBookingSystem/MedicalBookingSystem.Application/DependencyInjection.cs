@@ -21,6 +21,8 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher<StaffAccount>, PasswordHasher<StaffAccount>>();
         services.AddScoped<StaffAuthenticationService>();
         services.AddScoped<PatientAuthenticationService>();
+        services.AddScoped<AccountRecoveryService>();
+        services.AddOptions<Notifications.NotificationOptions>();
         services.AddScoped<ISessionValidator, AccountSessionValidator>();
         services.AddScoped<SessionGuard>();
         services.AddScoped<StaffPasswordService>();

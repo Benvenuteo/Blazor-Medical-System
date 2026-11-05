@@ -31,8 +31,18 @@ services:
       Seed__Enabled: ${DEMO_DATA:-true}
       Seed__PatientPassword: ${SEED_PATIENT_PASSWORD:-}
       Seed__StaffPassword: ${SEED_STAFF_PASSWORD:-}
+      Notifications__PatientAppUrl: https://${PATIENT_HOST}
+      # Pickup writes .eml files to the mail volume (no mail leaves the server); Smtp delivers for real.
+      Email__Mode: ${EMAIL_MODE:-Pickup}
+      Email__PickupDirectory: /data/mail
+      Email__From: ${EMAIL_FROM:-Medical Booking System <no-reply@example.test>}
+      Email__SmtpHost: ${SMTP_HOST:-}
+      Email__SmtpPort: ${SMTP_PORT:-587}
+      Email__SmtpUserName: ${SMTP_USERNAME:-}
+      Email__SmtpPassword: ${SMTP_PASSWORD:-}
     volumes:
       - db:/data/db
+      - mail:/data/mail
     networks:
       internal: { ipv4_address: 172.28.0.20 }
 
@@ -98,6 +108,7 @@ services:
 
 volumes:
   db:
+  mail:
   photos:
   keys:
   caddy-data:

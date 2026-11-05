@@ -47,7 +47,7 @@ USER root
 RUN apt-get update \
  && apt-get install -y --no-install-recommends curl \
  && rm -rf /var/lib/apt/lists/* \
- && mkdir -p /data/db /data/photos /data/keys /app/logs \
+ && mkdir -p /data/db /data/photos /data/keys /data/mail /app/logs \
  && chown -R $APP_UID:$APP_UID /data /app/logs
 WORKDIR /app
 ENV ASPNETCORE_HTTP_PORTS=8080 \

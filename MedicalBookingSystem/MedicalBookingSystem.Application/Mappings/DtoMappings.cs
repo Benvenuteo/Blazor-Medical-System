@@ -16,6 +16,7 @@ public static class DtoMappings
         LastName = patient.LastName,
         Email = patient.Email,
         PhoneNumber = patient.PhoneNumber,
+        EmailConfirmed = patient.EmailConfirmed,
         DateOfBirth = patient.DateOfBirth
     };
 
