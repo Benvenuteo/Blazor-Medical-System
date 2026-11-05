@@ -131,11 +131,39 @@ Stan wyjściowy: commit `e596cef`. Projekt jest dojrzały jak na portfolio — w
 
 ---
 
+## Część E — Wdrożenie demo na Oracle Cloud Always Free
+
+### Decyzje
+
+- **Jedna maszyna wirtualna** Oracle Always Free (Ampere A1, ARM64). API i panel muszą widzieć ten sam plik SQLite, więc stoją razem na jednym dysku. Kod zostaje na SQLite — bez migracji na PostgreSQL.
+- **Docker Compose:** kontenery `api`, `staff`, `nginx` (serwuje WASM i robi reverse proxy). Wolumeny: `data/` (baza), `photos/`, `data-protection/`, `backups/`.
+- **Obrazy `linux/arm64`** budowane w GitHub Actions i publikowane w GitHub Container Registry (darmowy dla publicznego repo). Na serwerze nie ma kompilacji.
+- **Domeny:** 3 subdomeny (pacjent, api, panel), np. darmowe DuckDNS albo własna tania domena. Certyfikaty Let's Encrypt (certbot), odnawiane automatycznie.
+- **Dane demo bez nocnego resetu.** Zmiany odwiedzających zostają, a demo nie może się „zepsuć”:
+  - konta demo (`patient@` / `doctor@` / `admin@example.test`) mają flagę `IsDemo`; w trybie `Demo:Enabled` nie można im zmienić hasła ani emaila, dezaktywować ich, zresetować ani wylogować z innych urządzeń; UI pokazuje czytelny komunikat;
+  - `BackgroundService` raz dziennie **dokłada** grafiki demo na kolejne tygodnie (horyzont rezerwacji to 3 miesiące), niczego nie usuwając;
+  - ewentualne „sprzątanie” tylko ręcznie: polecenie `reset-demo` w narzędziu `Maintenance`.
+- **Ryzyko Oracle:** maszyny Always Free z bardzo niskim użyciem CPU/sieci mogą zostać odebrane po ~7 dniach bezczynności. Ograniczenia: przejście na konto Pay As You Go (dalej 0 zł w limitach Always Free, wymaga karty, ustawić budżet z alertem 1 zł) albo lekki zewnętrzny ruch (healthcheck z GitHub Actions co kilka godzin). Kopie w `backups/` + `restore` z istniejącego narzędzia — maszynę da się odtworzyć w kilka minut.
+
+### Kroki
+
+1. **Konto i maszyna** — Oracle Cloud (region Frankfurt), VM Ampere A1 (np. 2 OCPU / 12 GB), Ubuntu 24.04, klucz SSH; Security List / firewall: tylko 22 (SSH, logowanie kluczem), 80, 443. Docker + Compose plugin, `unattended-upgrades`, `fail2ban`.
+2. **Dockerfile** dla `WebAPI` i `BlazorServer` (multi-stage, `mcr.microsoft.com/dotnet/aspnet:10.0` dla arm64, użytkownik nie-root, `HEALTHCHECK` na `/health/live` i `/health/ready`) oraz etap budujący WASM → statyczne pliki w obrazie `nginx`. Plik `.dockerignore`.
+3. **`deploy/docker-compose.yml`** + `deploy/.env.example`: `JwtSettings__SecretKey`, `ConnectionStrings__MedicalBookingSystem=/data/medical.db`, `AllowedHosts`, `Cors__AllowedOrigins__0`, `Proxy__KnownProxies__0` (IP kontenera nginx w stałej sieci Compose), `Media__*`, `DataProtection__*`, `Demo__Enabled=true`, `Seed__Enabled=true` z hasłami demo z README. Sekrety tylko w `.env` na serwerze, nigdy w repo.
+4. **Data Protection panelu** — certyfikat `.pfx` wygenerowany na serwerze (`openssl`), poza web rootem; wymagany przez `HostSecurity` w Production.
+5. **nginx** — na bazie `deploy/nginx.conf.example` z prawdziwymi domenami, `Referrer-Policy` wg części C (kafelki OSM), certyfikaty z certbota; `access_log` bez `$args`.
+6. **Migracje przy wdrożeniu** — jednorazowy kontener `api` z `Database__InitializeOnStartup=true` przed startem usług (albo osobna komenda w `Maintenance`); przed migracją automatyczny `backup`.
+7. **Tryb demo w kodzie** — flaga `IsDemo` (migracja), blokady w `StaffAccountService`, `StaffPasswordService`, `PatientService`, `SessionManagementService`; `DemoScheduleTopUpService`; komenda `reset-demo`; baner „Wersja demonstracyjna — dane fikcyjne” w obu UI; testy integracyjne blokad i dokładania grafików.
+8. **CD w GitHub Actions** — nowy workflow `deploy.yml`, uruchamiany po zielonym CI na `main`: `docker buildx` (arm64) → push do GHCR → SSH na VM (sekrety repo: host, użytkownik, klucz) → `backup` → `docker compose pull && up -d` → smoke test `/health/ready` i strony logowania; przy błędzie powrót do poprzedniego tagu obrazu.
+9. **Kopie** — `cron` na VM: codzienny `backup` + `verify` z narzędzia `Maintenance`, przechowywanie 7 dni.
+10. **README** — link „Zobacz demo” do wszystkich trzech aplikacji, dane logowania demo, informacja o fikcyjnych danych, odznaka statusu CI.
+
 ## Kolejność realizacji
 
 | Etap | Zakres | Uzasadnienie |
 |---|---|---|
-| 1 | A4, A5, A6, A7, A8, A12 | Szybkie porządki, małe ryzyko, osobny PR. |
+| 1 | A4, A5, A6, A7, A8, A12 | Szybkie porządki, małe ryzyko, osobny PR. `/health/ready` jest potrzebne do wdrożenia. |
+| 1b | E (wdrożenie demo + tryb demo) | Działający link w portfolio jak najwcześniej; każdy kolejny etap wdraża się sam po merge. |
 | 2 | A1 (lockout + równy czas odpowiedzi) | Bezpieczeństwo przed dodaniem nowej metody logowania. |
 | 3 | A9 → A0, A2 | Infrastruktura e‑mail, potwierdzenie emaila i reset hasła — B ich potrzebuje do rozwiązania konfliktu 409. |
 | 4 | B (Google) | Niezależne od mapy; wymaga migracji `Patient`. |
