@@ -76,7 +76,14 @@ jobs:
         run: npm ci
       - name: Install Chromium and Firefox
         working-directory: tests/e2e
-        run: npx playwright install --with-deps chromium firefox
+        timeout-minutes: 16
+        # Downloads occasionally hang on the runner; retry with a per-attempt limit instead of losing the whole job.
+        run: |
+          for attempt in 1 2 3; do
+            timeout 300 npx playwright install --with-deps chromium firefox && exit 0
+            echo "::warning::Browser installation attempt $attempt failed or timed out; retrying."
+          done
+          exit 1
       - name: Run real browser workflows
         working-directory: tests/e2e
         run: npm test
