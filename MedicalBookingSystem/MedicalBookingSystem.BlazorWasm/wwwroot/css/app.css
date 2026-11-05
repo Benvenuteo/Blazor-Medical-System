@@ -89,7 +89,7 @@ form.d-flex > .form-control { flex: 1 1 12rem; min-width: 0; }
 .auth-features li { padding-left: 1.6rem; position: relative; line-height: 1.45; color: #dbe7f5; }
 .auth-features li::before { content: "¹3"; position: absolute; left: 0; color: #7fd1ff; font-weight: 700; }
 .auth-features strong { color: #fff; }
-.auth-stack { font-size: .85rem; color: #a9c3e0; margin: 0; }
+.auth-stack { font-size: .85rem; color: #d6e4f5; margin: 0; }
 .auth-main { display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
 .auth-card { width: 100%; max-width: 480px; background: #fff; border-radius: 1rem; box-shadow: 0 10px 30px rgba(9, 36, 71, .08); padding: 2rem; }
 .auth-card h3, .auth-card h1 { font-weight: 700; margin-bottom: 1rem; }
@@ -100,3 +100,6 @@ form.d-flex > .form-control { flex: 1 1 12rem; min-width: 0; }
   .auth-title { font-size: 1.5rem; margin: 1rem 0; }
   .auth-features { display: none; }
 }
+
+/* Demo notice in the app bar: dark text on white for contrast. */
+.demo-chip { background: #fff; color: #0b3d75; border-radius: 999px; padding: .15rem .65rem; font-size: .8rem; font-weight: 600; white-space: nowrap; }

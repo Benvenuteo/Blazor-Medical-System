@@ -158,6 +158,10 @@ Stan wyjściowy: commit `e596cef`. Projekt jest dojrzały jak na portfolio — w
 9. **Kopie** — `cron` na VM: codzienny `backup` + `verify` z narzędzia `Maintenance`, przechowywanie 7 dni.
 10. **README** — link „Zobacz demo” do wszystkich trzech aplikacji, dane logowania demo, informacja o fikcyjnych danych, odznaka statusu CI.
 
+## Status (listopad 2026)
+
+Zrobione: A1–A2, A0 (potwierdzenie emaila bez blokady logowania), A4–A9, A12, B (Google), C (placówki, wyszukiwanie w promieniu, mapa Leaflet/OSM), E (kontenery, Caddy, tryb demo), D1 (potwierdzenia, przypomnienia, .ics). Do zrobienia: A3 (refresh token/BFF), A10 (wspólna biblioteka komponentów), D2–D9, CD do Oracle (workflow `deploy.yml`).
+
 ## Kolejność realizacji
 
 | Etap | Zakres | Uzasadnienie |

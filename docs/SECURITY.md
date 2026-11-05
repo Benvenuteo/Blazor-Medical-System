@@ -12,7 +12,10 @@
 | Dodanie grafiku | Nie | Nie | Własny | Dowolnego lekarza |
 | Zmiana zdjęcia lekarza | Nie | Nie | Nie | Tak |
 | Lista, tworzenie, edycja i reset kont personelu | Nie | Nie | Nie | Tak |
-| Zmiana własnego hasła i zakończenie własnych sesji | Nie | Tak | Tak | Tak |
+| Zmiana własnego hasła i zakończenie własnych sesji | Nie | Tak (nie dla kont demo) | Tak (nie dla kont demo) | Tak (nie dla kont demo) |
+| Placówki i przypisanie lekarzy | Nie | Nie | Nie | Tak |
+| Geokodowanie adresu (`/api/locations/geocode`) | Nie | Tak | Tak | Tak |
+| Logowanie Google, łączenie i odłączanie | Logowanie | Własne konto | Nie | Nie |
 
 API domyślnie wymaga uwierzytelnienia. Wyjątki są jawne na operacjach logowania, rejestracji, publicznych odczytach katalogu oraz `/health/live` i `/health/ready`. Sonda gotowości zwraca tylko `Healthy`/`Unhealthy`, bez szczegółów błędu. Odmowa uwierzytelnienia zwraca 401, a niewłaściwa rola lub obcy zasób — 403. Brak zasobu zwraca 404. Kontrola w `UserAccess` obowiązuje również przy bezpośrednich wywołaniach usług z panelu Server.
 
@@ -68,3 +71,23 @@ Token w localStorage jest dostępny dla kodu JavaScript działającego w origini
 ## Odczyty i pliki
 
 Kontekst EF nie jest współdzielony między operacjami obwodu Blazor. Odczyty katalogu są stronicowane i projektują publiczne dane bez historii klinicznej. Formularze personelu pozostają nieaktywne do pierwszego interaktywnego renderowania. Przesyłane zdjęcia są dekodowane i kodowane ponownie, a nazwy plików oraz adres publiczny kontroluje serwer; szczegóły: [MEDIA.md](MEDIA.md).
+
+## Konta demonstracyjne
+
+Konta z seeda demo (`patient@`, `doctor@`, `admin@example.test`) mają flagę `IsDemo`. Usługi odmawiają (403) zmiany ich hasła, emaila, profilu, aktywności, resetu przez administratora, wylogowania wszystkich sesji, resetu hasła mailem i powiązania z Google — każda z tych operacji odcięłaby kolejnego odwiedzającego. Konta demo nie podlegają też blokadzie po nieudanych logowaniach; chroni je limit żądań na adres IP. Rezerwacje, dokumentacja, opinie i zarządzanie innymi kontami działają normalnie.
+
+## Blokada konta i równy czas odpowiedzi
+
+Pięć błędnych haseł blokuje konto pacjenta lub personelu na 15 minut; poprawne logowanie zeruje licznik. Nieznany email, konto zablokowane i złe hasło dają ten sam komunikat i tyle samo obliczeń hasha (weryfikacja na atrapie), więc czas odpowiedzi nie zdradza istnienia konta. Limit żądań panelu liczy wyłącznie wysłania formularza logowania, nie jego wyświetlenia.
+
+## Potwierdzenie emaila i reset hasła
+
+Linki zawierają losowy, jednorazowy token; baza przechowuje tylko jego SHA-256. Reset jest ważny 30 minut, nowe żądanie unieważnia wcześniejsze linki, a udany reset zmienia `SecurityStamp` (wylogowuje wszystkie sesje) i zdejmuje blokadę. Żądanie resetu dla nieznanego lub demonstracyjnego adresu zwraca to samo 202 bez wysyłki. Strona potwierdzenia wymienia token jawnym POST — skanery poczty otwierające linki GET niczego nie potwierdzą.
+
+## Logowanie przez Google
+
+Przeglądarka otrzymuje ID token z Google Identity Services i przekazuje go z jednorazowym `nonce`. API weryfikuje podpis kluczami Google (metadane OIDC z cache), wystawcę, `aud` równe własnemu Client ID, ważność i `nonce`, wymaga `email_verified`, a następnie wydaje własny JWT. Konto dopasowuje się po stałym `sub`, nigdy po samym emailu: istniejące potwierdzone konto zwraca 409 `account_exists_link_required` i łączy je właściciel w ustawieniach po podaniu aktualnego hasła. Wyjątkiem jest niepotwierdzona rejestracja tego samego adresu — zweryfikowany przez Google właściciel skrzynki ją przejmuje, a hasło ustawione przez rejestrującego przestaje działać. Konto utworzone przez Google musi uzupełnić datę urodzenia i telefon przed rezerwacją; blokadę wymusza stan w bazie (`ProfileIncomplete`), nie claim w tokenie.
+
+## Nagłówki dla zewnętrznych zasobów
+
+Aplikacja pacjenta zezwala w CSP na skrypt i ramkę Google Identity Services oraz Leaflet z cdnjs (z Subresource Integrity); kafelki OpenStreetMap są obrazami `https:`. `Referrer-Policy: strict-origin-when-cross-origin` w aplikacji pacjenta i panelu wynika z wymagań Google i polityki kafelków OSM; API pozostaje przy `no-referrer`. Lokalizacja pacjenta jest zaokrąglana do ok. 1 km i nie jest zapisywana; geokodowanie idzie przez API (limit 10/min na adres), więc przeglądarka nie kontaktuje się z Nominatim.

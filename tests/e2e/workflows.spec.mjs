@@ -24,7 +24,8 @@ test('patient searches, books, reschedules, cancels and logs out', async ({ page
   await page.getByRole('button', { name: 'Szukaj', exact: true }).click();
   await expect(page.getByRole('cell', { name: 'Demonstracyjna', exact: true })).toBeVisible();
   await page.screenshot({ path: info.outputPath('patient-directory.png'), fullPage: true });
-  await page.getByRole('link', { name: 'Zarezerwuj wizytę', exact: true }).click();
+  // The demo has several doctors; book the one whose visits the doctor test completes later.
+  await page.getByRole('row').filter({ hasText: 'Demonstracyjna' }).getByRole('link', { name: 'Zarezerwuj wizytę', exact: true }).click();
   const slot = page.getByLabel('Wolny termin');
   await expect(slot.locator('option')).not.toHaveCount(1);
   const original = await slot.locator('option').nth(1).getAttribute('value');
@@ -94,9 +95,10 @@ test('doctor completes a visit and documents it; patient reads records and posts
   await expect(patient.getByRole('status').filter({ hasText: 'opinia o lekarzu' })).toBeVisible();
   await patient.goto('/doctors/search');
   await patient.getByRole('button', { name: 'Szukaj', exact: true }).click();
-  await patient.getByRole('button', { name: 'Pokaż opinie', exact: true }).first().click();
+  const reviewed = patient.getByRole('row').filter({ hasText: 'Demonstracyjna' });
+  await reviewed.getByRole('button', { name: 'Pokaż opinie', exact: true }).click();
   await expect(patient.getByRole('listitem').filter({ hasText: 'Opinia demonstracyjna z testu przeglądarkowego.' })).toBeVisible();
-  await expect(patient.getByRole('row').filter({ has: patient.getByRole('link', { name: 'Zarezerwuj wizytę', exact: true }) }).getByRole('cell').nth(5)).toHaveText('1');
+  await expect(reviewed.getByRole('cell').nth(5)).toHaveText('1');
   await patientContext.close();
   expect(errors).toEqual([]);
 });
@@ -242,4 +244,40 @@ test('patient changes password and ends sessions in another browser', async ({ p
   await other.goto('http://localhost:5016/appointments');
   await expect(other.getByRole('heading', { name: 'Logowanie', exact: true })).toBeVisible();
   await otherContext.close();
+});
+
+test('demo patient account is protected; location search lists nearby clinics on the map', async ({ page, context }, info) => {
+  const errors = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Wypełnij dane demo', exact: true }).click();
+  await page.getByRole('button', { name: 'Zaloguj się', exact: true }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.goto('/account/security');
+  await expect(page.getByText('To publiczne konto demonstracyjne', { exact: false })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Zmień hasło', exact: true })).toBeDisabled();
+
+  // Kraków: three demo clinics are within 30 km, Katowice (~70 km) and Warsaw are not.
+  await context.grantPermissions(['geolocation']);
+  await context.setGeolocation({ latitude: 50.0614, longitude: 19.9366 });
+  await page.goto('/doctors/search');
+  await page.getByRole('button', { name: 'Użyj mojej lokalizacji', exact: true }).click();
+  await expect(page.getByText('Szukam w promieniu 30 km', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: 'Szukaj', exact: true }).click();
+  await expect(page.getByRole('cell', { name: 'Demonstracyjna', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Fikcyjny', exact: true })).toHaveCount(0);
+  await expect(page.getByText('Wyniki: 3', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: 'Mapa', exact: true }).click();
+  await expect(page.locator('.leaflet-marker-icon')).toHaveCount(3);
+  await page.screenshot({ path: info.outputPath('patient-map.png'), fullPage: true });
+  expect(errors).toEqual([]);
+});
+
+test('admin manages clinics on the map', async ({ page }, info) => {
+  const errors = []; page.on('pageerror', e => errors.push(e.message));
+  await staffLogin(page, 'admin@example.test');
+  await page.goto('http://localhost:5187/admin/clinics');
+  await expect(page.getByRole('cell', { name: 'Centrum Medyczne Demo — Kraków Stare Miasto', exact: true })).toBeVisible();
+  await expect(page.locator('.clinic-map .leaflet-marker-icon')).toHaveCount(1);
+  await page.screenshot({ path: info.outputPath('admin-clinics.png'), fullPage: true });
+  expect(errors).toEqual([]);
 });

@@ -36,3 +36,24 @@ Metadane audytu powstają w tej samej jednostce pracy co dokument. Zapis obu jes
 Filtrowanie, agregaty, sortowanie i podział stron wykonywane są przed materializacją w SQLite. Dostępność katalogu korzysta z ograniczonego kalendarza i rekurencyjnego CTE wewnątrz realnych grafików, zamiast z grafów wszystkich wizyt. Historia korzysta z indeksów właściciel/status/data/Id. Liczba wyników i strona to osobne odczyty; zapis rezerwacji zawsze sprawdza bieżący stan.
 
 Plik i SQLite nie tworzą jednej transakcji. Zmiana zdjęcia korzysta z dekodowania, ponownego kodowania, nazw generowanych na serwerze, kompensacji i sprzątania osieroconych plików. Backup obejmuje spójny snapshot SQLite i wskazane zdjęcia; brak zdjęcia przerywa publikację kopii. Szczegóły ograniczeń i odzyskiwania zawierają [MEDIA.md](MEDIA.md) oraz [OPERATIONS.md](OPERATIONS.md).
+
+## Placówki i wyszukiwanie w promieniu
+
+Lekarz pracuje w wielu placówkach (`DoctorClinic`); dyżur (`DoctorSchedule.ClinicId`) odbywa się w jednej z nich, a wizyta kopiuje placówkę przy rezerwacji, więc późniejsza zmiana grafiku nie przepisuje historii. Grafiki sprzed wprowadzenia placówek mają `ClinicId = null`.
+
+Wyszukiwanie z punktem i promieniem to jedno zapytanie SQL: CTE `NearbyClinics` filtruje placówki prostokątem ograniczającym (indeks na współrzędnych, granice liczone w C#) i dokładną odległością `haversine` — funkcją .NET rejestrowaną na połączeniu SQLite jak istniejąca collation. Lekarz kwalifikuje się, jeśli przyjmuje w placówce w zasięgu; „najbliższy termin” liczony jest tylko z dyżurów w tych placówkach. Najbliższa placówka i odległość wracają w wynikach (`ROW_NUMBER` po odległości).
+
+Migracja `ClinicsAndMapSearch` dodaje kolumny z kluczem obcym natywnym `ALTER TABLE ... ADD COLUMN ... REFERENCES`. `AddForeignKey` w EF dla SQLite przebudowałby tabele `Appointments` i `DoctorSchedules`, a przebudowa po cichu usuwa ich triggery przedziałów. Z tego samego powodu migracji nie da się cofnąć w miejscu — przywraca się kopię.
+
+## Powiadomienia
+
+Maile powstają w transakcyjnym outboxie (`EmailOutbox`) razem ze zmianą, która je wywołała, i są dostarczane w tle z wykładniczym odstępem ponowień. Tryb `Pickup` zapisuje pliki `.eml` (development, demo), `Smtp` wysyła je. Potwierdzenie rezerwacji jest zapisywane po rezerwacji (potrzebuje jej identyfikatora do UID wydarzenia) i jest „best effort”: zajęta baza nie zmienia zapisanej rezerwacji w błąd. Przypomnienia na jutro kolejkuje godzinne zadanie; `ReminderQueuedAtUtc` gwarantuje jedno przypomnienie na wizytę. Pliki iCalendar używają czasu UTC.
+
+## Zewnętrzne usługi
+
+| Usługa | Do czego | Gdy niedostępna |
+| --- | --- | --- |
+| Google Identity Services | Logowanie pacjentów przez Google | Przycisk ukryty bez Client ID; logowanie hasłem działa |
+| OpenStreetMap Nominatim | Adres → współrzędne (przez API, 1 żądanie/s, cache 24 h) | Komunikat; można użyć lokalizacji przeglądarki |
+| Kafelki OpenStreetMap, Leaflet (cdnjs) | Mapa pacjenta i administratora | Widok listy działa bez mapy |
+| Serwer SMTP | Wysyłka maili | Wiadomości czekają w outboxie i są ponawiane |

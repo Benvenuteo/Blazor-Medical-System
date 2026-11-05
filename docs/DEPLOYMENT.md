@@ -55,6 +55,11 @@ Skrypt tworzy `deploy/.env` z wzoru, generuje `JWT_SECRET_KEY`, hasło certyfika
 
 `DEMO_DATA=true` włącza fikcyjne konta z README. To celowo publiczne dane demonstracyjne; dla wdrożenia bez nich ustaw `DEMO_DATA=false` i utwórz administratora narzędziem z punktu 5.
 
+### Opcjonalnie: logowanie Google i prawdziwe maile
+
+- **Google:** w Google Cloud Console utwórz OAuth Client ID typu *Web application*, w *Authorized JavaScript origins* dodaj `https://PATIENT_HOST` (lokalnie także `http://localhost:5016` i `http://localhost`) i wpisz go jako `GOOGLE_CLIENT_ID`. Bez niego przycisk Google się nie pokazuje.
+- **Maile:** `EMAIL_MODE=Smtp` i dane `SMTP_*` (np. darmowy plan dostawcy maili transakcyjnych). Domyślne `Pickup` zapisuje wiadomości jako `.eml` w wolumenie `mail`.
+
 ## 4. Uruchomienie i aktualizacja
 
 ```bash

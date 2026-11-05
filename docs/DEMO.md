@@ -8,6 +8,16 @@ Pacjent filtruje i sortuje katalog, porównuje oceny oraz pierwszy wolny termin,
 
 ![Katalog lekarzy](screenshots/patient-directory.png)
 
+## Pacjent: lekarze w okolicy na mapie
+
+Na stronie **Lekarze** wpisz adres (np. „Kraków, Rynek Główny”) albo użyj lokalizacji przeglądarki i zostaw promień 30 km. Wyniki obejmują trzech lekarzy z Krakowa i Wieliczki — Katowice (~70 km) i Warszawa są poza zasięgiem. Przełącz na **Mapa**: pinezki placówek, okrąg promienia i lekarze z najbliższym terminem w dymku. Zwiększ promień do 100 km, aby pojawiły się Katowice.
+
+Po rezerwacji lista wizyt pokazuje placówkę z linkiem „Nawiguj” i przyciskiem **Do kalendarza** (.ics). Potwierdzenie i przypomnienie trafiają do outboxu — w demo jako pliki `.eml`.
+
+## Konta i bezpieczeństwo
+
+Na koncie demo otwórz **Bezpieczeństwo konta**: zmiana hasła i wylogowanie wszystkich sesji są wyłączone z wyjaśnieniem, a reszta aplikacji działa. Załóż własne konto, żeby pokazać potwierdzenie emaila, „Nie pamiętasz hasła?” i — gdy skonfigurowano Client ID — logowanie przez Google z uzupełnieniem profilu.
+
 ## Dokumentacja po odbytej wizycie
 
 Przypisany lekarz oznacza zakończoną wizytę jako odbytą i dodaje notatkę oraz receptę. Pacjent odczytuje je w historii. Uprawnienia są weryfikowane również w usługach i API.
@@ -19,6 +29,8 @@ Przypisany lekarz oznacza zakończoną wizytę jako odbytą i dodaje notatkę or
 Administrator korzysta ze stronicowanego katalogu, zastępuje zdjęcie lekarza i dodaje grafik. Test przeglądarkowy sprawdza również odrzucenie tekstu przesłanego jako JPG.
 
 ![Panel administratora](screenshots/admin-directory.png)
+
+Na koncie administratora otwórz **Placówki**: lista placówek, wyszukanie adresu na mapie, przeciąganie pinezki i przypisanie lekarzy. Formularz grafiku pyta o placówkę, jeśli lekarz pracuje w którejś z nich.
 
 Raport każdego przebiegu CI zawiera aktualne zrzuty, a przy błędzie również ślad Playwright. Reguły działania opisują [BOOKING.md](BOOKING.md), [API.md](API.md) i [MEDIA.md](MEDIA.md).
 
