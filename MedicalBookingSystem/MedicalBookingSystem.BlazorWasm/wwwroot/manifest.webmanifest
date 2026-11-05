@@ -1,0 +1,21 @@
+{
+  "name": "Medical Booking System",
+  "short_name": "Wizyty",
+  "description": "Rezerwacja wizyt lekarskich: lekarze w okolicy, wolne terminy, dokumentacja i przypomnienia.",
+  "lang": "pl",
+  "id": "/",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f6f9",
+  "theme_color": "#092447",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Znajdź lekarza", "url": "/doctors/search", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Moje wizyty", "url": "/appointments", "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ]
+}
