@@ -123,6 +123,7 @@ namespace MedicalBookingSystem.Infrastructure
             });
             modelBuilder.Entity<DoctorSchedule>().HasOne(s => s.Clinic).WithMany().HasForeignKey(s => s.ClinicId).OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<Appointment>().HasOne(a => a.Clinic).WithMany().HasForeignKey(a => a.ClinicId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Appointment>().Property(a => a.VideoRoom).HasMaxLength(100);
             modelBuilder.Entity<PatientExternalLogin>(entity =>
             {
                 entity.Property(l => l.Provider).IsRequired().HasMaxLength(30);

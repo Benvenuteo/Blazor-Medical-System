@@ -78,7 +78,8 @@ public sealed class VisitNotificationService(IUnitOfWorkFactory units, ClinicClo
         var doctor = await unit.Doctors.GetByIdAsync(appointment.DoctorId);
         if (patient is null || doctor is null) return null;
         var clinic = appointment.ClinicId is int clinicId ? await unit.Clinics.GetByIdAsync(clinicId) : null;
-        var location = clinic is null ? null : $"{clinic.Name}, {clinic.Address}";
+        var location = appointment.IsRemote ? $"Teleporada: {VideoRooms.Link(appointment.VideoRoom)}"
+            : clinic is null ? null : $"{clinic.Name}, {clinic.Address}";
         var startUtc = clock.ToUtc(appointment.Date);
         return new VisitDetails(patient, $"{doctor.FirstName} {doctor.LastName}",
             appointment.Date.ToString("dd.MM.yyyy 'o' HH:mm", Polish), location, startUtc, startUtc.Add(AppointmentSlots.Duration));

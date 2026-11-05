@@ -14,6 +14,8 @@ namespace MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
         public string? ClinicAddress { get; set; }
         public double? ClinicLatitude { get; set; }
         public double? ClinicLongitude { get; set; }
+        public bool IsRemote { get; set; }
+        public string? VideoLink { get; set; }
     }
 
 }

@@ -91,7 +91,9 @@ public static class DtoMappings
         ClinicName = appointment.Clinic?.Name,
         ClinicAddress = appointment.Clinic?.Address,
         ClinicLatitude = appointment.Clinic?.Latitude,
-        ClinicLongitude = appointment.Clinic?.Longitude
+        ClinicLongitude = appointment.Clinic?.Longitude,
+        IsRemote = appointment.IsRemote,
+        VideoLink = MedicalBookingSystem.Application.Notifications.VideoRooms.Link(appointment.VideoRoom)
     };
 
     public static AppointmentDetailsDto ToDetailsDto(this Appointment appointment) => new()
@@ -104,6 +106,8 @@ public static class DtoMappings
         Date = appointment.Date,
         Status = appointment.Status.ToString(),
         DoctorName = appointment.ToDto().DoctorName,
+        IsRemote = appointment.IsRemote,
+        VideoLink = MedicalBookingSystem.Application.Notifications.VideoRooms.Link(appointment.VideoRoom),
         Doctor = appointment.Doctor?.ToDto(),
         Patient = appointment.Patient?.ToBasicDto(),
         Note = appointment.Note?.ToDto(),

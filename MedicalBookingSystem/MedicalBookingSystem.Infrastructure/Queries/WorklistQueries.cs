@@ -20,7 +20,9 @@ public sealed class WorklistQueries(IDbContextFactory<ApplicationDbContext> cont
         ClinicName = a.Clinic == null ? null : a.Clinic.Name,
         ClinicAddress = a.Clinic == null ? null : a.Clinic.Street + ", " + a.Clinic.PostalCode + " " + a.Clinic.City,
         ClinicLatitude = a.Clinic == null ? null : a.Clinic.Latitude,
-        ClinicLongitude = a.Clinic == null ? null : a.Clinic.Longitude
+        ClinicLongitude = a.Clinic == null ? null : a.Clinic.Longitude,
+        IsRemote = a.IsRemote,
+        VideoLink = a.VideoRoom == null ? null : "https://meet.jit.si/" + a.VideoRoom
     };
 
     public async Task<PagedResult<AppointmentDto>> AppointmentsAsync(int ownerId, bool doctor, bool completed, AppointmentListQueryDto query)

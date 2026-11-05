@@ -70,6 +70,9 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                     b.Property<int>("DoctorId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsRemote")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("PatientId")
                         .HasColumnType("INTEGER");
 
@@ -83,6 +86,10 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
 
                     b.Property<Guid>("Version")
                         .IsConcurrencyToken()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("VideoRoom")
+                        .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");

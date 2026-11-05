@@ -43,7 +43,16 @@ else
                 <tr>
                     <td>@appointment.Date.ToShortDateString()</td>
                     <td>@appointment.Date.ToShortTimeString()</td>
-                    <td>@appointment.DoctorName<ClinicInfo Name="@appointment.ClinicName" Address="@appointment.ClinicAddress" Latitude="@appointment.ClinicLatitude" Longitude="@appointment.ClinicLongitude" /></td>
+                    <td>@appointment.DoctorName
+                        @if (appointment.IsRemote)
+                        {
+                            <div class="small"><span class="badge text-bg-info">Teleporada</span>
+                                @if (appointment.VideoLink is not null) { <a href="@appointment.VideoLink" target="_blank" rel="noopener noreferrer" class="ms-1">Dołącz do rozmowy<span class="visually-hidden"> (otwiera nową kartę)</span></a> }</div>
+                        }
+                        else
+                        {
+                            <ClinicInfo Name="@appointment.ClinicName" Address="@appointment.ClinicAddress" Latitude="@appointment.ClinicLatitude" Longitude="@appointment.ClinicLongitude" />
+                        }</td>
                     <td>
                         <button class="btn btn-primary btn-sm" @onclick="() => ShowDetails(appointment.Id)">Szczegóły</button>
                         <button class="btn btn-sm btn-primary me-2" @onclick="() => EditAppointment(appointment)">Edytuj</button>

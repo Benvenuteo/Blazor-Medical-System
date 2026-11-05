@@ -29,7 +29,8 @@ public sealed class AppointmentService(
         if (await PatientHasConflictAsync(unitOfWork, patientId, dto.Date))
             return Result.Failure<AppointmentDto>("W tym czasie masz już inną wizytę.", ErrorType.Conflict);
         var appointment = new Appointment { PatientId = patientId, DoctorId = dto.DoctorId, Date = dto.Date,
-            ClinicId = await unitOfWork.DoctorSchedules.FindClinicAtAsync(dto.DoctorId, dto.Date) };
+            ClinicId = await unitOfWork.DoctorSchedules.FindClinicAtAsync(dto.DoctorId, dto.Date),
+            IsRemote = dto.Remote, VideoRoom = dto.Remote ? MedicalBookingSystem.Application.Notifications.VideoRooms.NewRoom() : null };
         await unitOfWork.Appointments.AddAsync(appointment);
         try { await unitOfWork.SaveChangesAsync(); }
         catch (PersistenceConflictException)

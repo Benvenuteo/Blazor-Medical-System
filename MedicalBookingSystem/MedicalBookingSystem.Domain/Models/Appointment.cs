@@ -12,6 +12,10 @@ namespace MedicalBookingSystem.Domain.Models
         public DateTime? ReminderQueuedAtUtc { get; set; }
         /// <summary>Copied from the schedule when booked, so later schedule edits do not rewrite history.</summary>
         public int? ClinicId { get; set; }
+        /// <summary>Video visit instead of meeting at the clinic.</summary>
+        public bool IsRemote { get; set; }
+        /// <summary>Unguessable video room name, set only for remote visits.</summary>
+        public string? VideoRoom { get; set; }
         public Clinic? Clinic { get; set; }
 
         public Patient Patient { get; set; } = null!;
