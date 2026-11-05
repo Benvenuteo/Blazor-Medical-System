@@ -8,7 +8,8 @@ namespace MedicalBookingSystem.Application.Security;
 /// <summary>Enforces permissions at the application boundary, including direct calls from a server circuit.</summary>
 public sealed class UserAccess(ICurrentUser currentUser, SessionGuard sessions)
 {
-    private async Task<ClaimsPrincipal> GetUserAsync() => await sessions.RequireAsync(await currentUser.GetPrincipalAsync());
+    private async Task<ClaimsPrincipal> GetUserAsync(bool allowIncompleteProfile = false) =>
+        await sessions.RequireAsync(await currentUser.GetPrincipalAsync(), allowIncompleteProfile: allowIncompleteProfile);
 
     public async Task<AccountIdentity> IdentityAsync()
     {
@@ -34,9 +35,10 @@ public sealed class UserAccess(ICurrentUser currentUser, SessionGuard sessions)
         catch (AccessDeniedException) { return null; }
     }
 
-    public async Task<int> PatientIdAsync()
+    /// <param name="allowIncompleteProfile">True only for reading/completing the profile and ending sessions.</param>
+    public async Task<int> PatientIdAsync(bool allowIncompleteProfile = false)
     {
-        var user = await GetUserAsync();
+        var user = await GetUserAsync(allowIncompleteProfile);
         if (!user.IsInRole(Roles.Patient) || AccountClaims.ReadId(user, AccountClaims.PatientId) is not int id)
             throw new AccessDeniedException(true);
         return id;
@@ -50,9 +52,9 @@ public sealed class UserAccess(ICurrentUser currentUser, SessionGuard sessions)
         return id;
     }
 
-    public async Task RequirePatientAsync(int patientId)
+    public async Task RequirePatientAsync(int patientId, bool allowIncompleteProfile = false)
     {
-        if (await PatientIdAsync() != patientId) throw new AccessDeniedException(true);
+        if (await PatientIdAsync(allowIncompleteProfile) != patientId) throw new AccessDeniedException(true);
     }
 
     public async Task RequireDoctorAsync(int doctorId)

@@ -28,11 +28,15 @@ internal sealed class MedicalApiFactory : WebApplicationFactory<MedicalBookingSy
         _interceptor = interceptor;
         if (connectionString is null) { _connection = new("Data Source=:memory:"); _connection.Open(); }
     }
+    /// <summary>Replaces Google in every API test host; tests issue tokens through it.</summary>
+    internal FakeExternalTokenValidator ExternalTokens { get; } = new();
     internal SqliteConnection Connection => _connection ?? throw new InvalidOperationException("This factory uses independent file connections.");
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        // Same container checks as Development: a missing registration fails every test, not only a real start.
+        builder.UseDefaultServiceProvider(options => { options.ValidateOnBuild = true; options.ValidateScopes = true; });
         builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["JwtSettings:SecretKey"] = "integration-tests-only-signing-key-at-least-thirty-two-bytes",
@@ -43,6 +47,10 @@ internal sealed class MedicalApiFactory : WebApplicationFactory<MedicalBookingSy
         {
             // Keep test cookies independent of the developer profile and other test hosts.
             services.AddDataProtection().UseEphemeralDataProtectionProvider();
+            services.RemoveAll<MedicalBookingSystem.Application.Security.IExternalTokenValidator>();
+            services.AddSingleton<MedicalBookingSystem.Application.Security.IExternalTokenValidator>(ExternalTokens);
+            services.RemoveAll<MedicalBookingSystem.Application.Services.IGeocodingService>();
+            services.AddSingleton<MedicalBookingSystem.Application.Services.IGeocodingService, FakeGeocodingService>();
             services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<ApplicationDbContext>>();
             services.AddDbContextFactory<ApplicationDbContext>(options =>

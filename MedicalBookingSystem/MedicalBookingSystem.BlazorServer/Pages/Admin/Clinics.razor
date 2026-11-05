@@ -1,0 +1,196 @@
+@inherits MedicalBookingSystem.BlazorServer.Shared.InteractivePageBase
+@page "/admin/clinics"
+@attribute [Authorize(Roles = Roles.Admin)]
+@implements IAsyncDisposable
+@using MedicalBookingSystem.SharedKernel.Dto
+@using MedicalBookingSystem.SharedKernel.Dto.DtoHelp
+@inject ClinicService ClinicManager
+@inject IDoctorService DoctorService
+@inject IJSRuntime JS
+
+<PageTitle>Placówki</PageTitle>
+<h3>Placówki</h3>
+<p>Placówki pojawiają się na mapie pacjenta. Ustaw pinezkę dokładnie przy wejściu — wyszukiwanie w promieniu liczy odległość od niej.</p>
+@if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
+@if (success is not null) { <div class="alert alert-success" role="status">@success</div> }
+
+<fieldset disabled="@(!IsInteractive || busy)">
+@if (clinics.Count > 0)
+{
+    <div class="table-responsive" tabindex="0" role="region" aria-label="Lista placówek">
+    <table class="table align-middle">
+        <thead><tr><th>Placówka</th><th>Adres</th><th>Lekarze</th><th>Akcje</th></tr></thead>
+        <tbody>
+        @foreach (var clinic in clinics)
+        {
+            <tr @key="clinic.Id">
+                <td>@clinic.Name</td>
+                <td>@clinic.Address</td>
+                <td>@string.Join(", ", clinic.DoctorIds.Select(DoctorName))</td>
+                <td><button class="btn btn-outline-primary btn-sm" @onclick="() => Edit(clinic)">Edytuj</button></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    </div>
+}
+else if (!loading) { <p>Nie ma jeszcze żadnej placówki.</p> }
+
+<section class="card card-body mt-3">
+    <h4>@(editingId is null ? "Nowa placówka" : "Edycja placówki")</h4>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label for="clinic-name" class="form-label">Nazwa</label>
+            <InputText id="clinic-name" class="form-control" @bind-Value="form.Name" />
+            <label for="clinic-street" class="form-label mt-2">Ulica i numer</label>
+            <InputText id="clinic-street" class="form-control" @bind-Value="form.Street" />
+            <div class="row g-2 mt-0">
+                <div class="col-4"><label for="clinic-postal" class="form-label mt-2">Kod</label><InputText id="clinic-postal" class="form-control" placeholder="00-000" @bind-Value="form.PostalCode" /></div>
+                <div class="col-8"><label for="clinic-city" class="form-label mt-2">Miejscowość</label><InputText id="clinic-city" class="form-control" @bind-Value="form.City" /></div>
+            </div>
+            <label for="clinic-phone" class="form-label mt-2">Telefon</label>
+            <InputText id="clinic-phone" class="form-control" @bind-Value="form.Phone" />
+            <button type="button" class="btn btn-outline-secondary mt-3" @onclick="FindOnMapAsync">Znajdź adres na mapie</button>
+            <p class="form-text">Wyszukiwanie adresu podpowiada położenie; popraw pinezkę, przeciągając ją albo klikając mapę.</p>
+            <p class="small">Położenie: @(form.Latitude is double lat && form.Longitude is double lng ? $"{lat:0.00000}, {lng:0.00000}" : "nie ustawiono")</p>
+            <fieldset>
+                <legend class="form-label fs-6">Lekarze przyjmujący w placówce</legend>
+                @foreach (var doctor in doctors)
+                {
+                    <label class="d-block"><input type="checkbox" checked="@form.DoctorIds.Contains(doctor.Id)" @onchange="e => ToggleDoctor(doctor.Id, (bool)e.Value!)" />
+                        @doctor.FirstName @doctor.LastName</label>
+                }
+            </fieldset>
+        </div>
+        <div class="col-md-6">
+            <div @ref="mapHost" class="clinic-map" role="application" aria-label="Mapa: kliknij lub przeciągnij pinezkę, aby ustawić położenie placówki"></div>
+            <p class="form-text">Mapa © współtwórcy OpenStreetMap.</p>
+        </div>
+    </div>
+    <div class="d-flex gap-2 mt-3">
+        <button class="btn btn-primary" @onclick="SaveAsync">Zapisz placówkę</button>
+        @if (editingId is not null)
+        {
+            <button class="btn btn-outline-danger" @onclick="DeleteAsync">Usuń placówkę</button>
+            <button class="btn btn-link" @onclick="New">Nowa placówka</button>
+        }
+    </div>
+</section>
+</fieldset>
+
+@code {
+    private List<ClinicDto> clinics = [];
+    private List<DoctorDto> doctors = [];
+    private SaveClinicDto form = new();
+    private int? editingId;
+    private bool loading = true, busy, mapReady;
+    private string? error, success;
+    private ElementReference mapHost;
+    private DotNetObjectReference<Clinics>? self;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        // Doctor list for the checkboxes: every page of the directory (50 per page).
+        for (var number = 1; ; number++)
+        {
+            var page = await DoctorService.SearchDoctorsAsync(new SearchDoctorsDto { Page = number, PageSize = 50 });
+            if (!page.IsSuccess) break;
+            doctors.AddRange(page.Value.Items);
+            if (number >= page.Value.TotalPages) break;
+        }
+        doctors = doctors.OrderBy(d => d.LastName).ThenBy(d => d.FirstName).ToList();
+        loading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        self = DotNetObjectReference.Create(this);
+        try { await JS.InvokeVoidAsync("medicalMap.picker", mapHost, form.Latitude, form.Longitude, self); mapReady = true; }
+        catch (JSException) { error = "Nie udało się wczytać mapy. Sprawdź połączenie z internetem."; StateHasChanged(); }
+    }
+
+    [JSInvokable]
+    public Task PinMoved(double latitude, double longitude)
+    {
+        form.Latitude = Math.Round(latitude, 6);
+        form.Longitude = Math.Round(longitude, 6);
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadAsync()
+    {
+        var result = await ClinicManager.ListAsync();
+        if (result.IsSuccess) clinics = result.Value.ToList(); else error = result.Error;
+    }
+
+    private string DoctorName(int id) => doctors.FirstOrDefault(d => d.Id == id) is { } d ? $"{d.FirstName} {d.LastName}" : $"#{id}";
+
+    private void ToggleDoctor(int id, bool selected)
+    {
+        if (selected && !form.DoctorIds.Contains(id)) form.DoctorIds.Add(id);
+        if (!selected) form.DoctorIds.Remove(id);
+    }
+
+    private async Task Edit(ClinicDto clinic)
+    {
+        editingId = clinic.Id; error = success = null;
+        form = new SaveClinicDto
+        {
+            Name = clinic.Name, Street = clinic.Street, City = clinic.City, PostalCode = clinic.PostalCode, Phone = clinic.Phone,
+            Latitude = clinic.Latitude, Longitude = clinic.Longitude, DoctorIds = clinic.DoctorIds.ToList()
+        };
+        if (mapReady) await JS.InvokeVoidAsync("medicalMap.setPin", mapHost, clinic.Latitude, clinic.Longitude);
+    }
+
+    private void New() { editingId = null; form = new(); error = success = null; }
+
+    private async Task FindOnMapAsync()
+    {
+        error = success = null;
+        var query = string.Join(", ", new[] { form.Street, $"{form.PostalCode} {form.City}".Trim() }.Where(s => !string.IsNullOrWhiteSpace(s)));
+        var point = await ClinicManager.GeocodeAsync(query);
+        if (!point.IsSuccess) { error = point.Error; return; }
+        await PinMoved(point.Value.Latitude, point.Value.Longitude);
+        if (mapReady) await JS.InvokeVoidAsync("medicalMap.setPin", mapHost, point.Value.Latitude, point.Value.Longitude);
+    }
+
+    private async Task SaveAsync()
+    {
+        if (busy) return;
+        busy = true; error = success = null;
+        try
+        {
+            var result = editingId is int id ? await ClinicManager.UpdateAsync(id, form) : await ClinicManager.CreateAsync(form);
+            if (!result.IsSuccess) { error = result.Error; return; }
+            editingId = result.Value.Id;
+            success = "Placówka zapisana.";
+            await LoadAsync();
+        }
+        finally { busy = false; }
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (busy || editingId is not int id) return;
+        busy = true; error = success = null;
+        try
+        {
+            var result = await ClinicManager.DeleteAsync(id);
+            if (!result.IsSuccess) { error = result.Error; return; }
+            New();
+            success = "Placówka usunięta.";
+            await LoadAsync();
+        }
+        finally { busy = false; }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (mapReady)
+            try { await JS.InvokeVoidAsync("medicalMap.dispose", mapHost); }
+            catch (Exception exception) when (exception is JSException or JSDisconnectedException or InvalidOperationException) { }
+        self?.Dispose();
+    }
+}

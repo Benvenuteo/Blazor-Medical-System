@@ -4,6 +4,7 @@
 @attribute [Authorize(Roles = Roles.Patient)]
 @using MudBlazor
 @inject HttpClient Http
+@inject IJSRuntime JS
 @inject NavigationManager Navigation
 
 @inject MudBlazor.ISnackbar Snackbar
@@ -42,11 +43,21 @@ else
                 <tr>
                     <td>@appointment.Date.ToShortDateString()</td>
                     <td>@appointment.Date.ToShortTimeString()</td>
-                    <td>@appointment.DoctorName</td>
+                    <td>@appointment.DoctorName
+                        @if (appointment.IsRemote)
+                        {
+                            <div class="small"><span class="badge text-bg-info">Teleporada</span>
+                                @if (appointment.VideoLink is not null) { <a href="@appointment.VideoLink" target="_blank" rel="noopener noreferrer" class="ms-1">Dołącz do rozmowy<span class="visually-hidden"> (otwiera nową kartę)</span></a> }</div>
+                        }
+                        else
+                        {
+                            <ClinicInfo Name="@appointment.ClinicName" Address="@appointment.ClinicAddress" Latitude="@appointment.ClinicLatitude" Longitude="@appointment.ClinicLongitude" />
+                        }</td>
                     <td>
                         <button class="btn btn-primary btn-sm" @onclick="() => ShowDetails(appointment.Id)">Szczegóły</button>
                         <button class="btn btn-sm btn-primary me-2" @onclick="() => EditAppointment(appointment)">Edytuj</button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => ShowDeleteConfirmation(appointment.Id)">Odwołaj wizytę</button>
+                        <button class="btn btn-sm btn-danger me-2" @onclick="() => ShowDeleteConfirmation(appointment.Id)">Odwołaj wizytę</button>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => DownloadCalendarAsync(appointment.Id)">Do kalendarza</button>
                     </td>
                 </tr>
             }
@@ -74,6 +85,8 @@ else
 @if (detailsError is not null) { <p class="alert alert-danger" role="alert">@detailsError</p> }
 
 <Pagination Page="currentPage" TotalPages="@(page?.TotalPages ?? 0)" TotalCount="@(page?.TotalCount ?? 0)" Busy="isLoading" PageChanged="LoadPageAsync" />
+
+<WaitlistPanel />
 
 @code {
     private PagedResult<AppointmentDto>? page;
@@ -184,5 +197,18 @@ else
             if (request == detailsRequest) detailsError = "Nie udało się pobrać szczegółów wizyty. Spróbuj ponownie.";
         }
         finally { if (request == detailsRequest) detailsLoading = false; }
+    }
+
+    /// <summary>Downloads the visit as an .ics file (Google, Outlook and Apple Calendar import it).</summary>
+    private async Task DownloadCalendarAsync(int appointmentId)
+    {
+        try
+        {
+            using var response = await Http.GetAsync($"api/appointments/{appointmentId}/calendar");
+            if (!response.IsSuccessStatusCode) { Snackbar.Add(await ApiErrors.ReadAsync(response), Severity.Error); return; }
+            var content = await response.Content.ReadAsStringAsync();
+            await JS.InvokeVoidAsync("medicalFiles.download", $"wizyta-{appointmentId}.ics", "text/calendar", content);
+        }
+        catch (Exception exception) { Snackbar.Add(ApiErrors.Describe(exception, "Nie udało się pobrać pliku kalendarza"), Severity.Error); }
     }
 }

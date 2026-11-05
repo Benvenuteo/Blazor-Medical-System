@@ -23,10 +23,13 @@ namespace MedicalBookingSystem.Application.Services
         private readonly UserAccess _access;
         private readonly ClinicClock _clock;
         private readonly IValidator<CreateScheduleDto> _scheduleValidator;
+        private readonly IWaitlistNotifier? _waitlist;
 
 
-        public DoctorService(IUnitOfWorkFactory units, IValidator<CreateScheduleDto> scheduleValidator, ClinicClock clock, UserAccess access, IDoctorDirectoryQueries directory)
+        public DoctorService(IUnitOfWorkFactory units, IValidator<CreateScheduleDto> scheduleValidator, ClinicClock clock, UserAccess access, IDoctorDirectoryQueries directory,
+            IWaitlistNotifier? waitlist = null)
         {
+            _waitlist = waitlist;
             _units = units;
             _directory = directory;
             _access = access;
@@ -94,8 +97,17 @@ namespace MedicalBookingSystem.Application.Services
             var patientId = await _access.PatientIdOrNullAsync();
             var appointments = await _uow.Appointments.FindAsync(a => (a.DoctorId == doctorId || a.PatientId == patientId) &&
                 a.Id != excludedAppointmentId && a.Status != AppointmentStatus.Cancelled && a.Date >= lower && a.Date <= upper);
-            IReadOnlyList<AvailableSlotDto> result = AvailableStarts(schedules, appointments, date)
-                .Select(start => new AvailableSlotDto { DoctorId = doctorId, StartTime = start, EndTime = start.Add(AppointmentSlots.Duration) }).ToList();
+            var clinicIds = schedules.Where(s => s.ClinicId.HasValue).Select(s => s.ClinicId!.Value).ToHashSet();
+            var clinics = (await _uow.Clinics.FindAsync(c => clinicIds.Contains(c.Id))).ToDictionary(c => c.Id);
+            IReadOnlyList<AvailableSlotDto> result = AvailableStarts(schedules, appointments, date).Select(start =>
+            {
+                // Shifts of one doctor never overlap, so exactly one covers the slot.
+                var end = start.Add(AppointmentSlots.Duration);
+                var shift = schedules.FirstOrDefault(s => s.IsAvailable && s.StartTime <= start && s.EndTime >= end);
+                var clinic = shift?.ClinicId is int id && clinics.TryGetValue(id, out var found) ? found : null;
+                return new AvailableSlotDto { DoctorId = doctorId, StartTime = start, EndTime = end,
+                    ClinicId = clinic?.Id, ClinicName = clinic?.Name, ClinicAddress = clinic?.Address };
+            }).ToList();
             return Result.Success(result);
         }
 
@@ -133,13 +145,19 @@ namespace MedicalBookingSystem.Application.Services
 
             if (await _uow.Doctors.GetByIdAsync(dto.DoctorId) is null)
                 return Result.Failure("Lekarz nie istnieje.");
+            var clinicIds = (await _uow.DoctorClinics.FindAsync(l => l.DoctorId == dto.DoctorId)).Select(l => l.ClinicId).ToHashSet();
+            if (clinicIds.Count > 0 && dto.ClinicId is null)
+                return Result.Failure("Wybierz placówkę, w której odbywa się dyżur.");
+            if (dto.ClinicId is int clinicId && !clinicIds.Contains(clinicId))
+                return Result.Failure("Lekarz nie jest przypisany do wybranej placówki.");
 
             var schedule = new DoctorSchedule
             {
                 DoctorId = dto.DoctorId,
                 StartTime = dto.StartTime,
                 EndTime = dto.EndTime,
-                IsAvailable = true
+                IsAvailable = true,
+                ClinicId = dto.ClinicId
             };
 
             await _uow.DoctorSchedules.AddAsync(schedule);
@@ -147,6 +165,13 @@ namespace MedicalBookingSystem.Application.Services
             catch (PersistenceConflictException)
             {
                 return Result.Failure("Grafik nachodzi na przedział zapisany w innym żądaniu.", ErrorType.Conflict);
+            }
+            // A new shift may give waiting patients an earlier slot (best effort, after the shift is stored).
+            var firstStart = dto.StartTime < _clock.MinimumBookingTime ? AppointmentSlots.RoundUp(_clock.MinimumBookingTime) : dto.StartTime;
+            if (_waitlist is not null && firstStart.Add(AppointmentSlots.Duration) <= dto.EndTime)
+            {
+                try { await _waitlist.SlotFreedAsync(dto.DoctorId, firstStart); }
+                catch (Exception exception) when (exception is not OperationCanceledException) { }
             }
             return Result.Success();
         }

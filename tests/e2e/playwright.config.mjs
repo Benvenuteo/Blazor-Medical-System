@@ -4,7 +4,8 @@ export default defineConfig({
   testDir: '.', testMatch: '**/*.spec.mjs', fullyParallel: false, workers: 1,
   retries: 0, timeout: 60_000, expect: { timeout: 15_000 },
   outputDir: '../../TestResults/e2e/browser',
-  reporter: [['list'], ['html', { outputFolder: '../../TestResults/e2e/report', open: 'never' }]],
+  // On GitHub Actions failures also become annotations, readable on the run page and through the API.
+  reporter: [['list'], ['html', { outputFolder: '../../TestResults/e2e/report', open: 'never' }], ...(process.env.GITHUB_ACTIONS ? [['github']] : [])],
   use: { baseURL: 'http://localhost:5016', locale: 'pl-PL', timezoneId: 'Europe/Warsaw',
     viewport: { width: 1440, height: 1000 }, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
   projects: [

@@ -26,7 +26,12 @@ else
     <div class="table-responsive" tabindex="0" role="region" aria-label="Tabela wyników"><table class="table"><thead><tr><th>Termin</th><th>Pacjent</th><th>Akcja</th></tr></thead><tbody>
     @foreach (var appointment in appointments)
     {
-        <tr @key="appointment.Id"><td>@appointment.Date.ToString("dd.MM.yyyy HH:mm")</td><td>@appointment.PatientId</td><td>
+        <tr @key="appointment.Id"><td>@appointment.Date.ToString("dd.MM.yyyy HH:mm")</td><td>@appointment.PatientId
+            @if (appointment.IsRemote)
+            {
+                <div class="small"><span class="badge bg-info text-dark">Teleporada</span>
+                    @if (appointment.VideoLink is not null) { <a href="@appointment.VideoLink" target="_blank" rel="noopener noreferrer" class="ms-1">Dołącz</a> }</div>
+            }</td><td>
             <button class="btn btn-primary" disabled="@(saving || appointment.Date.Add(AppointmentSlots.Duration) > Clock.Now)"
                 @onclick="() => CompleteAsync(appointment.Id)">Oznacz jako odbytą</button>
         </td></tr>

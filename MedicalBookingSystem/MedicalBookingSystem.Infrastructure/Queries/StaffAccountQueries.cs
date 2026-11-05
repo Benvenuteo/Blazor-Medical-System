@@ -23,7 +23,7 @@ public sealed class StaffAccountQueries(IDbContextFactory<ApplicationDbContext> 
                 Id = a.Id, Email = a.Email, DisplayName = a.DisplayName, Role = a.Role.ToString(), IsActive = a.IsActive,
                 MustChangePassword = a.MustChangePassword, DoctorId = a.DoctorId,
                 DoctorName = a.Doctor == null ? null : a.Doctor.FirstName + " " + a.Doctor.LastName,
-                Version = a.Version, IsCurrentUser = a.Id == currentStaffId
+                Version = a.Version, IsCurrentUser = a.Id == currentStaffId, IsDemo = a.IsDemo
             }).ToListAsync();
         return new(items, count, search.Page, search.PageSize);
     }

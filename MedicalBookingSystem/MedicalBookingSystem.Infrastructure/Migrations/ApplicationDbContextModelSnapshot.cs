@@ -17,10 +17,51 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.13");
 
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.AccountToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UsedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("PatientId", "Purpose");
+
+                    b.ToTable("AccountTokens");
+                });
+
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Appointment", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ClinicId")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("Date")
@@ -29,8 +70,14 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                     b.Property<int>("DoctorId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsRemote")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("PatientId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ReminderQueuedAtUtc")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -41,7 +88,13 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("VideoRoom")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ClinicId");
 
                     b.HasIndex("DoctorId", "Date")
                         .IsUnique()
@@ -56,6 +109,54 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                     b.HasIndex("PatientId", "Status", "Date", "Id");
 
                     b.ToTable("Appointments");
+                });
+
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Clinic", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PostalCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Street")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.HasIndex("Latitude", "Longitude");
+
+                    b.ToTable("Clinics");
                 });
 
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.ClinicalAuditEntry", b =>
@@ -144,10 +245,28 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                     b.ToTable("Doctors");
                 });
 
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.DoctorClinic", b =>
+                {
+                    b.Property<int>("DoctorId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ClinicId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("DoctorId", "ClinicId");
+
+                    b.HasIndex("ClinicId");
+
+                    b.ToTable("DoctorClinics");
+                });
+
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.DoctorSchedule", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ClinicId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("DoctorId")
@@ -165,6 +284,8 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ClinicId");
 
                     b.HasIndex("DoctorId");
 
@@ -187,6 +308,64 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                     b.HasIndex("SpecializationId");
 
                     b.ToTable("DoctorSpecializations");
+                });
+
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.EmailMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AttachmentContent")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AttachmentContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AttachmentName")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("HtmlBody")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("NextAttemptAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("SentAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TextBody")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("To")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SentAtUtc", "NextAttemptAtUtc");
+
+                    b.ToTable("EmailOutbox", (string)null);
                 });
 
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Note", b =>
@@ -221,7 +400,7 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("DateOfBirth")
+                    b.Property<DateTime?>("DateOfBirth")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Email")
@@ -230,23 +409,37 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         .HasColumnType("TEXT")
                         .UseCollation("NOCASE");
 
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("FailedLoginCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsDemo")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("LockoutEndUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("PasswordHash")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("ProfileIncomplete")
+                        .HasColumnType("INTEGER");
 
                     b.Property<Guid>("SecurityStamp")
                         .HasColumnType("TEXT");
@@ -261,6 +454,44 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Patients");
+                });
+
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.PatientExternalLogin", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("LinkedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PatientId", "Provider")
+                        .IsUnique();
+
+                    b.HasIndex("Provider", "Subject")
+                        .IsUnique();
+
+                    b.ToTable("PatientExternalLogins");
                 });
 
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Prescription", b =>
@@ -377,8 +608,17 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         .HasColumnType("TEXT")
                         .UseCollation("NOCASE");
 
+                    b.Property<int>("FailedLoginCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDemo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LockoutEndUtc")
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("MustChangePassword")
                         .HasColumnType("INTEGER");
@@ -413,8 +653,59 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.WaitlistEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("Before")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DoctorId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("NotifiedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PatientId", "DoctorId")
+                        .IsUnique()
+                        .HasFilter("Active = 1");
+
+                    b.HasIndex("DoctorId", "Active", "Before");
+
+                    b.ToTable("WaitlistEntries", (string)null);
+                });
+
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.AccountToken", b =>
+                {
+                    b.HasOne("MedicalBookingSystem.Domain.Models.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
+                });
+
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Appointment", b =>
                 {
+                    b.HasOne("MedicalBookingSystem.Domain.Models.Clinic", "Clinic")
+                        .WithMany()
+                        .HasForeignKey("ClinicId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("MedicalBookingSystem.Domain.Models.Doctor", "Doctor")
                         .WithMany("Appointments")
                         .HasForeignKey("DoctorId")
@@ -427,18 +718,46 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("Clinic");
+
                     b.Navigation("Doctor");
 
                     b.Navigation("Patient");
                 });
 
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.DoctorClinic", b =>
+                {
+                    b.HasOne("MedicalBookingSystem.Domain.Models.Clinic", "Clinic")
+                        .WithMany("DoctorClinics")
+                        .HasForeignKey("ClinicId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MedicalBookingSystem.Domain.Models.Doctor", "Doctor")
+                        .WithMany("DoctorClinics")
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Clinic");
+
+                    b.Navigation("Doctor");
+                });
+
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.DoctorSchedule", b =>
                 {
+                    b.HasOne("MedicalBookingSystem.Domain.Models.Clinic", "Clinic")
+                        .WithMany()
+                        .HasForeignKey("ClinicId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("MedicalBookingSystem.Domain.Models.Doctor", "Doctor")
                         .WithMany("Schedules")
                         .HasForeignKey("DoctorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Clinic");
 
                     b.Navigation("Doctor");
                 });
@@ -471,6 +790,17 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Appointment");
+                });
+
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.PatientExternalLogin", b =>
+                {
+                    b.HasOne("MedicalBookingSystem.Domain.Models.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Patient");
                 });
 
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Prescription", b =>
@@ -513,6 +843,25 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                     b.Navigation("Doctor");
                 });
 
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.WaitlistEntry", b =>
+                {
+                    b.HasOne("MedicalBookingSystem.Domain.Models.Doctor", "Doctor")
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MedicalBookingSystem.Domain.Models.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Doctor");
+
+                    b.Navigation("Patient");
+                });
+
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Appointment", b =>
                 {
                     b.Navigation("Note");
@@ -520,9 +869,16 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                     b.Navigation("Prescription");
                 });
 
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Clinic", b =>
+                {
+                    b.Navigation("DoctorClinics");
+                });
+
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Doctor", b =>
                 {
                     b.Navigation("Appointments");
+
+                    b.Navigation("DoctorClinics");
 
                     b.Navigation("DoctorSpecializations");
 

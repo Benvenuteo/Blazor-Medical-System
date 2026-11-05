@@ -29,7 +29,15 @@ var connectionString = MedicalBookingSystem.Infrastructure.DependencyInjection.R
     builder.Environment.ContentRootPath);
 builder.Services.AddInfrastructureServices(connectionString);
 builder.Services.AddDatabaseHealthCheck();
+MedicalBookingSystem.Infrastructure.Geocoding.NominatimGeocodingService.Register(builder.Services, builder.Configuration);
+builder.Services.Configure<GoogleAuthenticationOptions>(builder.Configuration.GetSection("Authentication:Google"));
+builder.Services.AddSingleton<IExternalTokenValidator, GoogleIdTokenValidator>();
+builder.Services.Configure<MedicalBookingSystem.Application.Notifications.NotificationOptions>(builder.Configuration.GetSection("Notifications"));
+MedicalBookingSystem.Infrastructure.Email.EmailDeliveryService.Register(builder.Services, builder.Configuration);
+builder.Services.AddHostedService<MedicalBookingSystem.Infrastructure.Email.VisitReminderService>();
 builder.Services.Configure<DemoDataOptions>(builder.Configuration.GetSection("Seed"));
+if (builder.Configuration.GetValue<bool>("Seed:Enabled"))
+    builder.Services.AddHostedService<DemoScheduleTopUpService>();
 
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
@@ -110,6 +118,12 @@ builder.Services.AddRateLimiter(options =>
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
         {
             PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
+        }));
+    // Address search is forwarded to a shared public geocoder; keep each client well below its fair-use limit.
+    options.AddPolicy("geocoding", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
         }));
 });
 

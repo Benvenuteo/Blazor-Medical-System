@@ -62,6 +62,7 @@ public sealed class StaffAccountService(IUnitOfWorkFactory units, UserAccess acc
         if (!validation.IsValid) return Result.Failure<StaffAccountDto>(Errors(validation));
         using var unit = units.Create(); var account = await unit.StaffAccounts.GetByIdAsync(id);
         if (account is null) return Result.Failure<StaffAccountDto>("Konto nie istnieje.", ErrorType.NotFound);
+        if (account.IsDemo) return DemoAccounts.Refused<StaffAccountDto>();
         if (account.Version != dto.Version) return Result.Failure<StaffAccountDto>("Konto zmieniło się. Odśwież dane.", ErrorType.Conflict);
         var email = dto.Email.Trim().ToLowerInvariant();
         if (actorId == id && (email != account.Email || dto.IsActive != account.IsActive))
@@ -82,6 +83,7 @@ public sealed class StaffAccountService(IUnitOfWorkFactory units, UserAccess acc
         if (!validation.IsValid) return Result.Failure(Errors(validation));
         using var unit = units.Create(); var account = await unit.StaffAccounts.GetByIdAsync(id);
         if (account is null) return Result.Failure("Konto nie istnieje.", ErrorType.NotFound);
+        if (account.IsDemo) return DemoAccounts.Refused();
         if (account.Version != dto.Version) return Result.Failure("Konto zmieniło się. Odśwież dane.", ErrorType.Conflict);
         account.PasswordHash = hasher.HashPassword(account, dto.NewPassword);
         account.MustChangePassword = true; account.SecurityStamp = Guid.NewGuid();
@@ -103,7 +105,7 @@ public sealed class StaffAccountService(IUnitOfWorkFactory units, UserAccess acc
     {
         Id = account.Id, Email = account.Email, DisplayName = account.DisplayName, Role = account.Role.ToString(),
         DoctorId = account.DoctorId, IsActive = account.IsActive, MustChangePassword = account.MustChangePassword,
-        Version = account.Version, IsCurrentUser = account.Id == actorId
+        Version = account.Version, IsCurrentUser = account.Id == actorId, IsDemo = account.IsDemo
     };
     private static string Errors(FluentValidation.Results.ValidationResult result) => string.Join("; ", result.Errors.Select(e => e.ErrorMessage));
 }

@@ -37,10 +37,11 @@ else
                 <tr>
                     <td>@appointment.Date.ToShortDateString()</td>
                     <td>@appointment.Date.ToShortTimeString()</td>
-                    <td>@appointment.DoctorName</td>
+                    <td>@appointment.DoctorName<ClinicInfo Name="@appointment.ClinicName" Address="@appointment.ClinicAddress" Latitude="@appointment.ClinicLatitude" Longitude="@appointment.ClinicLongitude" /></td>
                     <td>
                         <button class="btn btn-primary btn-sm" @onclick="() => ShowDetails(appointment.Id)">Szczegóły</button>
                         <button class="btn btn-success btn-sm ms-1" @onclick="() => StartReview(appointment)">Oceń lekarza</button>
+                        <a class="btn btn-outline-secondary btn-sm ms-1" href="@($"visits/{appointment.Id}/print")">Drukuj / PDF</a>
                     </td>
                 </tr>
             }

@@ -68,3 +68,62 @@ nav.d-flex, form.d-flex { flex-wrap: wrap; }
 form.d-flex > .form-control { flex: 1 1 12rem; min-width: 0; }
 .selected-value { overflow-wrap: anywhere; white-space: normal; }
 .selected-value:empty { display: none; }
+
+/* "or" separator between password and Google sign-in. */
+.auth-divider { display: flex; align-items: center; gap: .75rem; color: #6c757d; margin: 1.25rem 0 1rem; max-width: 420px; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; border-top: 1px solid #dee2e6; }
+.google-signin { min-height: 44px; }
+
+/* Doctor search map (Leaflet). */
+.doctor-map { height: 480px; border-radius: .5rem; border: 1px solid #dee2e6; }
+@media (max-width: 576px) { .doctor-map { height: 360px; } }
+
+/* Public pages: product introduction next to the form. */
+.auth-shell { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); background: #f4f6f9; }
+.auth-hero { background: linear-gradient(160deg, #092447 0%, #183f69 55%, #1f6fb2 100%); color: #fff; display: flex; align-items: center; padding: 3rem; }
+.auth-hero-inner { max-width: 460px; margin-left: auto; }
+.auth-brand { font-weight: 600; letter-spacing: .02em; opacity: .9; display: flex; align-items: center; gap: .6rem; }
+.auth-logo { display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: .5rem; background: #fff; color: #183f69; font-weight: 800; font-size: 1.3rem; }
+.auth-title { font-size: 2rem; font-weight: 700; line-height: 1.2; margin: 1.5rem 0; }
+.auth-features { list-style: none; padding: 0; margin: 0 0 2rem; display: grid; gap: .9rem; }
+.auth-features li { padding-left: 1.6rem; position: relative; line-height: 1.45; color: #dbe7f5; }
+.auth-features li::before { content: "¹3"; position: absolute; left: 0; color: #7fd1ff; font-weight: 700; }
+.auth-features strong { color: #fff; }
+.auth-stack { font-size: .85rem; color: #d6e4f5; margin: 0; }
+.auth-main { display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
+.auth-card { width: 100%; max-width: 480px; background: #fff; border-radius: 1rem; box-shadow: 0 10px 30px rgba(9, 36, 71, .08); padding: 2rem; }
+.auth-card h3, .auth-card h1 { font-weight: 700; margin-bottom: 1rem; }
+@media (max-width: 900px) {
+  .auth-shell { grid-template-columns: 1fr; }
+  .auth-hero { padding: 2rem 1.25rem; }
+  .auth-hero-inner { margin: 0; }
+  .auth-title { font-size: 1.5rem; margin: 1rem 0; }
+  .auth-features { display: none; }
+}
+
+/* Demo notice in the app bar: dark text on white for contrast. */
+.demo-chip { background: #fff; color: #0b3d75; border-radius: 999px; padding: .15rem .65rem; font-size: .8rem; font-weight: 600; white-space: nowrap; }
+
+/* Week view of free slots. */
+.slot-week { margin-bottom: 1rem; }
+.slot-week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .5rem; }
+.slot-day { display: flex; flex-direction: column; gap: .35rem; background: #fff; border: 1px solid #e3e7ed; border-radius: .5rem; padding: .5rem; min-width: 0; }
+.slot-day-empty { opacity: .65; }
+.slot-day-name { font-weight: 600; font-size: .9rem; }
+.slot-day-name span { font-weight: 400; color: #555; margin-left: .25rem; }
+@media (max-width: 768px) { .slot-week-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Printable visit documentation (print or "Save as PDF" in the browser). */
+.print-page { max-width: 800px; margin: 0 auto; padding: 1.5rem 1rem; background: #fff; }
+.print-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.print-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #092447; padding-bottom: .75rem; margin-bottom: 1.25rem; }
+.print-header h1 { font-size: 1.6rem; margin: 0; }
+.print-brand { margin: 0; color: #183f69; font-weight: 600; }
+.print-meta { margin: 0; color: #555; font-size: .85rem; }
+.print-grid { display: grid; grid-template-columns: 11rem 1fr; gap: .35rem 1rem; margin-bottom: 1.25rem; }
+.print-grid dt { color: #555; font-weight: 600; }
+.print-grid dd { margin: 0; }
+.print-document h2 { font-size: 1.15rem; border-bottom: 1px solid #dee2e6; padding-bottom: .25rem; margin-top: 1.5rem; }
+.print-text { white-space: pre-wrap; }
+.print-footer { margin-top: 2rem; font-size: .8rem; color: #555; border-top: 1px solid #dee2e6; padding-top: .5rem; }
+@media print { .print-actions, #blazor-error-ui { display: none !important; } .print-page { padding: 0; max-width: none; } @page { margin: 18mm; } }

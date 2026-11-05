@@ -11,10 +11,20 @@ set -eu
 
 settings=/srv/patient/appsettings.json
 rm -f "$settings.br" "$settings.gz"
+demo=false
+[ "${DEMO_DATA:-false}" = true ] && [ -n "${SEED_PATIENT_PASSWORD:-}" ] && demo=true
+# The demo password is deliberately public (shown on the login page); it is JSON-escaped here.
+demo_password=$(printf '%s' "${SEED_PATIENT_PASSWORD:-}" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
 cat > "$settings" <<EOF
 {
   "MedicalBookingSystemAPIUrl": "https://${API_HOST}",
-  "MedicalBookingSystemServerUrl": "https://${STAFF_HOST}"
+  "MedicalBookingSystemServerUrl": "https://${STAFF_HOST}",
+  "Google": { "ClientId": "${GOOGLE_CLIENT_ID:-}" },
+  "Demo": {
+    "Enabled": ${demo},
+    "PatientEmail": "patient@example.test",
+    "PatientPassword": "$( [ "$demo" = true ] && printf '%s' "$demo_password" )"
+  }
 }
 EOF
 

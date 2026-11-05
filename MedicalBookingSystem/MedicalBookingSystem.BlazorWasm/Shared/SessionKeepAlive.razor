@@ -1,0 +1,36 @@
+@using MedicalBookingSystem.SharedKernel.Dto
+@implements IDisposable
+@inject PatientAuthenticationStateProvider Authentication
+@inject HttpClient Http
+
+@code {
+    // Renew shortly before the one-hour token expires, while the app is open. The API decides whether the session
+    // may continue (password change, "log out everywhere" and the 12-hour limit all stop renewal).
+    private static readonly TimeSpan RenewBefore = TimeSpan.FromMinutes(10);
+    private Timer? timer;
+    private int running;
+
+    protected override void OnInitialized() =>
+        timer = new Timer(_ => _ = InvokeAsync(RenewIfDueAsync), null, TimeSpan.FromSeconds(20), TimeSpan.FromMinutes(1));
+
+    private async Task RenewIfDueAsync()
+    {
+        if (Interlocked.Exchange(ref running, 1) == 1) return;
+        try
+        {
+            var user = (await Authentication.GetAuthenticationStateAsync()).User;
+            if (user.Identity?.IsAuthenticated != true ||
+                !long.TryParse(user.FindFirst(AccountClaims.ExpiresAt)?.Value, out var expires)) return;
+            var remaining = DateTimeOffset.FromUnixTimeSeconds(expires) - DateTimeOffset.UtcNow;
+            if (remaining > RenewBefore || remaining <= TimeSpan.Zero) return;
+            using var response = await Http.PostAsync("api/auth/refresh", null);
+            if (!response.IsSuccessStatusCode) return; // a refused renewal ends the session when the token expires
+            var result = await response.Content.ReadFromJsonAsync<AuthenticationResponseDto>();
+            if (!string.IsNullOrWhiteSpace(result?.Token)) await Authentication.SignInAsync(result.Token);
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException) { }
+        finally { Interlocked.Exchange(ref running, 0); }
+    }
+
+    public void Dispose() => timer?.Dispose();
+}

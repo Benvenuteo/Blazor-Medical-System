@@ -36,6 +36,8 @@ flowchart LR
    ```
 
 5. Zainstaluj Docker Engine z pluginem Compose według [instrukcji dla Ubuntu](https://docs.docker.com/engine/install/ubuntu/) i dodaj użytkownika do grupy `docker`.
+
+   Punkty 4 i 5 (oraz katalog kopii z punktu 5 niżej) wykonuje jeden skrypt — po sklonowaniu repozytorium: `sudo sh deploy/scripts/bootstrap-server.sh`, potem wyloguj się i zaloguj ponownie.
 6. Oracle może odebrać maszynę Always Free, która przez 7 dni prawie nie pracuje. Konto Pay As You Go (nadal 0 zł w limitach Always Free) zdejmuje to ryzyko; regularne kopie z punktu 5 pozwalają odtworzyć demo na nowej maszynie.
 
 ## 2. Domeny
@@ -54,6 +56,11 @@ nano deploy/.env
 Skrypt tworzy `deploy/.env` z wzoru, generuje `JWT_SECRET_KEY`, hasło certyfikatu i `deploy/secrets/dataprotection.pfx`. Istniejących wartości nie nadpisuje. W `deploy/.env` uzupełnij `PATIENT_HOST`, `API_HOST`, `STAFF_HOST` i `ACME_EMAIL`. `.env` i `secrets/` przechowuj w kopii poza serwerem — bez nich istniejące sesje i ciasteczka panelu przestaną działać.
 
 `DEMO_DATA=true` włącza fikcyjne konta z README. To celowo publiczne dane demonstracyjne; dla wdrożenia bez nich ustaw `DEMO_DATA=false` i utwórz administratora narzędziem z punktu 5.
+
+### Opcjonalnie: logowanie Google i prawdziwe maile
+
+- **Google:** w Google Cloud Console utwórz OAuth Client ID typu *Web application*, w *Authorized JavaScript origins* dodaj `https://PATIENT_HOST` (lokalnie także `http://localhost:5016` i `http://localhost`) i wpisz go jako `GOOGLE_CLIENT_ID`. Bez niego przycisk Google się nie pokazuje.
+- **Maile:** `EMAIL_MODE=Smtp` i dane `SMTP_*` (np. darmowy plan dostawcy maili transakcyjnych). Domyślne `Pickup` zapisuje wiadomości jako `.eml` w wolumenie `mail`.
 
 ## 4. Uruchomienie i aktualizacja
 
@@ -92,6 +99,29 @@ Codzienna kopia z rotacją 7 dni (`crontab -e`, ścieżkę repozytorium dostosuj
 ```
 
 Odtwarzanie, `create-admin` i `reset-admin` działają tak jak w [OPERATIONS.md](OPERATIONS.md), ze ścieżkami z kontenera (`/data/db/medical.db`, `/backups/...`). Polecenia zmieniające bazę uruchamiaj przy zatrzymanych usługach `api` i `staff` (`docker compose ... stop api staff`), a hasło podawaj w konsoli (`run --rm -it maintenance reset-admin ...`).
+
+## 6. Automatyczne wdrażanie z GitHub Actions
+
+Workflow `Deploy demo` (`.github/workflows/deploy.yml`) uruchamia się po zielonym `Build and test` na `main` (albo ręcznie). Buduje obrazy ARM64 i publikuje je w GitHub Container Registry jako `ghcr.io/<właściciel>/medical-booking/<api|staff|web|maintenance>:<commit>`. Gdy skonfigurowano serwer, łączy się przez SSH i uruchamia `deploy/scripts/remote-deploy.sh`: przełącza pliki compose na ten commit, pobiera obrazy, robi kopię bazy, startuje nową wersję i czeka na kontrole zdrowia. Jeśli nowa wersja nie wstanie, przywraca poprzednie obrazy.
+
+Jednorazowa konfiguracja:
+
+1. Na serwerze sklonuj repozytorium i przygotuj `deploy/.env` oraz `deploy/secrets` jak w punkcie 3 (bez `--build` przy pierwszym starcie nie trzeba nic budować lokalnie).
+2. Utwórz osobny klucz SSH tylko do wdrożeń: `ssh-keygen -t ed25519 -f deploy_key -N ""` i dopisz `deploy_key.pub` do `~/.ssh/authorized_keys` użytkownika na serwerze (należy do grupy `docker`).
+3. W repozytorium: *Settings → Environments → New environment* `demo` (opcjonalnie z wymaganą akceptacją), a w nim sekrety:
+
+   | Sekret | Wartość |
+   | --- | --- |
+   | `DEPLOY_HOST` | Publiczny adres IP lub nazwa serwera |
+   | `DEPLOY_USER` | Użytkownik SSH, np. `ubuntu` |
+   | `DEPLOY_SSH_KEY` | Zawartość pliku `deploy_key` (klucz prywatny) |
+   | `DEPLOY_KNOWN_HOSTS` | Wynik `ssh-keyscan -t ed25519 <adres serwera>` — workflow nie akceptuje nieznanych kluczy hosta |
+   | `DEPLOY_PATH` | Ścieżka repozytorium na serwerze, np. `/home/ubuntu/Blazor-Medical-System` |
+
+   Opcjonalnie zmienna `API_HOST` (np. `medical-api.duckdns.org`) włącza końcowe sprawdzenie `/health/ready` z internetu.
+4. Po pierwszym przebiegu ustaw pakiety `medical-booking/*` w zakładce *Packages* jako publiczne albo zaloguj serwer do rejestru: `docker login ghcr.io` z tokenem o uprawnieniu `read:packages`.
+
+Bez sekretu `DEPLOY_HOST` workflow tylko publikuje obrazy.
 
 ## Lokalny test kontenerów
 

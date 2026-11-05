@@ -20,10 +20,14 @@
     <div class="table-responsive" tabindex="0" role="region" aria-label="Tabela wyników"><table class="table"><thead><tr><th>Konto</th><th>Rola</th><th>Status</th><th>Lekarz</th><th>Akcje</th></tr></thead><tbody>
     @foreach (var account in page.Items)
     {
-        <tr @key="account.Id"><td>@account.DisplayName<br />@account.Email @(account.IsCurrentUser ? "(Twoje konto)" : "")</td>
+        <tr @key="account.Id"><td>@account.DisplayName<br />@account.Email @(account.IsCurrentUser ? "(Twoje konto)" : "")
+            @if (account.IsDemo) { <span class="badge bg-info text-dark ms-1">Demo</span> }</td>
         <td>@(account.Role == Roles.Admin ? "Administrator" : "Lekarz")</td>
         <td>@(account.IsActive ? "Aktywne" : "Wyłączone") @(account.MustChangePassword ? "· wymagane nowe hasło" : "")</td>
-        <td>@account.DoctorName</td><td><button class="btn btn-outline-primary" @onclick="() => Select(account)">Edytuj</button></td></tr>
+        <td>@account.DoctorName</td><td>
+            @if (account.IsDemo) { <span class="text-muted small">Konto chronione</span> }
+            else { <button class="btn btn-outline-primary" @onclick="() => Select(account)">Edytuj</button> }
+        </td></tr>
     }
     </tbody></table></div>
     <nav aria-label="Strony kont" class="d-flex gap-3 align-items-center mb-4">

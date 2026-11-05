@@ -31,8 +31,20 @@ services:
       Seed__Enabled: ${DEMO_DATA:-true}
       Seed__PatientPassword: ${SEED_PATIENT_PASSWORD:-}
       Seed__StaffPassword: ${SEED_STAFF_PASSWORD:-}
+      Notifications__PatientAppUrl: https://${PATIENT_HOST}
+      # Empty disables Google sign-in; see docs/DEPLOYMENT.md.
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      # Pickup writes .eml files to the mail volume (no mail leaves the server); Smtp delivers for real.
+      Email__Mode: ${EMAIL_MODE:-Pickup}
+      Email__PickupDirectory: /data/mail
+      Email__From: ${EMAIL_FROM:-Medical Booking System <no-reply@example.test>}
+      Email__SmtpHost: ${SMTP_HOST:-}
+      Email__SmtpPort: ${SMTP_PORT:-587}
+      Email__SmtpUserName: ${SMTP_USERNAME:-}
+      Email__SmtpPassword: ${SMTP_PASSWORD:-}
     volumes:
       - db:/data/db
+      - mail:/data/mail
     networks:
       internal: { ipv4_address: 172.28.0.20 }
 
@@ -46,6 +58,8 @@ services:
       <<: *dotnet-env
       AllowedHosts: ${STAFF_HOST:?Set STAFF_HOST}
       Media__PublicBaseUrl: https://${STAFF_HOST}
+      Demo__Enabled: ${DEMO_DATA:-true}
+      Demo__StaffPassword: ${SEED_STAFF_PASSWORD:-}
       Media__StoragePath: /data/photos
       DataProtection__KeysPath: /data/keys
       DataProtection__CertificatePath: /run/secrets/dataprotection.pfx
@@ -70,6 +84,9 @@ services:
       API_HOST: ${API_HOST}
       STAFF_HOST: ${STAFF_HOST}
       ACME_EMAIL: ${ACME_EMAIL:-}
+      DEMO_DATA: ${DEMO_DATA:-true}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      SEED_PATIENT_PASSWORD: ${SEED_PATIENT_PASSWORD:-}
     ports:
       - "80:80"
       - "443:443"
@@ -94,6 +111,7 @@ services:
 
 volumes:
   db:
+  mail:
   photos:
   keys:
   caddy-data:

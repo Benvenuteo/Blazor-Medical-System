@@ -4,6 +4,8 @@
 @page "/doctors/search"
 @attribute [Authorize(Roles = Roles.Patient)]
 @inject HttpClient Http
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <h3>Wyszukiwanie lekarzy</h3>
 
@@ -19,6 +21,33 @@
         </InputSelect>
         <div id="selected-specialization" class="form-text selected-value">@(specializations.FirstOrDefault(s => s.Id == searchDto.SpecializationId)?.Name)</div>
     </div>
+
+    <fieldset class="mb-3">
+        <legend class="form-label fs-6 mb-1">Lokalizacja</legend>
+        <div class="d-flex flex-wrap gap-2">
+            <input id="address" class="form-control" style="flex: 1 1 14rem" placeholder="Adres lub miejscowość, np. Kraków, Rynek Główny"
+                   aria-label="Adres lub miejscowość" @bind="address" disabled="@locating" />
+            <button type="button" class="btn btn-outline-primary" disabled="@locating" @onclick="FindAddressAsync">Ustaw adres</button>
+            <button type="button" class="btn btn-outline-primary" disabled="@locating" @onclick="UseMyLocationAsync">Użyj mojej lokalizacji</button>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center mt-2">
+            <label for="radius" class="mb-0">Promień</label>
+            <select id="radius" class="form-select w-auto" @bind="radiusKm">
+                <option value="10">10 km</option>
+                <option value="30">30 km</option>
+                <option value="50">50 km</option>
+                <option value="100">100 km</option>
+            </select>
+            @if (centre is not null)
+            {
+                <span class="badge text-bg-light text-wrap text-start" role="status">Szukam w promieniu @radiusKm km od: @centreLabel</span>
+                <button type="button" class="btn btn-sm btn-link" @onclick="ClearLocation">Wyczyść lokalizację</button>
+            }
+        </div>
+        @if (locating) { <p role="status" class="small mt-2 mb-0">Ustalanie lokalizacji...</p> }
+        @if (locationError is not null) { <p class="alert alert-warning mt-2 mb-0" role="alert">@locationError</p> }
+        <p class="form-text mb-0">Lokalizacja służy tylko do tego wyszukiwania; wysyłamy ją z dokładnością do ok. 1 km i nie zapisujemy.</p>
+    </fieldset>
 
     <div class="mb-3">
         <label for="region">Region</label>
@@ -36,6 +65,7 @@
             <option value="">-- wybierz --</option>
             <option value="rating">Ocena</option>
             <option value="availability">Najbliższy termin</option>
+            <option value="distance" disabled="@(centre is null)">Odległość</option>
         </InputSelect>
     </div>
 
@@ -52,13 +82,22 @@ else if (!string.IsNullOrEmpty(errorMessage))
 }
 else if (doctors != null && doctors.Any())
 {
-    <div class="table-responsive" tabindex="0" role="region" aria-label="Tabela wyników"><table class="table table-bordered mt-3">
+    <div class="btn-group mt-3" role="group" aria-label="Widok wyników">
+        <button type="button" class="btn @(showMap ? "btn-outline-primary" : "btn-primary")" aria-pressed="@(showMap ? "false" : "true")" @onclick="() => SetView(false)">Lista</button>
+        <button type="button" class="btn @(showMap ? "btn-primary" : "btn-outline-primary")" aria-pressed="@(showMap ? "true" : "false")" @onclick="() => SetView(true)">Mapa</button>
+    </div>
+    @if (showMap)
+    {
+        <div @ref="mapHost" class="doctor-map mt-3" role="region" aria-label="Mapa placówek z wynikami wyszukiwania"></div>
+        <p class="form-text">Na mapie są placówki lekarzy z bieżącej strony wyników. Kliknij pinezkę, aby zobaczyć lekarzy i zarezerwować wizytę.</p>
+    }
+    <div class="table-responsive @(showMap ? "d-none" : "")" tabindex="0" role="region" aria-label="Tabela wyników"><table class="table table-bordered mt-3">
         <thead>
             <tr>
                 <th>Zdjęcie</th>
                 <th>Imię</th>
                 <th>Nazwisko</th>
-                <th>Region</th>
+                <th>Placówka</th>
                 <th>Ocena</th>
                 <th>Liczba ocen</th>
                 <th>Najbliższy termin</th>
@@ -74,7 +113,15 @@ else if (doctors != null && doctors.Any())
                     </td>
                     <td>@doctor.FirstName</td>
                     <td>@doctor.LastName</td>
-                    <td>@doctor.Region</td>
+                    <td>
+                        @if (doctor.ClinicName is not null)
+                        {
+                            <span>@doctor.ClinicName</span><br />
+                            <span class="small text-muted">@doctor.ClinicAddress</span>
+                            @if (doctor.DistanceKm is double km) { <br /><span class="badge text-bg-info">@FormatDistance(km)</span> }
+                        }
+                        else { <span>@doctor.Region</span> }
+                    </td>
                     <td>
                         @if (doctor.ReviewCount == 0)
                         {
@@ -167,6 +214,97 @@ else if (doctors != null)
     private string? errorMessage;
     private int searchRequest;
 
+    // Location search: centre from an address (geocoded by the API) or from the browser, rounded to ~1 km.
+    private sealed record Centre(double Latitude, double Longitude);
+    private Centre? centre;
+    private string? centreLabel, address, locationError;
+    private int radiusKm = 30;
+    private bool locating, showMap, mapDirty, mapRendered;
+    private ElementReference mapHost;
+
+    private static string FormatDistance(double km) =>
+        km.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',') + " km";
+    private static string Invariant(double value) => value.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+    private static Centre Rounded(double latitude, double longitude) => new(Math.Round(latitude, 2), Math.Round(longitude, 2));
+
+    private async Task FindAddressAsync()
+    {
+        if (string.IsNullOrWhiteSpace(address)) { locationError = "Wpisz adres lub miejscowość."; return; }
+        locating = true; locationError = null;
+        try
+        {
+            using var response = await Http.GetAsync($"api/locations/geocode?q={Uri.EscapeDataString(address.Trim())}");
+            if (!response.IsSuccessStatusCode) { locationError = await ApiErrors.ReadAsync(response); return; }
+            var point = await response.Content.ReadFromJsonAsync<GeoPointDto>();
+            centre = Rounded(point!.Latitude, point.Longitude);
+            centreLabel = point.DisplayName;
+            searchDto.SortBy = "distance";
+        }
+        catch (Exception exception) { locationError = ApiErrors.Describe(exception, "Nie udało się znaleźć adresu"); }
+        finally { locating = false; }
+    }
+
+    private async Task UseMyLocationAsync()
+    {
+        locating = true; locationError = null;
+        try
+        {
+            var position = await JS.InvokeAsync<Centre>("medicalMap.locate");
+            centre = Rounded(position.Latitude, position.Longitude);
+            centreLabel = "Twoja lokalizacja";
+            searchDto.SortBy = "distance";
+        }
+        catch (JSException exception)
+        {
+            locationError = exception.Message.Contains("denied")
+                ? "Przeglądarka nie udostępniła lokalizacji. Wpisz adres albo zezwól na dostęp do lokalizacji."
+                : "Nie udało się ustalić lokalizacji. Wpisz adres lub miejscowość.";
+        }
+        finally { locating = false; }
+    }
+
+    private void ClearLocation()
+    {
+        centre = null; centreLabel = null; locationError = null;
+        if (searchDto.SortBy == "distance") searchDto.SortBy = null;
+    }
+
+    private void SetView(bool map)
+    {
+        if (!map) mapRendered = false; // the map element leaves the page with the view
+        showMap = map;
+        mapDirty = map;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!mapDirty || !showMap || doctors is null) return;
+        mapDirty = false;
+        var clinics = doctors.Where(d => d.ClinicLatitude.HasValue && d.ClinicLongitude.HasValue)
+            .GroupBy(d => d.ClinicId)
+            .Select(g => new
+            {
+                name = g.First().ClinicName, address = g.First().ClinicAddress,
+                latitude = g.First().ClinicLatitude, longitude = g.First().ClinicLongitude, distanceKm = g.First().DistanceKm,
+                doctors = g.Select(d => new
+                {
+                    name = $"{d.FirstName} {d.LastName}",
+                    nextSlot = d.NextAvailableSlot?.ToString("dd.MM.yyyy HH:mm"),
+                    bookUrl = $"/appointments/create?doctorId={d.Id}"
+                }).ToList()
+            }).ToList();
+        object? searchCentre = centre is null ? null : new { latitude = centre.Latitude, longitude = centre.Longitude, radiusKm };
+        try { await JS.InvokeVoidAsync("medicalMap.showDoctors", mapHost, searchCentre, clinics); mapRendered = true; }
+        catch (JSException) { locationError = "Nie udało się wczytać mapy. Wyniki są dostępne w widoku listy."; StateHasChanged(); }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (!mapRendered) return;
+        try { await JS.InvokeVoidAsync("medicalMap.dispose", mapHost); }
+        catch (Exception exception) when (exception is JSException or JSDisconnectedException or InvalidOperationException) { }
+    }
+
     // Polish decimal comma without depending on culture data being loaded in WebAssembly.
     private static string FormatRating(decimal rating) =>
         rating.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',');
@@ -214,11 +352,15 @@ else if (doctors != null)
             if (!string.IsNullOrWhiteSpace(searchDto.SortBy))
                 queryParams.Add($"SortBy={Uri.EscapeDataString(searchDto.SortBy)}");
 
+            if (centre is not null)
+                queryParams.Add($"Latitude={Invariant(centre.Latitude)}&Longitude={Invariant(centre.Longitude)}&RadiusKm={radiusKm}");
+
             var queryString = string.Join("&", queryParams);
             var result = await Http.GetFromJsonAsync<PagedResult<DoctorDto>>($"api/doctors?{queryString}");
             if (request != searchRequest) return;
             page = result;
             doctors = page?.Items.ToList() ?? [];
+            mapDirty = showMap;
         }
         catch (Exception ex)
         {

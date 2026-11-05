@@ -70,12 +70,14 @@ public static class HostSecurity
         {
             context.Response.Headers.XContentTypeOptions = "nosniff";
             context.Response.Headers.XFrameOptions = "DENY";
-            context.Response.Headers["Referrer-Policy"] = "no-referrer";
+            // The staff panel requests OpenStreetMap tiles, whose usage policy needs the origin in Referer.
+            context.Response.Headers["Referrer-Policy"] = staff ? "strict-origin-when-cross-origin" : "no-referrer";
             context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
             if (staff)
             {
                 var websocket = $"{(context.Request.IsHttps ? "wss" : "ws")}://{context.Request.Host}";
-                context.Response.Headers.ContentSecurityPolicy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
+                // Leaflet comes from cdnjs with Subresource Integrity; map tiles are images from OpenStreetMap (img-src https:).
+                context.Response.Headers.ContentSecurityPolicy = "default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
                     $"connect-src 'self' {websocket}; img-src 'self' data: https:; font-src 'self'; " +
                     "object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
             }

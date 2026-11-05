@@ -6,6 +6,7 @@
     <ProjectReference Include="..\MedicalBookingSystem.Application\MedicalBookingSystem.Application.csproj" />
     <ProjectReference Include="..\MedicalBookingSystem.Infrastructure\MedicalBookingSystem.Infrastructure.csproj" />
     <ProjectReference Include="..\MedicalBookingSystem.SharedKernel\MedicalBookingSystem.SharedKernel.csproj" />
+    <ProjectReference Include="..\MedicalBookingSystem.UI.Shared\MedicalBookingSystem.UI.Shared.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MudBlazor" />

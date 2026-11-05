@@ -51,6 +51,16 @@ namespace MedicalBookingSystem.Infrastructure.Repositories
                 a.Id != excludedAppointmentId && a.Date < end && a.Date > previousStart && a.Status != AppointmentStatus.Cancelled);
         }
 
+        public async Task<int?> FindClinicAtAsync(int doctorId, DateTime start)
+        {
+            var end = start.Add(AppointmentSlots.Duration);
+            return await _context.DoctorSchedules.Where(s => s.DoctorId == doctorId && s.StartTime <= start && s.EndTime >= end && s.IsAvailable)
+                .Select(s => s.ClinicId).FirstOrDefaultAsync();
+        }
+
+        public Task<bool> AnyInClinicAsync(int clinicId, int? doctorId = null) =>
+            _context.DoctorSchedules.AnyAsync(s => s.ClinicId == clinicId && (doctorId == null || s.DoctorId == doctorId));
+
         public async Task AddAsync(DoctorSchedule schedule)
         {
             await _context.DoctorSchedules.AddAsync(schedule);

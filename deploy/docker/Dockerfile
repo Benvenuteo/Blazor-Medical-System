@@ -22,6 +22,7 @@ COPY MedicalBookingSystem/MedicalBookingSystem.WebAPI/*.csproj MedicalBookingSys
 COPY MedicalBookingSystem/MedicalBookingSystem.BlazorServer/*.csproj MedicalBookingSystem/MedicalBookingSystem.BlazorServer/
 COPY MedicalBookingSystem/MedicalBookingSystem.BlazorWasm/*.csproj MedicalBookingSystem/MedicalBookingSystem.BlazorWasm/
 COPY MedicalBookingSystem/MedicalBookingSystem.Maintenance/*.csproj MedicalBookingSystem/MedicalBookingSystem.Maintenance/
+COPY MedicalBookingSystem/MedicalBookingSystem.UI.Shared/*.csproj MedicalBookingSystem/MedicalBookingSystem.UI.Shared/
 RUN dotnet restore MedicalBookingSystem/MedicalBookingSystem.WebAPI -a $TARGETARCH \
  && dotnet restore MedicalBookingSystem/MedicalBookingSystem.BlazorServer -a $TARGETARCH \
  && dotnet restore MedicalBookingSystem/MedicalBookingSystem.Maintenance -a $TARGETARCH \
@@ -47,7 +48,7 @@ USER root
 RUN apt-get update \
  && apt-get install -y --no-install-recommends curl \
  && rm -rf /var/lib/apt/lists/* \
- && mkdir -p /data/db /data/photos /data/keys /app/logs \
+ && mkdir -p /data/db /data/photos /data/keys /data/mail /app/logs \
  && chown -R $APP_UID:$APP_UID /data /app/logs
 WORKDIR /app
 ENV ASPNETCORE_HTTP_PORTS=8080 \

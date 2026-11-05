@@ -6,6 +6,7 @@ using MedicalBookingSystem.Application.Validators;
 using MedicalBookingSystem.Domain.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MedicalBookingSystem.Application;
 
@@ -21,6 +22,10 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher<StaffAccount>, PasswordHasher<StaffAccount>>();
         services.AddScoped<StaffAuthenticationService>();
         services.AddScoped<PatientAuthenticationService>();
+        services.AddScoped<AccountRecoveryService>();
+        services.AddScoped<ExternalAuthenticationService>();
+        services.TryAddSingleton<IExternalTokenValidator, DisabledExternalTokenValidator>();
+        services.AddOptions<Notifications.NotificationOptions>();
         services.AddScoped<ISessionValidator, AccountSessionValidator>();
         services.AddScoped<SessionGuard>();
         services.AddScoped<StaffPasswordService>();
@@ -33,6 +38,11 @@ public static class DependencyInjection
         services.AddScoped<IMedicalRecordService, MedicalRecordService>();
         services.AddScoped<IPatientService, PatientService>();
         services.AddScoped<IReviewService, ReviewService>();
+        services.AddScoped<ClinicService>();
+        services.AddScoped<WaitlistService>();
+        services.AddScoped<IWaitlistNotifier>(provider => provider.GetRequiredService<WaitlistService>());
+        services.AddScoped<Notifications.VisitNotificationService>();
+        services.AddScoped<Notifications.IVisitNotifications>(provider => provider.GetRequiredService<Notifications.VisitNotificationService>());
         return services;
     }
 }

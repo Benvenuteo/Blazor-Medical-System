@@ -10,19 +10,21 @@ public sealed class SessionManagementService(IUnitOfWorkFactory units, SessionGu
 {
     public async Task<Result> RevokeAllAsync(ClaimsPrincipal principal)
     {
-        await guard.RequireAsync(principal, allowPasswordChange: true);
+        await guard.RequireAsync(principal, allowPasswordChange: true, allowIncompleteProfile: true);
         if (!AccountClaims.TryReadIdentity(principal, out var identity)) throw new AccessDeniedException(false);
         using var unit = units.Create();
         if (identity.Role == Roles.Patient)
         {
             var patient = await unit.Patients.GetByIdAsync(identity.Id);
             if (patient is null || patient.SecurityStamp != identity.SecurityStamp) throw new AccessDeniedException(false);
+            if (patient.IsDemo) return DemoAccounts.Refused();
             patient.SecurityStamp = Guid.NewGuid();
         }
         else
         {
             var staff = await unit.StaffAccounts.GetByIdAsync(identity.Id);
             if (staff is null || !staff.IsActive || staff.SecurityStamp != identity.SecurityStamp) throw new AccessDeniedException(false);
+            if (staff.IsDemo) return DemoAccounts.Refused();
             staff.SecurityStamp = Guid.NewGuid();
         }
         try { await unit.SaveChangesAsync(); return Result.Success(); }

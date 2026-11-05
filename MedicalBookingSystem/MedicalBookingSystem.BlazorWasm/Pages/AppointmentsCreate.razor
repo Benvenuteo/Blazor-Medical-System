@@ -30,16 +30,34 @@ else if (selectedDoctorId > 0)
     @if (slots.Count == 0) { <p>Brak dostępnych terminów.</p> }
     else
     {
+        <SlotWeekPicker Slots="slots" SelectedStart="@selectedStart" SelectedStartChanged="v => selectedStart = v" Disabled="saving" />
         <label for="slot">Wolny termin</label>
         <select id="slot" disabled="@saving" class="form-select mb-3" @bind="selectedStart">
             <option value="">Wybierz termin</option>
             @foreach (var slot in slots)
             {
-                <option value="@slot.StartTime.ToString("s")">@slot.StartTime.ToString("dd.MM.yyyy HH:mm") – @slot.EndTime.ToString("HH:mm")</option>
+                <option value="@slot.StartTime.ToString("s")">@slot.StartTime.ToString("dd.MM.yyyy HH:mm") – @slot.EndTime.ToString("HH:mm")@(slot.ClinicName is null ? "" : $" · {slot.ClinicName}")</option>
             }
         </select>
+        @if (slots.FirstOrDefault(s => s.StartTime.ToString("s") == selectedStart) is { ClinicName: not null } chosen)
+        {
+            <p class="form-text" role="status">Miejsce wizyty: <strong>@chosen.ClinicName</strong>, @chosen.ClinicAddress</p>
+        }
+        <fieldset class="mb-3">
+            <legend class="form-label fs-6 mb-1">Rodzaj wizyty</legend>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="visit-mode" id="mode-clinic" checked="@(!remote)" @onchange="() => remote = false" disabled="@saving" />
+                <label class="form-check-label" for="mode-clinic">W placówce</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="visit-mode" id="mode-remote" checked="@remote" @onchange="() => remote = true" disabled="@saving" />
+                <label class="form-check-label" for="mode-remote">Teleporada (wideo)</label>
+            </div>
+            @if (remote) { <p class="form-text mb-0">Link do rozmowy wideo pojawi się przy wizycie i w mailu z potwierdzeniem.</p> }
+        </fieldset>
         <button class="btn btn-primary" disabled="@(saving || string.IsNullOrEmpty(selectedStart))" @onclick="BookAsync">Zarezerwuj</button>
     }
+    <WaitlistJoin DoctorId="selectedDoctorId" @key="selectedDoctorId" />
 }
 
 @code {
@@ -54,6 +72,7 @@ else if (selectedDoctorId > 0)
     private bool loading;
     private bool saving;
     private bool loadingDoctors;
+    private bool remote;
 
     protected override async Task OnInitializedAsync()
     {
@@ -122,7 +141,7 @@ else if (selectedDoctorId > 0)
         {
             using var response = await Http.PostAsJsonAsync("api/appointments", new CreateAppointmentDto
             {
-                DoctorId = selectedDoctorId, Date = DateTime.SpecifyKind(start, DateTimeKind.Unspecified)
+                DoctorId = selectedDoctorId, Date = DateTime.SpecifyKind(start, DateTimeKind.Unspecified), Remote = remote
             });
             if (response.IsSuccessStatusCode) { Navigation.NavigateTo("/appointments"); return; }
             error = await ApiErrors.ReadAsync(response);

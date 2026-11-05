@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\MedicalBookingSystem.SharedKernel\MedicalBookingSystem.SharedKernel.csproj" />
+    <ProjectReference Include="..\MedicalBookingSystem.UI.Shared\MedicalBookingSystem.UI.Shared.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Blazored.LocalStorage" />

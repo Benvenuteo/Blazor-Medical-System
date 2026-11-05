@@ -3,12 +3,21 @@
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @inject PatientAuthenticationStateProvider Authentication
+@inject IConfiguration Configuration
 
 
 <h3>Logowanie</h3>
 @if (SessionEnded)
 {
     <p role="status">Sesje zakończone. Zaloguj się ponownie.</p>
+}
+
+@if (demoEnabled)
+{
+    <aside class="alert alert-info d-flex flex-wrap align-items-center gap-2" aria-label="Konto demonstracyjne">
+        <span><strong>Wersja demonstracyjna</strong> — zaloguj się kontem <strong>@demoEmail</strong> (dane są fikcyjne).</span>
+        <button type="button" class="btn btn-sm btn-primary" @onclick="FillDemo">Wypełnij dane demo</button>
+    </aside>
 }
 
 <EditForm Model="loginDto" OnSubmit="HandleLogin">
@@ -22,6 +31,7 @@
 </div>
 <button type="submit" disabled="@saving" class="btn btn-primary">Zaloguj się</button>
 <button type="button" class="btn btn-link" @onclick="Register">Zarejestruj się</button>
+<a class="btn btn-link" href="/forgot-password">Nie pamiętasz hasła?</a>
 
 </EditForm>
 
@@ -30,11 +40,33 @@
     <div class="alert alert-danger mt-2">@error</div>
 }
 
+@if (!string.IsNullOrWhiteSpace(Configuration["Google:ClientId"]))
+{
+    <div class="auth-divider" role="separator"><span>lub</span></div>
+    <GoogleSignInButton />
+}
+
 @code {
     [SupplyParameterFromQuery(Name = "sessionEnded")] public bool SessionEnded { get; set; }
     private LoginDto loginDto = new();
     private string? error;
     private bool saving;
+    private bool demoEnabled;
+    private string? demoEmail, demoPassword;
+
+    protected override void OnInitialized()
+    {
+        demoEnabled = Configuration.GetValue<bool>("Demo:Enabled");
+        demoEmail = Configuration["Demo:PatientEmail"];
+        demoPassword = Configuration["Demo:PatientPassword"];
+        demoEnabled &= !string.IsNullOrEmpty(demoEmail) && !string.IsNullOrEmpty(demoPassword);
+    }
+
+    private void FillDemo()
+    {
+        loginDto.Email = demoEmail!;
+        loginDto.Password = demoPassword!;
+    }
 
     private void Register(){
         Navigation.NavigateTo($"/register");

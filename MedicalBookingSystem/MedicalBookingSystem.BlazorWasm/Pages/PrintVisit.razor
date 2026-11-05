@@ -1,0 +1,83 @@
+@page "/visits/{Id:int}/print"
+@layout PrintLayout
+@attribute [Authorize(Roles = Roles.Patient)]
+@using MedicalBookingSystem.SharedKernel.Dto.AppointmentsDto
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageTitle>Dokumentacja wizyty</PageTitle>
+
+<div class="print-actions">
+    <a href="/historyAppointments" class="btn btn-link">‹ Wróć do historii</a>
+    @if (visit is not null) { <button type="button" class="btn btn-primary" @onclick="PrintAsync">Drukuj / zapisz jako PDF</button> }
+</div>
+
+@if (error is not null)
+{
+    <p class="alert alert-danger" role="alert">@error</p>
+}
+else if (visit is null)
+{
+    <p role="status">Ładowanie dokumentacji...</p>
+}
+else
+{
+    <article class="print-document">
+        <header class="print-header">
+            <div>
+                <p class="print-brand">Medical Booking System</p>
+                <h1>Dokumentacja wizyty</h1>
+            </div>
+            <p class="print-meta">Wygenerowano: @DateTime.Now.ToString("dd.MM.yyyy HH:mm")</p>
+        </header>
+
+        <dl class="print-grid">
+            <dt>Pacjent</dt><dd>@visit.Patient?.FirstName @visit.Patient?.LastName</dd>
+            <dt>Lekarz</dt><dd>@visit.Doctor?.FirstName @visit.Doctor?.LastName</dd>
+            <dt>Termin wizyty</dt><dd>@visit.Date.ToString("dd.MM.yyyy, HH:mm")</dd>
+            @if (!string.IsNullOrEmpty(visit.ClinicName)) { <dt>Placówka</dt><dd>@visit.ClinicName, @visit.ClinicAddress</dd> }
+        </dl>
+
+        <section>
+            <h2>Notatka lekarza</h2>
+            @if (visit.Note is null) { <p class="text-muted">Brak notatki.</p> }
+            else { <p class="print-text">@visit.Note.Content</p> }
+        </section>
+
+        <section>
+            <h2>Recepta</h2>
+            @if (visit.Prescription is null) { <p class="text-muted">Brak recepty.</p> }
+            else
+            {
+                <dl class="print-grid">
+                    <dt>Lek</dt><dd>@visit.Prescription.Medication</dd>
+                    <dt>Dawkowanie</dt><dd>@visit.Prescription.Dosage</dd>
+                    <dt>Zalecenia</dt><dd class="print-text">@visit.Prescription.Instructions</dd>
+                    <dt>Ważna do</dt><dd>@visit.Prescription.ExpiryDate.ToString("dd.MM.yyyy")</dd>
+                </dl>
+            }
+        </section>
+
+        <footer class="print-footer">Dane demonstracyjne — dokument nie jest dokumentacją medyczną w rozumieniu przepisów.</footer>
+    </article>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private AppointmentDetailsDto? visit;
+    private string? error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        visit = null; error = null;
+        try
+        {
+            using var response = await Http.GetAsync($"api/appointments/{Id}");
+            if (response.IsSuccessStatusCode) visit = await response.Content.ReadFromJsonAsync<AppointmentDetailsDto>();
+            else error = await ApiErrors.ReadAsync(response);
+        }
+        catch (Exception exception) { error = ApiErrors.Describe(exception, "Nie udało się wczytać dokumentacji"); }
+    }
+
+    private async Task PrintAsync() => await JS.InvokeVoidAsync("print");
+}

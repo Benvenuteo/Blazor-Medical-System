@@ -12,6 +12,12 @@ namespace MedicalBookingSystem.Domain.Contracts
         IPrescriptionRepository Prescriptions { get; }
         INoteRepository Notes { get; }
         ISpecializationRepository Specializations { get; }
+        IRepository<MedicalBookingSystem.Domain.Models.EmailMessage> EmailOutbox { get; }
+        IRepository<MedicalBookingSystem.Domain.Models.AccountToken> AccountTokens { get; }
+        IRepository<MedicalBookingSystem.Domain.Models.PatientExternalLogin> ExternalLogins { get; }
+        IRepository<MedicalBookingSystem.Domain.Models.Clinic> Clinics { get; }
+        IRepository<MedicalBookingSystem.Domain.Models.DoctorClinic> DoctorClinics { get; }
+        IRepository<MedicalBookingSystem.Domain.Models.WaitlistEntry> Waitlist { get; }
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
         Task CommitTransactionAsync();

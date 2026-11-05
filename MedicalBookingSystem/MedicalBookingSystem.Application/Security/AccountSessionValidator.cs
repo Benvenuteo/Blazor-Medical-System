@@ -18,7 +18,8 @@ public sealed class AccountSessionValidator(IUnitOfWorkFactory units, ClinicCloc
         {
             var patient = await unit.Patients.GetByIdAsync(identity.Id);
             cancellationToken.ThrowIfCancellationRequested();
-            return patient?.SecurityStamp == identity.SecurityStamp ? SessionStatus.Valid : SessionStatus.Invalid;
+            if (patient is null || patient.SecurityStamp != identity.SecurityStamp) return SessionStatus.Invalid;
+            return patient.ProfileIncomplete ? SessionStatus.ProfileIncomplete : SessionStatus.Valid;
         }
         var staff = await unit.StaffAccounts.GetByIdAsync(identity.Id);
         cancellationToken.ThrowIfCancellationRequested();

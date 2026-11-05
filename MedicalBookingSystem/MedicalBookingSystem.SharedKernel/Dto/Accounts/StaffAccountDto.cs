@@ -12,6 +12,7 @@ public sealed class StaffAccountDto
     public string? DoctorName { get; set; }
     public Guid Version { get; set; }
     public bool IsCurrentUser { get; set; }
+    public bool IsDemo { get; set; }
 }
 
 public sealed class AccountSearchDto

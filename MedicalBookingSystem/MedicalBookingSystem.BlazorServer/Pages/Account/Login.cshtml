@@ -1,12 +1,23 @@
 @page
 @model MedicalBookingSystem.BlazorServer.Pages.Account.LoginModel
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{ var demoPassword = Configuration.GetValue<bool>("Demo:Enabled") ? Configuration["Demo:StaffPassword"] : null; }
 <!DOCTYPE html>
 <html lang="pl"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Logowanie personelu</title><link rel="stylesheet" href="/css/bootstrap/bootstrap.min.css" /></head>
 <body><main class="container py-5" style="max-width: 480px">
 <h1>Logowanie personelu</h1>
 @if (Request.Query["passwordChanged"] == "true") { <p role="status">Hasło zmienione. Zaloguj się ponownie.</p> }
+@if (!string.IsNullOrEmpty(demoPassword))
+{
+<aside class="alert alert-info" aria-label="Konta demonstracyjne">
+<strong>Wersja demonstracyjna</strong> — dane są fikcyjne.<br />
+Lekarz: <strong>doctor@example.test</strong><br />
+Administrator: <strong>admin@example.test</strong><br />
+Hasło obu kont: <strong>@demoPassword</strong>
+</aside>
+}
 <form method="post">
 <div asp-validation-summary="All" class="text-danger"></div>
 <label asp-for="Email">Email</label><input asp-for="Email" type="email" autocomplete="username" class="form-control mb-3" />

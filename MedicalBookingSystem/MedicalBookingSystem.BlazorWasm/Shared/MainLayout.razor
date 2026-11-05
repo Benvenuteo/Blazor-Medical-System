@@ -1,15 +1,24 @@
 @inherits LayoutComponentBase
 @using MudBlazor
+@inject IConfiguration Configuration
+@inject AuthenticationStateProvider AuthenticationState
+@inject NavigationManager Navigation
 
 <MudThemeProvider />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
+<AuthorizeView><SessionKeepAlive /></AuthorizeView>
 
 <MudLayout>
     <MudAppBar Color="Color.Primary">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="ToggleDrawer" aria-label="Otwórz menu nawigacji" />
         <MudText Typo="Typo.h6">Medical Booking System</MudText>
+        @if (Configuration.GetValue<bool>("Demo:Enabled"))
+        {
+            <MudSpacer />
+            <span class="demo-chip" title="Dane są fikcyjne, konta demo są chronione przed zmianą">DEMO · dane fikcyjne</span>
+        }
     </MudAppBar>
 
     <MudDrawer Style="background: linear-gradient(180deg, #092447, #183f69); color: white;" Anchor="Anchor.Left" @bind-Open="drawerOpen" Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md" ClipMode="DrawerClipMode.Always">
@@ -22,5 +31,15 @@
 </MudLayout>
 @code {
     private bool drawerOpen = true;
+
+    // Accounts created through Google must provide birth date and phone first; the API enforces it,
+    // the layout only sends the patient straight to the right page.
+    protected override async Task OnParametersSetAsync()
+    {
+        var user = (await AuthenticationState.GetAuthenticationStateAsync()).User;
+        if (user.HasClaim(AccountClaims.ProfileIncomplete, "true") &&
+            !Navigation.ToBaseRelativePath(Navigation.Uri).StartsWith("complete-profile", StringComparison.OrdinalIgnoreCase))
+            Navigation.NavigateTo("/complete-profile", replace: true);
+    }
     private void ToggleDrawer() => drawerOpen = !drawerOpen;
 }

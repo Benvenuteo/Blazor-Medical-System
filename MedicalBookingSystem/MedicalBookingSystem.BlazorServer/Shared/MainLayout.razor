@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@inject IConfiguration Configuration
 
 <MudThemeProvider />
 <MudPopoverProvider />
@@ -13,6 +14,10 @@
     </div>
 
     <main>
+        @if (Configuration.GetValue<bool>("Demo:Enabled"))
+        {
+            <div class="demo-banner" role="note">Wersja demonstracyjna · wszystkie dane są fikcyjne · konta demo są chronione przed zmianą</div>
+        }
         <article class="content px-4">
             @Body
         </article>

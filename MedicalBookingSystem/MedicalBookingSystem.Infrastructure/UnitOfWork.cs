@@ -25,6 +25,12 @@ namespace MedicalBookingSystem.Infrastructure
             Prescriptions = new PrescriptionRepository(context);
             Notes = new NoteRepository(context);
             Specializations = new SpecializationRepository(context);
+            EmailOutbox = new EntityRepository<EmailMessage>(context);
+            AccountTokens = new EntityRepository<AccountToken>(context);
+            ExternalLogins = new EntityRepository<PatientExternalLogin>(context);
+            Clinics = new EntityRepository<Clinic>(context);
+            DoctorClinics = new EntityRepository<DoctorClinic>(context);
+            Waitlist = new EntityRepository<WaitlistEntry>(context);
         }
 
         public IClinicalAuditWriter ClinicalAudit { get; }
@@ -37,6 +43,12 @@ namespace MedicalBookingSystem.Infrastructure
         public IPrescriptionRepository Prescriptions { get; }
         public INoteRepository Notes { get; }
         public ISpecializationRepository Specializations { get; }
+        public IRepository<EmailMessage> EmailOutbox { get; }
+        public IRepository<AccountToken> AccountTokens { get; }
+        public IRepository<PatientExternalLogin> ExternalLogins { get; }
+        public IRepository<Clinic> Clinics { get; }
+        public IRepository<DoctorClinic> DoctorClinics { get; }
+        public IRepository<WaitlistEntry> Waitlist { get; }
 
         public async Task<int> SaveChangesAsync()
         {
@@ -54,6 +66,9 @@ namespace MedicalBookingSystem.Infrastructure
                     : exception.Entries.Any(e => e.Entity is DoctorSchedule) ? PersistenceConflictKind.ScheduleOverlap
                     : exception.Entries.Any(e => e.Entity is Review) ? PersistenceConflictKind.DuplicateReview
                     : exception.Entries.Any(e => e.Entity is Note or Prescription) ? PersistenceConflictKind.DuplicateDocument
+                    : exception.Entries.Any(e => e.Entity is PatientExternalLogin) ? PersistenceConflictKind.DuplicateExternalLogin
+                    : exception.Entries.Any(e => e.Entity is Clinic or DoctorClinic) ? PersistenceConflictKind.DuplicateClinic
+                    : exception.Entries.Any(e => e.Entity is WaitlistEntry) ? PersistenceConflictKind.DuplicateWaitlistEntry
                     : exception.Entries.Any(e => e.Entity is Patient or StaffAccount) ? PersistenceConflictKind.DuplicateAccount
                     : (PersistenceConflictKind?)null;
                 if (kind is null) throw;

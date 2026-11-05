@@ -22,6 +22,7 @@ public sealed class StaffPasswordService(IUnitOfWorkFactory units, SessionGuard 
         if (!validation.IsValid) return Result.Failure(string.Join("; ", validation.Errors.Select(e => e.ErrorMessage)));
         using var unit = units.Create(); var account = await unit.StaffAccounts.GetByIdAsync(identity.Id);
         if (account is null || !account.IsActive || account.SecurityStamp != identity.SecurityStamp) throw new AccessDeniedException(false);
+        if (account.IsDemo) return DemoAccounts.Refused();
         if (hasher.VerifyHashedPassword(account, account.PasswordHash, dto.CurrentPassword) == PasswordVerificationResult.Failed)
             return Result.Failure("Aktualne hasło jest nieprawidłowe.");
         if (string.Equals(dto.CurrentPassword, dto.NewPassword, StringComparison.Ordinal)) return Result.Failure("Nowe hasło musi różnić się od aktualnego.");

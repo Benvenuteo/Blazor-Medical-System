@@ -1,0 +1,44 @@
+@using MedicalBookingSystem.SharedKernel.Dto
+@inject HttpClient Http
+
+@if (entries is { Count: > 0 })
+{
+    <section class="mt-4" aria-labelledby="waitlist-heading">
+        <h2 id="waitlist-heading" class="h5">Lista oczekujących</h2>
+        <ul class="list-group">
+            @foreach (var entry in entries)
+            {
+                <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2" @key="entry.Id">
+                    <span>@entry.DoctorName — czekasz na termin przed <strong>@entry.Before.ToString("dd.MM.yyyy")</strong></span>
+                    <button type="button" class="btn btn-sm btn-outline-danger" disabled="@busy" @onclick="() => LeaveAsync(entry.Id)">Usuń</button>
+                </li>
+            }
+        </ul>
+        @if (error is not null) { <p class="alert alert-danger mt-2" role="alert">@error</p> }
+    </section>
+}
+
+@code {
+    private List<WaitlistEntryDto>? entries;
+    private bool busy;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { entries = await Http.GetFromJsonAsync<List<WaitlistEntryDto>>("api/waitlist"); }
+        catch (Exception exception) when (exception is HttpRequestException or System.Text.Json.JsonException) { entries = null; }
+    }
+
+    private async Task LeaveAsync(int id)
+    {
+        busy = true; error = null;
+        try
+        {
+            using var response = await Http.DeleteAsync($"api/waitlist/{id}");
+            if (response.IsSuccessStatusCode) entries?.RemoveAll(e => e.Id == id);
+            else error = await ApiErrors.ReadAsync(response);
+        }
+        catch (Exception exception) { error = ApiErrors.Describe(exception, "Nie udało się usunąć wpisu"); }
+        finally { busy = false; }
+    }
+}

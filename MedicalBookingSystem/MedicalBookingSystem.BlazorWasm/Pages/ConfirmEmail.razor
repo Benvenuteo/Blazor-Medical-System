@@ -1,0 +1,45 @@
+@page "/confirm-email"
+@layout EmptyLayout
+@using MedicalBookingSystem.SharedKernel.Dto
+@inject HttpClient Http
+
+<PageTitle>Potwierdzenie adresu email</PageTitle>
+<h1 class="h3">Potwierdzenie adresu email</h1>
+
+@if (state == State.Working)
+{
+    <p role="status">Potwierdzanie adresu...</p>
+}
+else if (state == State.Confirmed)
+{
+    <p class="alert alert-success" role="status">Adres email został potwierdzony. Dziękujemy!</p>
+    <a class="btn btn-primary" href="/dashboard">Przejdź do panelu pacjenta</a>
+}
+else
+{
+    <p class="alert alert-warning" role="alert">@error</p>
+    <p>Nowy link wyślesz z panelu pacjenta po zalogowaniu.</p>
+    <a class="btn btn-outline-primary" href="/">Przejdź do logowania</a>
+}
+
+@code {
+    private enum State { Working, Confirmed, Failed }
+    [SupplyParameterFromQuery(Name = "token")] public string? Token { get; set; }
+    private State state = State.Working;
+    private string? error;
+
+    // The link only shows a page; the token is redeemed by an explicit POST, never by a GET that mail scanners may prefetch.
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Token)) { Fail("Link jest niekompletny."); return; }
+        try
+        {
+            using var response = await Http.PostAsJsonAsync("api/auth/confirm-email", new ConfirmEmailDto { Token = Token });
+            if (response.IsSuccessStatusCode) state = State.Confirmed;
+            else Fail(await ApiErrors.ReadAsync(response));
+        }
+        catch (Exception exception) { Fail(ApiErrors.Describe(exception, "Nie udało się potwierdzić adresu")); }
+    }
+
+    private void Fail(string message) { error = message; state = State.Failed; }
+}

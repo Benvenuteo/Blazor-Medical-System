@@ -13,7 +13,8 @@ namespace MedicalBookingSystem.Application.Services;
 
 public sealed class AppointmentService(
     IUnitOfWorkFactory units, ClinicClock clock, UserAccess access,
-    IValidator<CreateAppointmentDto> createValidator, IValidator<UpdateAppointmentDto> updateValidator) : IAppointmentService
+    IValidator<CreateAppointmentDto> createValidator, IValidator<UpdateAppointmentDto> updateValidator,
+    MedicalBookingSystem.Application.Notifications.IVisitNotifications? notifications = null, IWaitlistNotifier? waitlist = null) : IAppointmentService
 {
     public async Task<Result<AppointmentDto>> CreateAppointmentAsync(CreateAppointmentDto dto, int patientId)
     {
@@ -27,12 +28,26 @@ public sealed class AppointmentService(
             return Result.Failure<AppointmentDto>("Termin jest zajęty albo nie mieści się w grafiku. Wybierz inny termin.", ErrorType.Conflict);
         if (await PatientHasConflictAsync(unitOfWork, patientId, dto.Date))
             return Result.Failure<AppointmentDto>("W tym czasie masz już inną wizytę.", ErrorType.Conflict);
-        var appointment = new Appointment { PatientId = patientId, DoctorId = dto.DoctorId, Date = dto.Date };
+        var appointment = new Appointment { PatientId = patientId, DoctorId = dto.DoctorId, Date = dto.Date,
+            ClinicId = await unitOfWork.DoctorSchedules.FindClinicAtAsync(dto.DoctorId, dto.Date),
+            IsRemote = dto.Remote, VideoRoom = dto.Remote ? MedicalBookingSystem.Application.Notifications.VideoRooms.NewRoom() : null };
         await unitOfWork.Appointments.AddAsync(appointment);
         try { await unitOfWork.SaveChangesAsync(); }
         catch (PersistenceConflictException)
         {
             return Result.Failure<AppointmentDto>("Termin został już zajęty. Odśwież dostępne terminy.", ErrorType.Conflict);
+        }
+        if (notifications is not null)
+        {
+            // The booking is already committed. The confirmation needs the new id for its calendar file, so it is
+            // saved separately and is best effort: a busy database must not turn a stored booking into an error
+            // (the day-before reminder still follows).
+            try
+            {
+                await notifications.QueueBookingConfirmationAsync(unitOfWork, appointment);
+                await unitOfWork.SaveChangesAsync();
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException) { }
         }
         return Result.Success(appointment.ToDto());
     }
@@ -47,7 +62,17 @@ public sealed class AppointmentService(
         var editable = CheckPatientChange(appointment);
         if (editable.IsFailure) return editable;
         appointment.Status = AppointmentStatus.Cancelled;
-        return await SaveChangeAsync(unitOfWork);
+        var saved = await SaveChangeAsync(unitOfWork);
+        if (saved.IsSuccess) await NotifyWaitlistAsync(appointment.DoctorId, appointment.Date);
+        return saved;
+    }
+
+    /// <summary>Best effort, after the change is stored: a failing notification never undoes a cancellation or move.</summary>
+    private async Task NotifyWaitlistAsync(int doctorId, DateTime freedStart)
+    {
+        if (waitlist is null) return;
+        try { await waitlist.SlotFreedAsync(doctorId, freedStart); }
+        catch (Exception exception) when (exception is not OperationCanceledException) { }
     }
 
     public async Task<Result> UpdateAppointmentAsync(int id, UpdateAppointmentDto dto)
@@ -65,8 +90,12 @@ public sealed class AppointmentService(
         if (!await unitOfWork.DoctorSchedules.IsTimeSlotAvailableAsync(appointment.DoctorId, dto.NewDate, appointment.Id) ||
             await PatientHasConflictAsync(unitOfWork, appointment.PatientId, dto.NewDate, appointment.Id))
             return Result.Failure("Wybrany termin jest zajęty albo nie mieści się w grafiku.", ErrorType.Conflict);
+        var freed = appointment.Date;
         appointment.Date = dto.NewDate;
-        return await SaveChangeAsync(unitOfWork);
+        appointment.ClinicId = await unitOfWork.DoctorSchedules.FindClinicAtAsync(appointment.DoctorId, dto.NewDate);
+        var moved = await SaveChangeAsync(unitOfWork);
+        if (moved.IsSuccess) await NotifyWaitlistAsync(appointment.DoctorId, freed);
+        return moved;
     }
 
     public async Task<Result> CompleteAppointmentAsync(int id)

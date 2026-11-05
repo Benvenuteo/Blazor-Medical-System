@@ -52,7 +52,7 @@ public sealed class PatientServiceTests
         Assert.True(result.IsSuccess);
         Assert.NotEqual(originalHash, patient.PasswordHash);
         Assert.NotEqual(PasswordVerificationResult.Failed,
-            hasher.VerifyHashedPassword(patient, patient.PasswordHash, "Replacement2026!"));
+            hasher.VerifyHashedPassword(patient, patient.PasswordHash!, "Replacement2026!"));
         repositories.UnitOfWork.Verify(unit => unit.SaveChangesAsync(), Times.Once);
     }
 

@@ -3,6 +3,7 @@
 @using System.ComponentModel.DataAnnotations
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject IConfiguration Configuration
 
 <h3>Rejestracja</h3>
 
@@ -53,6 +54,13 @@
         <div class="alert alert-danger mt-3">@registerError</div>
     }
 </EditForm>
+
+@if (!string.IsNullOrWhiteSpace(Configuration["Google:ClientId"]))
+{
+    <div class="auth-divider" role="separator"><span>lub</span></div>
+    <p class="small text-muted">Konto przez Google nie wymaga hasła. Datę urodzenia i telefon uzupełnisz po zalogowaniu.</p>
+    <GoogleSignInButton />
+}
 
 @code {
     private RegisterPatientDto registerModel = new();

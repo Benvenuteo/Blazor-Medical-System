@@ -19,6 +19,15 @@ namespace MedicalBookingSystem.Application.Validators
                 .MaximumLength(100).WithMessage("Nazwa regionu nie może przekraczać 100 znaków")
                 .When(s => !string.IsNullOrEmpty(s.Region));
 
+            RuleFor(s => s.Latitude).InclusiveBetween(-90, 90).When(s => s.Latitude.HasValue);
+            RuleFor(s => s.Longitude).InclusiveBetween(-180, 180).When(s => s.Longitude.HasValue);
+            RuleFor(s => s).Must(s => s.Latitude.HasValue == s.Longitude.HasValue)
+                .WithMessage("Podaj obie współrzędne punktu wyszukiwania albo żadną.");
+            RuleFor(s => s.RadiusKm).InclusiveBetween(1, MedicalBookingSystem.SharedKernel.Dto.MapDefaults.MaxRadiusKm)
+                .WithMessage("Promień musi mieścić się w zakresie 1–100 km.").When(s => s.RadiusKm.HasValue);
+            RuleFor(s => s.SortBy).Must(s => s?.ToLowerInvariant() != "distance").When(s => !s.HasLocation)
+                .WithMessage("Sortowanie po odległości wymaga punktu wyszukiwania.");
+
             RuleFor(s => s.SortBy)
                 .Must(BeValidSortOption).WithMessage("Nieprawidłowa opcja sortowania")
                 .When(s => !string.IsNullOrEmpty(s.SortBy));
@@ -26,7 +35,7 @@ namespace MedicalBookingSystem.Application.Validators
 
         private bool BeValidSortOption(string? sortBy)
         {
-            var validOptions = new[] { "rating", "availability" };
+            var validOptions = new[] { "rating", "availability", "distance" };
             return sortBy is not null && validOptions.Contains(sortBy.ToLowerInvariant());
         }
     }

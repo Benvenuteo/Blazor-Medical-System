@@ -14,6 +14,8 @@ internal sealed class RepositoryMocks
     public Mock<INoteRepository> Notes { get; } = new();
     public Mock<IPrescriptionRepository> Prescriptions { get; } = new();
     public Mock<IReviewRepository> Reviews { get; } = new();
+    public Mock<IRepository<DoctorClinic>> DoctorClinics { get; } = new();
+    public Mock<IRepository<Clinic>> Clinics { get; } = new();
 
     public RepositoryMocks()
     {
@@ -25,6 +27,11 @@ internal sealed class RepositoryMocks
         UnitOfWork.SetupGet(unit => unit.Notes).Returns(Notes.Object);
         UnitOfWork.SetupGet(unit => unit.Prescriptions).Returns(Prescriptions.Object);
         UnitOfWork.SetupGet(unit => unit.Reviews).Returns(Reviews.Object);
+        // No clinics by default: schedules and slots behave as before clinics existed.
+        DoctorClinics.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<DoctorClinic, bool>>>())).ReturnsAsync([]);
+        Clinics.Setup(r => r.FindAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Clinic, bool>>>())).ReturnsAsync([]);
+        UnitOfWork.SetupGet(unit => unit.DoctorClinics).Returns(DoctorClinics.Object);
+        UnitOfWork.SetupGet(unit => unit.Clinics).Returns(Clinics.Object);
         UnitOfWork.Setup(unit => unit.SaveChangesAsync()).ReturnsAsync(1);
     }
 }
