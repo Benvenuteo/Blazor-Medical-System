@@ -4,8 +4,10 @@
 # The address defaults to 127.0.0.1; certificates are not verified (local CA for *.localhost).
 set -eu
 patient=$1 api=$2 staff=$3 address=${4:-127.0.0.1}
-request() { curl -ksS --max-time 20 --resolve "$1:443:$address" "$@"; }
-fail() { echo "FAIL: $*" >&2; exit 1; }
+# request <host> <curl arguments...>: sends the request to Caddy at $address with SNI and Host set to <host>.
+request() { host=$1; shift; curl -ksS --max-time 20 --resolve "$host:443:$address" "$@"; }
+# GitHub Actions shows ::error lines as annotations, which are readable without opening the log.
+fail() { echo "::error title=Container smoke test::$*"; echo "FAIL: $*" >&2; exit 1; }
 
 echo "Waiting for the API through Caddy..."
 for attempt in $(seq 1 30); do
@@ -14,8 +16,8 @@ for attempt in $(seq 1 30); do
   sleep 5
 done
 
-[ "$(request "$api" "https://$api/health/ready")" = Healthy ] || fail "API readiness"
-[ "$(request "$staff" "https://$staff/health/ready")" = Healthy ] || fail "staff panel readiness"
+ready=$(request "$api" "https://$api/health/ready"); [ "$ready" = Healthy ] || fail "API readiness: $ready"
+ready=$(request "$staff" "https://$staff/health/ready"); [ "$ready" = Healthy ] || fail "staff panel readiness: $ready"
 echo "OK: API and staff panel report a migrated database"
 
 request "$staff" "https://$staff/Account/Login" | grep -q '__RequestVerificationToken' || fail "staff login form"
