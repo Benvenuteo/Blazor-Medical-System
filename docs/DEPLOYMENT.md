@@ -36,6 +36,8 @@ flowchart LR
    ```
 
 5. Zainstaluj Docker Engine z pluginem Compose według [instrukcji dla Ubuntu](https://docs.docker.com/engine/install/ubuntu/) i dodaj użytkownika do grupy `docker`.
+
+   Punkty 4 i 5 (oraz katalog kopii z punktu 5 niżej) wykonuje jeden skrypt — po sklonowaniu repozytorium: `sudo sh deploy/scripts/bootstrap-server.sh`, potem wyloguj się i zaloguj ponownie.
 6. Oracle może odebrać maszynę Always Free, która przez 7 dni prawie nie pracuje. Konto Pay As You Go (nadal 0 zł w limitach Always Free) zdejmuje to ryzyko; regularne kopie z punktu 5 pozwalają odtworzyć demo na nowej maszynie.
 
 ## 2. Domeny
