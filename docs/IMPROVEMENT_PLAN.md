@@ -160,7 +160,7 @@ Stan wyjściowy: commit `e596cef`. Projekt jest dojrzały jak na portfolio — w
 
 ## Status (listopad 2026)
 
-Zrobione: A1–A2, A0 (potwierdzenie emaila bez blokady logowania), A4–A9, A12, B (Google), C (placówki, wyszukiwanie w promieniu, mapa Leaflet/OSM), E (kontenery, Caddy, tryb demo), D1 (potwierdzenia, przypomnienia, .ics). Do zrobienia: A3 (refresh token/BFF), A10 (wspólna biblioteka komponentów), D2–D9, CD do Oracle (workflow `deploy.yml`).
+Zrobione: A1–A2, A0 (potwierdzenie emaila bez blokady logowania), A4–A9, A12, B (Google), C (placówki, wyszukiwanie w promieniu, mapa Leaflet/OSM), E (kontenery, Caddy, tryb demo), D1 (potwierdzenia, przypomnienia, .ics). Zrobione później: A3 (odnawianie tokenu do 12 h od logowania, bez ciasteczek między domenami), A10 (biblioteka `MedicalBookingSystem.UI.Shared`), CD (`deploy.yml`). Do zrobienia: D2–D9 i ewentualnie BFF z tokenem poza `localStorage`.
 
 ## Kolejność realizacji
 

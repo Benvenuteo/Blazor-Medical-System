@@ -91,3 +91,7 @@ Przeglądarka otrzymuje ID token z Google Identity Services i przekazuje go z je
 ## Nagłówki dla zewnętrznych zasobów
 
 Aplikacja pacjenta zezwala w CSP na skrypt i ramkę Google Identity Services oraz Leaflet z cdnjs (z Subresource Integrity); kafelki OpenStreetMap są obrazami `https:`. `Referrer-Policy: strict-origin-when-cross-origin` w aplikacji pacjenta i panelu wynika z wymagań Google i polityki kafelków OSM; API pozostaje przy `no-referrer`. Lokalizacja pacjenta jest zaokrąglana do ok. 1 km i nie jest zapisywana; geokodowanie idzie przez API (limit 10/min na adres), więc przeglądarka nie kontaktuje się z Nominatim.
+
+## Odnawianie sesji pacjenta
+
+Token pacjenta jest ważny godzinę. Otwarta aplikacja wymienia go 10 minut przed wygaśnięciem przez `POST /api/auth/refresh`. API najpierw sprawdza sesję w bazie (`SecurityStamp`, profil), więc zmiana hasła, reset lub „wyloguj wszędzie” kończą odnawianie. Czas zalogowania (`session_started`) przechodzi do nowego tokenu i ogranicza sesję do 12 godzin; żaden token nie wychodzi poza ten limit. Token pozostaje w `localStorage` — przeniesienie go do ciasteczka HttpOnly (BFF) wymaga wspólnej domeny aplikacji i API i jest opisane w planie jako dalszy krok.

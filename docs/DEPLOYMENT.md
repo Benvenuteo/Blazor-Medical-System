@@ -98,6 +98,29 @@ Codzienna kopia z rotacją 7 dni (`crontab -e`, ścieżkę repozytorium dostosuj
 
 Odtwarzanie, `create-admin` i `reset-admin` działają tak jak w [OPERATIONS.md](OPERATIONS.md), ze ścieżkami z kontenera (`/data/db/medical.db`, `/backups/...`). Polecenia zmieniające bazę uruchamiaj przy zatrzymanych usługach `api` i `staff` (`docker compose ... stop api staff`), a hasło podawaj w konsoli (`run --rm -it maintenance reset-admin ...`).
 
+## 6. Automatyczne wdrażanie z GitHub Actions
+
+Workflow `Deploy demo` (`.github/workflows/deploy.yml`) uruchamia się po zielonym `Build and test` na `main` (albo ręcznie). Buduje obrazy ARM64 i publikuje je w GitHub Container Registry jako `ghcr.io/<właściciel>/medical-booking/<api|staff|web|maintenance>:<commit>`. Gdy skonfigurowano serwer, łączy się przez SSH i uruchamia `deploy/scripts/remote-deploy.sh`: przełącza pliki compose na ten commit, pobiera obrazy, robi kopię bazy, startuje nową wersję i czeka na kontrole zdrowia. Jeśli nowa wersja nie wstanie, przywraca poprzednie obrazy.
+
+Jednorazowa konfiguracja:
+
+1. Na serwerze sklonuj repozytorium i przygotuj `deploy/.env` oraz `deploy/secrets` jak w punkcie 3 (bez `--build` przy pierwszym starcie nie trzeba nic budować lokalnie).
+2. Utwórz osobny klucz SSH tylko do wdrożeń: `ssh-keygen -t ed25519 -f deploy_key -N ""` i dopisz `deploy_key.pub` do `~/.ssh/authorized_keys` użytkownika na serwerze (należy do grupy `docker`).
+3. W repozytorium: *Settings → Environments → New environment* `demo` (opcjonalnie z wymaganą akceptacją), a w nim sekrety:
+
+   | Sekret | Wartość |
+   | --- | --- |
+   | `DEPLOY_HOST` | Publiczny adres IP lub nazwa serwera |
+   | `DEPLOY_USER` | Użytkownik SSH, np. `ubuntu` |
+   | `DEPLOY_SSH_KEY` | Zawartość pliku `deploy_key` (klucz prywatny) |
+   | `DEPLOY_KNOWN_HOSTS` | Wynik `ssh-keyscan -t ed25519 <adres serwera>` — workflow nie akceptuje nieznanych kluczy hosta |
+   | `DEPLOY_PATH` | Ścieżka repozytorium na serwerze, np. `/home/ubuntu/Blazor-Medical-System` |
+
+   Opcjonalnie zmienna `API_HOST` (np. `medical-api.duckdns.org`) włącza końcowe sprawdzenie `/health/ready` z internetu.
+4. Po pierwszym przebiegu ustaw pakiety `medical-booking/*` w zakładce *Packages* jako publiczne albo zaloguj serwer do rejestru: `docker login ghcr.io` z tokenem o uprawnieniu `read:packages`.
+
+Bez sekretu `DEPLOY_HOST` workflow tylko publikuje obrazy.
+
 ## Lokalny test kontenerów
 
 Nazwy `*.localhost` nie wymagają DNS; Caddy wystawia dla nich certyfikat z własnego, lokalnego urzędu certyfikacji (przeglądarka pokaże ostrzeżenie):
