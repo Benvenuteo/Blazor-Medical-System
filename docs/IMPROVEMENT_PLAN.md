@@ -80,16 +80,17 @@ Stan wyjściowy: commit `e596cef`. Projekt jest dojrzały jak na portfolio — w
 
 - Lokalizacja należy do **placówki**, nie do lekarza (lekarz może przyjmować w kilku miejscach). Nowa encja `Clinic` + relacja wiele‑do‑wielu `DoctorClinic`. Pole `Doctor.Region` zostaje na okres przejściowy, potem do usunięcia.
 - **Placówka przenika cały przepływ rezerwacji**, nie tylko filtr: grafik (`DoctorSchedule.ClinicId`), sloty (`DoctorService.GetAvailableSlotsAsync`, `AvailableSlotDto`), „najbliższy termin” w katalogu i sama wizyta (`Appointment.ClinicId` zapisywane przy rezerwacji — nie odtwarzane z grafiku, bo grafik można później zmienić/usunąć). Inaczej „najbliższy termin” może wskazać placówkę 200 km dalej.
-- **Współrzędne placówek:** warunki Google Maps Platform nie pozwalają trwale przechowywać wyników Geocoding API (cache maks. 30 dni) ani pokazywać ich na mapie innej niż Google. Dlatego: admin **ustawia pinezkę ręcznie** na mapie (współrzędne wskazane przez człowieka można przechowywać), a geokodowanie służy tylko jako podpowiedź. Alternatywa w pełni wolna: Nominatim/OSM + Leaflet (zgodnie z polityką użycia Nominatim — niski wolumen, User-Agent).
+- **Współrzędne placówek:** admin wpisuje adres, Nominatim podpowiada współrzędne, a admin poprawia **pinezkę ręcznie** na mapie i zapisuje. Dane OSM (ODbL) można przechowywać, z atrybucją.
 - Odległość w SQLite: **prostokąt ograniczający** (`lat/lng BETWEEN`, korzysta z indeksu) + dokładny **haversine** jako funkcja zarejestrowana przez `SqliteConnection.CreateFunction` — ten sam wzorzec co istniejące `CreateCollation("MEDICAL_NOCASE")` w `DoctorDirectoryQueries`. Nie zakładamy, że wbudowane funkcje matematyczne SQLite są dostępne.
-- **Mapa:** Google Maps JavaScript API (zgodnie z pomysłem). Alternatywa bez kosztów i klucza: Leaflet + OpenStreetMap — interfejs JS‑interop tak zaprojektować, żeby dostawca był wymienny.
+- **Mapa (decyzja: darmowa):** Leaflet + kafelki OpenStreetMap, bez klucza i bez kosztów. Leaflet serwowany z własnego `wwwroot` (LibMan), więc `script-src 'self'` zostaje. Warunki OSM: widoczna atrybucja „© OpenStreetMap contributors”, nagłówek `Referer` (dlatego `Referrer-Policy: strict-origin-when-cross-origin`), niski ruch. JS‑interop zaprojektować tak, żeby dostawcę kafelków dało się wymienić.
+- **Wyszukiwanie adresu:** Nominatim — maks. 1 żądanie/s, własny User-Agent, **bez autouzupełniania** (zabronione przez politykę Nominatim). Geokodowanie tylko po kliknięciu „Szukaj”, przez API (z cache), nie bezpośrednio z przeglądarki.
 - **Prywatność:** lokalizacja użytkownika tylko za zgodą przeglądarki; do API wysyłane współrzędne zaokrąglone do 2 miejsc (~1 km); nie zapisujemy jej w bazie. NLog nie loguje query stringów (`Microsoft.*` poniżej Warn jest odrzucane), ale robi to domyślny `access_log` nginx — dlatego wyszukiwanie z lokalizacją idzie przez `POST /api/doctors/search` (alternatywnie `log_format` bez `$args`).
 
 ### Kroki
 
-1. **Google Cloud** — włączyć *Maps JavaScript API*, *Places API (New)* (dla nowych projektów dostępna jest tylko nowa wersja) i opcjonalnie *Geocoding API* (tylko podpowiedź, patrz wyżej). Dwa klucze: **przeglądarkowy** (ograniczony do HTTP referrerów aplikacji pacjenta i do Maps JS + Places) oraz **serwerowy** (ograniczony do Geocoding, przechowywany jak `JwtSettings__SecretKey`, nigdy w repozytorium). Ustawić budżet/alerty kosztów.
+1. **Biblioteki** — Leaflet (LibMan → `wwwroot/lib/leaflet`, wersja przypięta) w aplikacji pacjenta i w panelu; konfiguracja `Maps:TileUrl` i `Geocoding:NominatimUrl` z User-Agentem projektu. Bez kluczy API.
 2. **Model danych**: `Clinic { Id, Name, Street, City, PostalCode, Latitude (double), Longitude (double), Phone }`, `DoctorClinic { DoctorId, ClinicId }`; indeks `(Latitude, Longitude)`; `DoctorSchedule.ClinicId` i `Appointment.ClinicId`. Migracja: stare grafiki i wizyty dostają placówkę domyślną seedowaną w migracji (jasna reguła zamiast `NULL`), potem kolumny `NOT NULL`. Walidacja w `CreateScheduleDtoValidator`/usłudze: `ClinicId` grafiku musi należeć do `DoctorClinic` lekarza. Unikalny indeks `(DoctorId, Date)` i trigger nakładania grafików zostają bez zmian (lekarz nie jest w dwóch miejscach naraz). Seed demo: 3–4 placówki w różnych miastach.
-3. **Backend placówek (bez UI mapy)** — `IGeocodingService` (Application) + `GoogleGeocodingService` (Infrastructure, typed `HttpClient`, timeout, retry; wynik tylko jako podpowiedź) + `FakeGeocodingService` dla testów/dev bez klucza. Serwis i API CRUD placówek, przypisanie lekarzy do placówek.
+3. **Backend placówek (bez UI mapy)** — `IGeocodingService` (Application) + `NominatimGeocodingService` (Infrastructure, typed `HttpClient`, User-Agent, limit 1 żądanie/s, cache, timeout; wynik tylko jako podpowiedź) + `FakeGeocodingService` dla testów/dev offline. Serwis i API CRUD placówek, przypisanie lekarzy do placówek.
 4. **Sloty i rezerwacja per placówka** — `GetAvailableSlotsAsync` i `AvailableSlotDto` zwracają `ClinicId`/nazwę; `CreateAppointmentDto` przyjmuje slot, a usługa ustala i zapisuje `Appointment.ClinicId` z grafiku w chwili rezerwacji; zmiana terminu aktualizuje placówkę.
 5. **Wyszukiwanie** — `POST /api/doctors/search` z `SearchDoctorsDto` rozszerzonym o `Latitude?`, `Longitude?`, `RadiusKm?` (domyślnie 30, maks. 100); walidator: obie współrzędne albo żadna, zakresy −90..90 / −180..180. W `DoctorDirectoryQueries.SearchAsync`:
    - granice prostokąta (`Δlat = r/111.32`, `Δlng = r/(111.32·cos(lat))`) **liczone w C#** i przekazane jako parametry (SQLite bez funkcji matematycznych nie policzy `cos`);
@@ -100,21 +101,19 @@ Stan wyjściowy: commit `e596cef`. Projekt jest dojrzały jak na portfolio — w
 6. **API pinezek** — `POST /api/clinics/nearby` (lekkie DTO dla mapy); jeśli ma być dostępne przed logowaniem — `[AllowAnonymous]` jawnie (dziś `FallbackPolicy` wymaga logowania, a katalog lekarzy jest tylko dla pacjenta).
 7. **Panel admina — placówki** (`BlazorServer/Pages/Admin`): strona „Placówki” (CRUD, mapa z ręcznym ustawieniem pinezki, podpowiedź z geokodowania) i przypisanie lekarzy w `Doctors.razor`. Wymaga rozszerzenia CSP panelu w `HostSecurity.cs` (dziś `script-src 'self'`) o domeny Maps z kroku 10.
 8. **WASM — mapa**:
-   - `wwwroot/js/doctor-map.js` (ładowanie Maps JS przez `@googlemaps/js-api-loader` lub tag `<script>` z kluczem z `appsettings.json`), funkcje `init`, `setMarkers`, `drawRadius`, `onMarkerClick → DotNet`;
+   - `wwwroot/js/doctor-map.js` (Leaflet z `wwwroot/lib`, kafelki OSM z atrybucją), funkcje `init`, `setMarkers`, `drawRadius`, `onMarkerClick → DotNet`;
    - komponent `DoctorMap.razor` (`IAsyncDisposable`, sprzątanie listenerów);
-   - w `Doctors.razor` przełącznik **Lista / Mapa**; pole „Twoja lokalizacja”: przycisk „Użyj mojej lokalizacji” (`navigator.geolocation`) **lub** wpisanie adresu/miasta (Places Autocomplete); suwak promienia 5–100 km (domyślnie 30); kliknięcie pinezki → karta placówki z lekarzami, odległością i najbliższym terminem → „Zarezerwuj”.
-   - Fallback: gdy brak zgody na lokalizację lub brak klucza Maps → zwykłe wyszukiwanie po mieście.
+   - w `Doctors.razor` przełącznik **Lista / Mapa**; pole „Twoja lokalizacja”: przycisk „Użyj mojej lokalizacji” (`navigator.geolocation`) **lub** wpisanie adresu/miasta i „Szukaj” (Nominatim przez nasze API, bez autouzupełniania); suwak promienia 5–100 km (domyślnie 30); kliknięcie pinezki → karta placówki z lekarzami, odległością i najbliższym terminem → „Zarezerwuj”.
+   - Fallback: gdy brak zgody na lokalizację lub niedostępne kafelki → zwykłe wyszukiwanie po mieście.
 9. **Rezerwacja** — `AppointmentsCreate.razor`, potwierdzenie i historia pokazują adres placówki z `Appointment.ClinicId` + link „Nawiguj” (`https://www.google.com/maps/dir/?api=1&destination=lat,lng`).
-10. **CSP / nagłówki** (`deploy/nginx.conf.example` blok pacjenta oraz `HostSecurity.cs` dla panelu), wg dokumentacji Maps JS:
-    - `script-src … https://*.googleapis.com https://*.gstatic.com *.google.com`;
-    - `img-src` — obecne `https:` wystarcza;
-    - `connect-src … https://*.googleapis.com *.google.com https://*.gstatic.com`;
-    - `style-src … https://fonts.googleapis.com`, `font-src … https://fonts.gstatic.com`;
-    - `worker-src blob:`, `frame-src *.google.com`;
-    - `Referrer-Policy: strict-origin-when-cross-origin` (klucz przeglądarkowy jest ograniczony do refererów — przy `no-referrer` mapa się nie załaduje);
+10. **CSP / nagłówki** (`deploy/nginx.conf.example` blok pacjenta oraz `HostSecurity.cs` dla panelu) — przy Leaflet z własnego `wwwroot` zmian jest mało:
+    - `script-src`/`style-src` — bez zmian (`'self'`);
+    - `img-src` — obecne `https:` obejmuje `https://tile.openstreetmap.org`;
+    - `connect-src` — bez zmian (geokodowanie idzie przez nasze API);
+    - `Referrer-Policy: strict-origin-when-cross-origin` — polityka kafelków OSM wymaga nagłówka `Referer`, przy obecnym `no-referrer` żądania mogą być blokowane;
     - jeśli aplikacja pacjenta dostanie `Permissions-Policy`, to `geolocation=(self)` (obecny `geolocation=()` z `HostSecurity` dotyczy API i panelu — dla API tak ma zostać).
-11. **Testy** — unit: haversine (Warszawa–Kraków ≈ 252 km), prostokąt na wysokich szerokościach, walidator; integracyjne: lekarz w 25 km jest, w 35 km nie ma, `NextAvailableSlot` ignoruje grafik w dalekiej placówce, `Appointment.ClinicId` po rezerwacji i zmianie terminu, grafik w placówce nieprzypisanej do lekarza odrzucony, sortowanie po odległości, łączenie z filtrem specjalizacji/daty; E2E z fałszywą geolokalizacją Playwright (`context.grantPermissions(['geolocation'])` + `setGeolocation`) i mapą wyłączoną (tryb listy) — testy nie mogą zależeć od klucza Google.
-12. **Dokumentacja** — `docs/ARCHITECTURE.md` (Clinic, geokodowanie, koszt zapytania), README (klucze, tryb bez klucza), aktualizacja zrzutów ekranu.
+11. **Testy** — unit: haversine (Warszawa–Kraków ≈ 252 km), prostokąt na wysokich szerokościach, walidator; integracyjne: lekarz w 25 km jest, w 35 km nie ma, `NextAvailableSlot` ignoruje grafik w dalekiej placówce, `Appointment.ClinicId` po rezerwacji i zmianie terminu, grafik w placówce nieprzypisanej do lekarza odrzucony, sortowanie po odległości, łączenie z filtrem specjalizacji/daty; E2E z fałszywą geolokalizacją Playwright (`context.grantPermissions(['geolocation'])` + `setGeolocation`) i mapą wyłączoną (tryb listy) — testy nie mogą zależeć od zewnętrznych serwerów kafelków ani Nominatim (fałszywy geokoder, kafelki blokowane w E2E).
+12. **Dokumentacja** — `docs/ARCHITECTURE.md` (Clinic, geokodowanie, koszt zapytania), README (konfiguracja kafelków/Nominatim, atrybucja OSM), aktualizacja zrzutów ekranu.
 
 ---
 
@@ -140,8 +139,8 @@ Stan wyjściowy: commit `e596cef`. Projekt jest dojrzały jak na portfolio — w
 | 2 | A1 (lockout + równy czas odpowiedzi) | Bezpieczeństwo przed dodaniem nowej metody logowania. |
 | 3 | A9 → A0, A2 | Infrastruktura e‑mail, potwierdzenie emaila i reset hasła — B ich potrzebuje do rozwiązania konfliktu 409. |
 | 4 | B (Google) | Niezależne od mapy; wymaga migracji `Patient`. |
-| 5 | C1–C6 (dane, placówka w grafiku/slotach/wizycie, zapytanie, API) | Backend mapy testowalny bez UI i bez klucza Google. |
-| 6 | C7–C12 (panel placówek, UI mapy, CSP, E2E) | Wymaga klucza Maps i zmian CSP w obu hostach. |
+| 5 | C1–C6 (dane, placówka w grafiku/slotach/wizycie, zapytanie, API) | Backend mapy testowalny bez UI i bez usług zewnętrznych. |
+| 6 | C7–C12 (panel placówek, UI mapy, CSP, E2E) | Leaflet w obu hostach, `Referrer-Policy` dla kafelków OSM. |
 | 7 | A3, A10, D | Większe zmiany architektury / nice‑to‑have. A11 jest zastępowane przez część C — jeśli C się opóźni, zrobić tylko listę wyboru regionów w etapie 1. |
 
 Każdy etap = osobna gałąź i PR z zielonym CI (Linux + Windows + E2E).
