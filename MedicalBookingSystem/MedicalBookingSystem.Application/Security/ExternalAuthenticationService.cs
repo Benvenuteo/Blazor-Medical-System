@@ -19,6 +19,14 @@ public interface IExternalTokenValidator
     Task<ExternalIdentity?> ValidateGoogleAsync(string idToken, string nonce, CancellationToken cancellationToken = default);
 }
 
+/// <summary>Default for hosts without Google sign-in (the staff panel); the API registers the real validator.</summary>
+public sealed class DisabledExternalTokenValidator : IExternalTokenValidator
+{
+    public bool GoogleEnabled => false;
+    public Task<ExternalIdentity?> ValidateGoogleAsync(string idToken, string nonce, CancellationToken cancellationToken = default) =>
+        Task.FromResult<ExternalIdentity?>(null);
+}
+
 /// <summary>
 /// Google sign-in for patients. The API trusts only a verified Google ID token and then issues its own JWT, so roles,
 /// session revocation and the profile gate work exactly like password sign-in.

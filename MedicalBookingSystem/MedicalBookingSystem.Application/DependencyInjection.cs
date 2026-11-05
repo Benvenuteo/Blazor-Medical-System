@@ -6,6 +6,7 @@ using MedicalBookingSystem.Application.Validators;
 using MedicalBookingSystem.Domain.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace MedicalBookingSystem.Application;
 
@@ -23,6 +24,7 @@ public static class DependencyInjection
         services.AddScoped<PatientAuthenticationService>();
         services.AddScoped<AccountRecoveryService>();
         services.AddScoped<ExternalAuthenticationService>();
+        services.TryAddSingleton<IExternalTokenValidator, DisabledExternalTokenValidator>();
         services.AddOptions<Notifications.NotificationOptions>();
         services.AddScoped<ISessionValidator, AccountSessionValidator>();
         services.AddScoped<SessionGuard>();

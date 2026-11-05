@@ -17,6 +17,8 @@ internal sealed class StaffPanelFactory(SqliteConnection connection) : WebApplic
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        // Same container checks as Development: a missing registration fails every test, not only a real start.
+        builder.UseDefaultServiceProvider(options => { options.ValidateOnBuild = true; options.ValidateScopes = true; });
         builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["Media:PublicBaseUrl"] = "http://localhost",

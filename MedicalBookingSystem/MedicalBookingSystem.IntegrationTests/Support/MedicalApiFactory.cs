@@ -35,6 +35,8 @@ internal sealed class MedicalApiFactory : WebApplicationFactory<MedicalBookingSy
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        // Same container checks as Development: a missing registration fails every test, not only a real start.
+        builder.UseDefaultServiceProvider(options => { options.ValidateOnBuild = true; options.ValidateScopes = true; });
         builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["JwtSettings:SecretKey"] = "integration-tests-only-signing-key-at-least-thirty-two-bytes",
