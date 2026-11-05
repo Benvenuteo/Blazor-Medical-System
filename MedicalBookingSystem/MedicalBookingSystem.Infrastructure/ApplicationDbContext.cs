@@ -23,6 +23,7 @@ namespace MedicalBookingSystem.Infrastructure
         public DbSet<PatientExternalLogin> PatientExternalLogins { get; set; }
         public DbSet<Clinic> Clinics { get; set; }
         public DbSet<DoctorClinic> DoctorClinics { get; set; }
+        public DbSet<WaitlistEntry> Waitlist { get; set; }
         public DbSet<DoctorSpecialization> DoctorSpecializations { get; set; }
 
         private void StampAccountVersions()
@@ -103,6 +104,15 @@ namespace MedicalBookingSystem.Infrastructure
                 entity.Ignore(c => c.Address);
                 // Supports the bounding-box pre-filter of the radius search.
                 entity.HasIndex(c => new { c.Latitude, c.Longitude });
+            });
+            modelBuilder.Entity<WaitlistEntry>(entity =>
+            {
+                entity.ToTable("WaitlistEntries");
+                entity.HasOne(e => e.Patient).WithMany().HasForeignKey(e => e.PatientId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.Doctor).WithMany().HasForeignKey(e => e.DoctorId).OnDelete(DeleteBehavior.Cascade);
+                // One open entry per patient and doctor; closed entries stay as history.
+                entity.HasIndex(e => new { e.PatientId, e.DoctorId }).IsUnique().HasFilter("Active = 1");
+                entity.HasIndex(e => new { e.DoctorId, e.Active, e.Before });
             });
             modelBuilder.Entity<DoctorClinic>(entity =>
             {

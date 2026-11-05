@@ -23,10 +23,13 @@ namespace MedicalBookingSystem.Application.Services
         private readonly UserAccess _access;
         private readonly ClinicClock _clock;
         private readonly IValidator<CreateScheduleDto> _scheduleValidator;
+        private readonly IWaitlistNotifier? _waitlist;
 
 
-        public DoctorService(IUnitOfWorkFactory units, IValidator<CreateScheduleDto> scheduleValidator, ClinicClock clock, UserAccess access, IDoctorDirectoryQueries directory)
+        public DoctorService(IUnitOfWorkFactory units, IValidator<CreateScheduleDto> scheduleValidator, ClinicClock clock, UserAccess access, IDoctorDirectoryQueries directory,
+            IWaitlistNotifier? waitlist = null)
         {
+            _waitlist = waitlist;
             _units = units;
             _directory = directory;
             _access = access;
@@ -162,6 +165,13 @@ namespace MedicalBookingSystem.Application.Services
             catch (PersistenceConflictException)
             {
                 return Result.Failure("Grafik nachodzi na przedział zapisany w innym żądaniu.", ErrorType.Conflict);
+            }
+            // A new shift may give waiting patients an earlier slot (best effort, after the shift is stored).
+            var firstStart = dto.StartTime < _clock.MinimumBookingTime ? AppointmentSlots.RoundUp(_clock.MinimumBookingTime) : dto.StartTime;
+            if (_waitlist is not null && firstStart.Add(AppointmentSlots.Duration) <= dto.EndTime)
+            {
+                try { await _waitlist.SlotFreedAsync(dto.DoctorId, firstStart); }
+                catch (Exception exception) when (exception is not OperationCanceledException) { }
             }
             return Result.Success();
         }

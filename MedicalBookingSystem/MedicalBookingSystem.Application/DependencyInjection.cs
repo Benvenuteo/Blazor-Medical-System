@@ -39,6 +39,8 @@ public static class DependencyInjection
         services.AddScoped<IPatientService, PatientService>();
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<ClinicService>();
+        services.AddScoped<WaitlistService>();
+        services.AddScoped<IWaitlistNotifier>(provider => provider.GetRequiredService<WaitlistService>());
         services.AddScoped<Notifications.VisitNotificationService>();
         services.AddScoped<Notifications.IVisitNotifications>(provider => provider.GetRequiredService<Notifications.VisitNotificationService>());
         return services;

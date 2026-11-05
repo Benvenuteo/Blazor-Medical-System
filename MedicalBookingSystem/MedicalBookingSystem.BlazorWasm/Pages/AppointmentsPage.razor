@@ -77,6 +77,8 @@ else
 
 <Pagination Page="currentPage" TotalPages="@(page?.TotalPages ?? 0)" TotalCount="@(page?.TotalCount ?? 0)" Busy="isLoading" PageChanged="LoadPageAsync" />
 
+<WaitlistPanel />
+
 @code {
     private PagedResult<AppointmentDto>? page;
     private int currentPage = 1;

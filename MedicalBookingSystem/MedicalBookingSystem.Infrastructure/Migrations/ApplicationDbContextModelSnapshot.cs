@@ -646,6 +646,41 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.WaitlistEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("Before")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DoctorId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("NotifiedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PatientId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PatientId", "DoctorId")
+                        .IsUnique()
+                        .HasFilter("Active = 1");
+
+                    b.HasIndex("DoctorId", "Active", "Before");
+
+                    b.ToTable("WaitlistEntries", (string)null);
+                });
+
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.AccountToken", b =>
                 {
                     b.HasOne("MedicalBookingSystem.Domain.Models.Patient", "Patient")
@@ -799,6 +834,25 @@ namespace MedicalBookingSystem.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Doctor");
+                });
+
+            modelBuilder.Entity("MedicalBookingSystem.Domain.Models.WaitlistEntry", b =>
+                {
+                    b.HasOne("MedicalBookingSystem.Domain.Models.Doctor", "Doctor")
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MedicalBookingSystem.Domain.Models.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Doctor");
+
+                    b.Navigation("Patient");
                 });
 
             modelBuilder.Entity("MedicalBookingSystem.Domain.Models.Appointment", b =>

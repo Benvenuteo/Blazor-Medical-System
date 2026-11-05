@@ -17,6 +17,7 @@ namespace MedicalBookingSystem.Domain.Contracts
         IRepository<MedicalBookingSystem.Domain.Models.PatientExternalLogin> ExternalLogins { get; }
         IRepository<MedicalBookingSystem.Domain.Models.Clinic> Clinics { get; }
         IRepository<MedicalBookingSystem.Domain.Models.DoctorClinic> DoctorClinics { get; }
+        IRepository<MedicalBookingSystem.Domain.Models.WaitlistEntry> Waitlist { get; }
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
         Task CommitTransactionAsync();

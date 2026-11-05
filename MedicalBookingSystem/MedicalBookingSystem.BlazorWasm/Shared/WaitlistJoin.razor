@@ -1,0 +1,36 @@
+@using MedicalBookingSystem.SharedKernel.Dto
+@inject HttpClient Http
+
+<details class="mt-4 waitlist-join">
+    <summary>Nie pasuje żaden termin? Powiadom mnie o wcześniejszym</summary>
+    <p class="mt-2 mb-2">Gdy u tego lekarza zwolni się termin przed wybranym dniem (np. ktoś odwoła wizytę), wyślemy email z linkiem do rezerwacji.</p>
+    <div class="d-flex flex-wrap gap-2 align-items-end">
+        <div>
+            <label for="waitlist-before" class="form-label mb-1">Interesują mnie terminy przed dniem</label>
+            <input id="waitlist-before" type="date" class="form-control" @bind="before" />
+        </div>
+        <button type="button" class="btn btn-outline-primary" disabled="@busy" @onclick="JoinAsync">Zapisz mnie na listę oczekujących</button>
+    </div>
+    @if (message is not null) { <p class="alert @(joined ? "alert-success" : "alert-warning") mt-2 mb-0" role="status">@message</p> }
+</details>
+
+@code {
+    [Parameter, EditorRequired] public int DoctorId { get; set; }
+    private DateTime before = DateTime.Today.AddDays(14);
+    private bool busy, joined;
+    private string? message;
+
+    private async Task JoinAsync()
+    {
+        busy = true; message = null;
+        try
+        {
+            using var response = await Http.PostAsJsonAsync("api/waitlist", new JoinWaitlistDto { DoctorId = DoctorId, Before = before.Date });
+            joined = response.IsSuccessStatusCode;
+            message = joined ? $"Zapisano. Powiadomimy Cię o wolnym terminie przed {before:dd.MM.yyyy}. Wpis znajdziesz w „Moje wizyty”."
+                             : await ApiErrors.ReadAsync(response);
+        }
+        catch (Exception exception) { joined = false; message = ApiErrors.Describe(exception, "Nie udało się zapisać na listę"); }
+        finally { busy = false; }
+    }
+}
