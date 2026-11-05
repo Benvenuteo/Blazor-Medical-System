@@ -65,11 +65,15 @@ builder.Services.AddHostedService<DoctorPhotoCleanup>();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddPolicy("authentication", context => RateLimitPartition.GetFixedWindowLimiter(
-        context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
-        }));
+    // Only credential submissions are limited. Rendering the login form (including redirects back to it
+    // after logout or a password change) must not use up the attempts available to the same address.
+    options.AddPolicy("authentication", context => HttpMethods.IsPost(context.Request.Method)
+        ? RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0, AutoReplenishment = true
+            })
+        : RateLimitPartition.GetNoLimiter("form"));
 });
 
 var app = builder.Build();

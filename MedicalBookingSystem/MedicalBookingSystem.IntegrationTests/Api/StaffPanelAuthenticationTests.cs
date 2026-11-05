@@ -84,6 +84,31 @@ public sealed class StaffPanelAuthenticationTests
         Assert.Equal(HttpStatusCode.Redirect, protectedPage.StatusCode);
     }
 
+    [Fact]
+    public async Task LoginRateLimit_CountsCredentialSubmissions_NotFormViews()
+    {
+        using var scenario = await SecurityScenario.CreateAsync();
+        using var panel = new StaffPanelFactory(scenario.Factory.Connection);
+        using var client = CreateClient(panel);
+        for (var view = 0; view < 25; view++)
+        {
+            using var form = await client.GetAsync("/Account/Login");
+            Assert.Equal(HttpStatusCode.OK, form.StatusCode);
+        }
+        var token = await ReadAntiforgeryToken(client, "/Account/Login");
+        for (var attempt = 0; attempt < 20; attempt++)
+        {
+            using var rejected = await client.PostAsync("/Account/Login", Form("unknown@example.test", token));
+            Assert.Equal(HttpStatusCode.OK, rejected.StatusCode);
+        }
+
+        using var limited = await client.PostAsync("/Account/Login", Form("admin@example.test", token));
+        using var stillVisible = await client.GetAsync("/Account/Login");
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, stillVisible.StatusCode);
+    }
+
     private static HttpClient CreateClient(StaffPanelFactory panel) => panel.CreateClient(new WebApplicationFactoryClientOptions
     {
         AllowAutoRedirect = false, HandleCookies = true, BaseAddress = new Uri("https://localhost")
