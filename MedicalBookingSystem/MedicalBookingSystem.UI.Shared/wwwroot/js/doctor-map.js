@@ -19,14 +19,16 @@ window.medicalMap = {
   },
   showDoctors(element, centre, clinics) {
     const state = this.ensure(element);
+    // The element may just have become visible: measure it before computing the view.
+    state.map.invalidateSize(false);
     state.layer.clearLayers();
-    const bounds = [];
+    const bounds = window.L.latLngBounds([]);
     if (centre) {
-      window.L.circle([centre.latitude, centre.longitude], { radius: centre.radiusKm * 1000, color: '#0b5ed7', weight: 1, fillOpacity: 0.06 })
+      const area = window.L.circle([centre.latitude, centre.longitude], { radius: centre.radiusKm * 1000, color: '#0b5ed7', weight: 1, fillOpacity: 0.06 })
         .addTo(state.layer);
       window.L.circleMarker([centre.latitude, centre.longitude], { radius: 6, color: '#0b5ed7', fillOpacity: 1 })
         .bindTooltip('Punkt wyszukiwania').addTo(state.layer);
-      bounds.push([centre.latitude, centre.longitude]);
+      bounds.extend(area.getBounds());
     }
     for (const clinic of clinics) {
       const popup = document.createElement('div');
@@ -50,9 +52,12 @@ window.medicalMap = {
       }
       popup.append(list);
       window.L.marker([clinic.latitude, clinic.longitude], { title: clinic.name, alt: clinic.name }).bindPopup(popup).addTo(state.layer);
-      bounds.push([clinic.latitude, clinic.longitude]);
+      bounds.extend([clinic.latitude, clinic.longitude]);
     }
-    if (bounds.length > 0) state.map.fitBounds(bounds, { padding: [30, 30], maxZoom: 13 });
+    // No animation: a redraw during a running zoom animation would otherwise be ignored by Leaflet.
+    state.map.stop();
+    if (bounds.isValid()) state.map.fitBounds(bounds, { padding: [30, 30], maxZoom: 13, animate: false });
+    else state.map.setView([52.07, 19.48], 6, { animate: false });
     setTimeout(() => state.map.invalidateSize(), 0);
   },
   // Administrator pin: click or drag to move; the component receives the new coordinates.
@@ -76,9 +81,12 @@ window.medicalMap = {
   locate() {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) { reject(new Error('unsupported')); return; }
+      // The browser's own timeout starts after the permission prompt is answered; an ignored prompt
+      // must not keep the search waiting, so the page falls back to its default place.
+      const guard = setTimeout(() => reject(new Error('unavailable')), 15000);
       navigator.geolocation.getCurrentPosition(
-        position => resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
-        error => reject(new Error(error.code === 1 ? 'denied' : 'unavailable')),
+        position => { clearTimeout(guard); resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude }); },
+        error => { clearTimeout(guard); reject(new Error(error.code === 1 ? 'denied' : 'unavailable')); },
         { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 });
     });
   },

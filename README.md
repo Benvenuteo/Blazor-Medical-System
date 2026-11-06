@@ -22,7 +22,7 @@ Projekt pokazuje kompletną aplikację .NET 10 — od reguł domenowych i wspó�
 Dane są fikcyjne. Konta demo są chronione: można na nich rezerwować, dokumentować i oceniać, ale nie zmienić hasła, wylogować innych ani ich zablokować — demo zawsze działa dla następnej osoby. Działa na jednej darmowej maszynie ARM w Oracle Cloud (Docker Compose, Caddy, automatyczny HTTPS), a każda zmiana na `main` po zielonym CI publikuje nowe obrazy.
 
 **W 2 minuty:**
-1. Pacjent → **Lekarze** → „Użyj mojej lokalizacji” albo wpisz „Kraków” i „Ustaw adres”, promień 30 km → **Szukaj** → **Mapa**.
+1. Pacjent → **Lekarze** → **Mapa** (bez zgody na lokalizację mapa startuje w Warszawie) albo wpisz „Kraków” i „Ustaw adres”, promień 30 km → **Szukaj**.
 2. Pinezka → **Zarezerwuj wizytę** → wybierz godzinę w kalendarzu tygodniowym (w placówce albo teleporada) → po rezerwacji „Do kalendarza” pobiera plik `.ics`.
 3. **Odbyte wizyty** → „Drukuj / PDF” dokumentacji i „Oceń lekarza”.
 4. Panel jako lekarz → **Moje wizyty** (oznacz jako odbytą, notatki, recepty); jako administrator → **Placówki** (pinezka na mapie) i **Konta personelu**.

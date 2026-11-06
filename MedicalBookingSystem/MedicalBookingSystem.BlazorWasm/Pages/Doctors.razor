@@ -45,6 +45,7 @@
             }
         </div>
         @if (locating) { <p role="status" class="small mt-2 mb-0">Ustalanie lokalizacji...</p> }
+        @if (locationNotice is not null) { <p class="alert alert-info mt-2 mb-0" role="status">@locationNotice</p> }
         @if (locationError is not null) { <p class="alert alert-warning mt-2 mb-0" role="alert">@locationError</p> }
         <p class="form-text mb-0">Lokalizacja służy tylko do tego wyszukiwania; wysyłamy ją z dokładnością do ok. 1 km i nie zapisujemy.</p>
     </fieldset>
@@ -72,6 +73,17 @@
     <button class="btn btn-primary" type="submit">Szukaj</button>
 </EditForm>
 
+<div class="btn-group mt-3" role="group" aria-label="Widok wyników">
+    <button type="button" class="btn @(showMap ? "btn-outline-primary" : "btn-primary")" aria-pressed="@(showMap ? "false" : "true")" @onclick="() => SetView(false)">Lista</button>
+    <button type="button" class="btn @(showMap ? "btn-primary" : "btn-outline-primary")" aria-pressed="@(showMap ? "true" : "false")" disabled="@(locating || isLoading)" @onclick="ShowMapAsync">Mapa</button>
+</div>
+@* The map element stays on the page, so Leaflet keeps one map while results reload or the view changes. *@
+<div @ref="mapHost" class="doctor-map mt-3 @(showMap ? "" : "d-none")" role="region" aria-label="Mapa placówek z wynikami wyszukiwania"></div>
+@if (showMap)
+{
+    <p class="form-text">Na mapie są placówki lekarzy z bieżącej strony wyników. Kliknij pinezkę, aby zobaczyć lekarzy i zarezerwować wizytę.</p>
+}
+
 @if (isLoading)
 {
     <p>Ładowanie...</p>
@@ -82,15 +94,6 @@ else if (!string.IsNullOrEmpty(errorMessage))
 }
 else if (doctors != null && doctors.Any())
 {
-    <div class="btn-group mt-3" role="group" aria-label="Widok wyników">
-        <button type="button" class="btn @(showMap ? "btn-outline-primary" : "btn-primary")" aria-pressed="@(showMap ? "false" : "true")" @onclick="() => SetView(false)">Lista</button>
-        <button type="button" class="btn @(showMap ? "btn-primary" : "btn-outline-primary")" aria-pressed="@(showMap ? "true" : "false")" @onclick="() => SetView(true)">Mapa</button>
-    </div>
-    @if (showMap)
-    {
-        <div @ref="mapHost" class="doctor-map mt-3" role="region" aria-label="Mapa placówek z wynikami wyszukiwania"></div>
-        <p class="form-text">Na mapie są placówki lekarzy z bieżącej strony wyników. Kliknij pinezkę, aby zobaczyć lekarzy i zarezerwować wizytę.</p>
-    }
     <div class="table-responsive @(showMap ? "d-none" : "")" tabindex="0" role="region" aria-label="Tabela wyników"><table class="table table-bordered mt-3">
         <thead>
             <tr>
@@ -202,7 +205,11 @@ else if (doctors != null && doctors.Any())
 }
 else if (doctors != null)
 {
-    <div class="alert alert-info mt-3">Brak dostępnych lekarzy dla wybranych kryteriów.</div>
+    <div class="alert alert-info mt-3" role="status">
+        @(centre is null
+            ? "Brak dostępnych lekarzy dla wybranych kryteriów."
+            : $"Brak lekarzy w promieniu {radiusKm} km od: {centreLabel}. Zwiększ promień albo wpisz inny adres.")
+    </div>
 }
 
 @code {
@@ -215,9 +222,12 @@ else if (doctors != null)
     private int searchRequest;
 
     // Location search: centre from an address (geocoded by the API) or from the browser, rounded to ~1 km.
-    private sealed record Centre(double Latitude, double Longitude);
+    /// <summary>Search centre, also the result of <c>medicalMap.locate</c> (public so component tests can answer it).</summary>
+    public sealed record Centre(double Latitude, double Longitude);
     private Centre? centre;
-    private string? centreLabel, address, locationError;
+    private string? centreLabel, address, locationError, locationNotice;
+    // Default centre when the browser does not share a location, like most map-based services in Poland.
+    private static readonly Centre Warsaw = new(52.23, 21.01);
     private int radiusKm = 30;
     private bool locating, showMap, mapDirty, mapRendered;
     private ElementReference mapHost;
@@ -238,6 +248,7 @@ else if (doctors != null)
             var point = await response.Content.ReadFromJsonAsync<GeoPointDto>();
             centre = Rounded(point!.Latitude, point.Longitude);
             centreLabel = point.DisplayName;
+            locationNotice = null;
             searchDto.SortBy = "distance";
         }
         catch (Exception exception) { locationError = ApiErrors.Describe(exception, "Nie udało się znaleźć adresu"); }
@@ -246,41 +257,65 @@ else if (doctors != null)
 
     private async Task UseMyLocationAsync()
     {
-        locating = true; locationError = null;
+        await LocateOrDefaultAsync();
+        await NewSearch();
+    }
+
+    /// <summary>Browser location when shared; otherwise Warsaw, with a note on how to search elsewhere.</summary>
+    private async Task LocateOrDefaultAsync()
+    {
+        locating = true; locationError = null; locationNotice = null;
         try
         {
             var position = await JS.InvokeAsync<Centre>("medicalMap.locate");
             centre = Rounded(position.Latitude, position.Longitude);
             centreLabel = "Twoja lokalizacja";
-            searchDto.SortBy = "distance";
         }
         catch (JSException exception)
         {
-            locationError = exception.Message.Contains("denied")
-                ? "Przeglądarka nie udostępniła lokalizacji. Wpisz adres albo zezwól na dostęp do lokalizacji."
-                : "Nie udało się ustalić lokalizacji. Wpisz adres lub miejscowość.";
+            centre = Warsaw;
+            centreLabel = "Warszawa (domyślnie)";
+            locationNotice = exception.Message.Contains("denied")
+                ? "Przeglądarka nie udostępniła lokalizacji, więc pokazujemy okolice Warszawy. Wpisz adres, aby szukać gdzie indziej."
+                : "Nie udało się ustalić lokalizacji, więc pokazujemy okolice Warszawy. Wpisz adres, aby szukać gdzie indziej.";
         }
         finally { locating = false; }
+        searchDto.SortBy = "distance";
     }
 
     private void ClearLocation()
     {
-        centre = null; centreLabel = null; locationError = null;
+        centre = null; centreLabel = null; locationError = null; locationNotice = null;
         if (searchDto.SortBy == "distance") searchDto.SortBy = null;
+        mapDirty = showMap;
     }
 
     private void SetView(bool map)
     {
-        if (!map) mapRendered = false; // the map element leaves the page with the view
         showMap = map;
         mapDirty = map;
     }
 
+    /// <summary>
+    /// The map needs a place to centre on: the address or browser location when known, otherwise Warsaw.
+    /// The view switches after the search, so the map is drawn once, with the final results.
+    /// </summary>
+    private async Task ShowMapAsync()
+    {
+        if (centre is null)
+        {
+            await LocateOrDefaultAsync();
+            await NewSearch();
+        }
+        else if (doctors is null) await NewSearch();
+        SetView(true);
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!mapDirty || !showMap || doctors is null) return;
+        if (!mapDirty || !showMap || isLoading) return;
         mapDirty = false;
-        var clinics = doctors.Where(d => d.ClinicLatitude.HasValue && d.ClinicLongitude.HasValue)
+        var clinics = (doctors ?? []).Where(d => d.ClinicLatitude.HasValue && d.ClinicLongitude.HasValue)
             .GroupBy(d => d.ClinicId)
             .Select(g => new
             {

@@ -10,7 +10,7 @@ Pacjent filtruje i sortuje katalog, porównuje oceny oraz pierwszy wolny termin,
 
 ## Pacjent: lekarze w okolicy na mapie
 
-Na stronie **Lekarze** wpisz adres (np. „Kraków, Rynek Główny”) albo użyj lokalizacji przeglądarki i zostaw promień 30 km. Wyniki obejmują trzech lekarzy z Krakowa i Wieliczki — Katowice (~70 km) i Warszawa są poza zasięgiem. Przełącz na **Mapa**: pinezki placówek, okrąg promienia i lekarze z najbliższym terminem w dymku. Zwiększ promień do 100 km, aby pojawiły się Katowice.
+Na stronie **Lekarze** wpisz adres (np. „Kraków, Rynek Główny”) albo użyj lokalizacji przeglądarki i zostaw promień 30 km. Wyniki obejmują trzech lekarzy z Krakowa i Wieliczki — Katowice (~70 km) i Warszawa są poza zasięgiem. Przełącz na **Mapa**: pinezki placówek, okrąg promienia i lekarze z najbliższym terminem w dymku. Zwiększ promień do 100 km, aby pojawiły się Katowice. Gdy przeglądarka nie udostępni lokalizacji (odmowa albo brak odpowiedzi przez 15 s), mapa startuje w Warszawie, gdzie jest jedna placówka demo; pusty wynik też zostawia mapę z obszarem wyszukiwania.
 
 Po rezerwacji lista wizyt pokazuje placówkę z linkiem „Nawiguj” i przyciskiem **Do kalendarza** (.ics). Potwierdzenie i przypomnienie trafiają do outboxu — w demo jako pliki `.eml`.
 
