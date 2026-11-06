@@ -273,6 +273,24 @@ test('demo patient account is protected; location search lists nearby clinics on
   expect(errors).toEqual([]);
 });
 
+test('without location access the map opens around Warsaw and keeps the search area when nothing matches', async ({ page }, info) => {
+  const errors = []; page.on('pageerror', e => errors.push(e.message));
+  await patientLogin(page);
+  await page.goto('/doctors/search');
+  // No geolocation permission is granted in this context, so the browser refuses (or times out).
+  await page.getByRole('button', { name: 'Mapa', exact: true }).click();
+  await expect(page.getByText('pokazujemy okolice Warszawy', { exact: false })).toBeVisible({ timeout: 25000 });
+  await expect(page.getByText('Szukam w promieniu 30 km od: Warszawa (domyślnie)', { exact: true })).toBeVisible();
+  await expect(page.locator('.doctor-map .leaflet-marker-icon[title="Klinika Demo — Warszawa"]')).toBeVisible();
+  await page.getByLabel('Specjalizacja', { exact: true }).selectOption({ label: 'Dermatologia' });
+  await page.getByRole('button', { name: 'Szukaj', exact: true }).click();
+  await expect(page.getByText('Brak lekarzy w promieniu 30 km od: Warszawa (domyślnie)', { exact: false })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Mapa placówek z wynikami wyszukiwania' })).toBeVisible();
+  await expect(page.locator('.doctor-map .leaflet-marker-icon')).toHaveCount(0);
+  await page.screenshot({ path: info.outputPath('patient-map-warsaw.png'), fullPage: true });
+  expect(errors).toEqual([]);
+});
+
 test('admin manages clinics on the map', async ({ page }, info) => {
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await staffLogin(page, 'admin@example.test');
