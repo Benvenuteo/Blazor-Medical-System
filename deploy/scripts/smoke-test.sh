@@ -23,6 +23,26 @@ echo "OK: API and staff panel report a migrated database"
 request "$staff" "https://$staff/Account/Login" | grep -q '__RequestVerificationToken' || fail "staff login form"
 echo "OK: staff login form renders"
 
+# The panel is interactive only when the browser can load the Blazor script and keep a SignalR circuit open.
+script=$(request "$staff" -o /dev/null -w '%{http_code} %{content_type}' "https://$staff/_framework/blazor.server.js")
+case "$script" in "200 text/javascript"*) ;; *) fail "staff Blazor script: $script" ;; esac
+jar=$(mktemp)
+token=$(request "$staff" -c "$jar" -b "$jar" "https://$staff/Account/Login" |
+  sed -n 's/.*name="__RequestVerificationToken" type="hidden" value="\([^"]*\)".*/\1/p' | head -n 1)
+signin=$(request "$staff" -c "$jar" -b "$jar" -o /dev/null -w '%{http_code}' --data-urlencode "__RequestVerificationToken=$token" \
+  --data-urlencode 'Email=doctor@example.test' --data-urlencode 'Password=DemoStaff2026!' "https://$staff/Account/Login")
+[ "$signin" = 302 ] || fail "demo doctor sign-in to the staff panel: HTTP $signin"
+negotiate=$(request "$staff" -b "$jar" -d '' "https://$staff/_blazor/negotiate?negotiateVersion=1")
+echo "$negotiate" | grep -q '"WebSockets"' || fail "staff SignalR negotiate: $negotiate"
+connection=$(echo "$negotiate" | sed -n 's/.*"connectionToken":"\([^"]*\)".*/\1/p')
+# Caddy must pass the WebSocket upgrade through; the open connection then ends with the time limit.
+upgrade=$(request "$staff" -b "$jar" --http1.1 -o /dev/null -w '%{http_code}' --max-time 5 \
+  -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: c21va2UtdGVzdC1rZXkxMg==' \
+  "https://$staff/_blazor?id=$connection" 2>/dev/null || true)
+rm -f "$jar"
+[ "$upgrade" = 101 ] || fail "staff WebSocket upgrade through Caddy: HTTP $upgrade"
+echo "OK: staff panel serves the Blazor script and opens a SignalR WebSocket"
+
 request "$patient" "https://$patient/" | grep -q 'id="app"' || fail "patient app index"
 request "$patient" "https://$patient/doctors/search" | grep -q 'id="app"' || fail "patient SPA fallback"
 request "$patient" "https://$patient/appsettings.json" | grep -q "https://$api" || fail "patient runtime settings"

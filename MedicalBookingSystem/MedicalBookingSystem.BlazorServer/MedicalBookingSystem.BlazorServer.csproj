@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <Configurations>Debug;Release;BezSerwera</Configurations>
+    <!-- The SDK adds the package with blazor.server.js only when restore sees .razor files. The container
+         build restores from project files alone (for layer caching), so the dependency is stated here. -->
+    <RequiresAspNetWebAssets>true</RequiresAspNetWebAssets>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\MedicalBookingSystem.Application\MedicalBookingSystem.Application.csproj" />
